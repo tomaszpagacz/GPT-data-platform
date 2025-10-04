@@ -1,0 +1,201 @@
+#!/bin/bash
+
+# Script to run Logic Apps locally using Azure Functions runtime
+
+echo "Setting up local Logic Apps environment..."
+
+# Function to check if a command exists
+command_exists() {
+    command -v "$1" >/dev/null 2>&1
+}
+
+# Check prerequisites
+check_prerequisites() {
+    local missing_deps=()
+
+    if ! command_exists func; then
+        missing_deps+=("Azure Functions Core Tools")
+    fi
+
+    if ! command_exists func; then
+        missing_deps+=("Azure Functions Core Tools")
+    fi
+
+    if [ ${#missing_deps[@]} -ne 0 ]; then
+        echo "Error: Missing required dependencies:"
+        printf '%s\n' "${missing_deps[@]}"
+        echo -e "\nPlease run: ./helpers/setup-scripts/install-dependencies.sh"
+        exit 1
+    fi
+}
+
+# Create function.json for Logic Apps
+create_function_configs() {
+    echo "Creating function configurations..."
+    
+    # Hello World function.json
+    mkdir -p /workspaces/GPT-data-platform/src/logic-apps/hello-world/workflow
+    cat > /workspaces/GPT-data-platform/src/logic-apps/hello-world/workflow/function.json << EOF
+{
+    "bindings": [
+        {
+            "authLevel": "anonymous",
+            "type": "httpTrigger",
+            "direction": "in",
+            "name": "req",
+            "methods": ["post"]
+        },
+        {
+            "type": "http",
+            "direction": "out",
+            "name": "res"
+        }
+    ]
+}
+EOF
+
+    # Travel Assistant function.json
+    mkdir -p /workspaces/GPT-data-platform/src/logic-apps/travel-assistant/workflow
+    cat > /workspaces/GPT-data-platform/src/logic-apps/travel-assistant/workflow/function.json << EOF
+{
+    "bindings": [
+        {
+            "authLevel": "anonymous",
+            "type": "httpTrigger",
+            "direction": "in",
+            "name": "req",
+            "methods": ["post"]
+        },
+        {
+            "type": "http",
+            "direction": "out",
+            "name": "res"
+        }
+    ]
+}
+EOF
+}
+
+# Create local settings for Logic Apps
+create_local_settings() {
+    echo "Creating local settings..."
+    
+    # Create local.settings.json for Hello World
+    cat > /workspaces/GPT-data-platform/src/logic-apps/hello-world/local.settings.json << EOF
+{
+    "IsEncrypted": false,
+    "Values": {
+        "AzureWebJobsStorage": "UseDevelopmentStorage=true",
+        "FUNCTIONS_WORKER_RUNTIME": "node",
+        "WORKFLOWS_SUBSCRIPTION_ID": "00000000-0000-0000-0000-000000000000",
+        "WORKFLOWS_RESOURCE_GROUP_NAME": "local-dev",
+        "WORKFLOWS_LOCATION_NAME": "local"
+    }
+}
+EOF
+
+    # Create local.settings.json for Travel Assistant
+    cat > /workspaces/GPT-data-platform/src/logic-apps/travel-assistant/local.settings.json << EOF
+{
+    "IsEncrypted": false,
+    "Values": {
+        "AzureWebJobsStorage": "UseDevelopmentStorage=true",
+        "FUNCTIONS_WORKER_RUNTIME": "node",
+        "WORKFLOWS_SUBSCRIPTION_ID": "00000000-0000-0000-0000-000000000000",
+        "WORKFLOWS_RESOURCE_GROUP_NAME": "local-dev",
+        "WORKFLOWS_LOCATION_NAME": "local",
+        "LocationIntelligenceFunctionUrl": "http://localhost:7071",
+        "LocationIntelligenceFunctionKey": "local-dev-key"
+    }
+}
+EOF
+}
+
+# Start Location Intelligence Function locally
+start_function() {
+    echo "Starting Location Intelligence Function..."
+    cd /workspaces/GPT-data-platform/src/functions/location-intelligence
+    func start --port 7071 &
+    FUNC_PID=$!
+    cd - > /dev/null
+    echo "Function started with PID: $FUNC_PID"
+    
+    # Wait for Function to start
+    sleep 5
+}
+
+# Start Logic Apps using Functions runtime
+start_logic_app() {
+    local workflow=$1
+    local port=$2
+    echo "Starting Logic App: $workflow on port $port..."
+    cd "/workspaces/GPT-data-platform/src/logic-apps/$workflow"
+    func start --port "$port" &
+    eval "${workflow}_PID=$!"
+    cd - > /dev/null
+    echo "Logic App $workflow started"
+    sleep 5
+}
+
+# Run test cases
+run_tests() {
+    echo -e "\nTesting Hello World Logic App..."
+    curl -X POST "http://localhost:7072/api/workflow" \
+         -H "Content-Type: application/json" \
+         -d '{"name": "Local Test User"}' \
+         | jq
+
+    echo -e "\nTesting Travel Assistant Logic App..."
+    curl -X POST "http://localhost:7073/api/workflow" \
+         -H "Content-Type: application/json" \
+         -d '{
+             "address": "350 5th Ave, New York, NY 10118",
+             "targetLanguage": "es",
+             "sourceLanguage": "en",
+             "currentLocation": {
+                 "latitude": 40.7484,
+                 "longitude": -73.9857
+             },
+             "travelMode": "driving"
+         }' \
+         | jq
+}
+
+# Cleanup function
+cleanup() {
+    echo -e "\nCleaning up..."
+    kill $AZURITE_PID 2>/dev/null
+    kill $FUNC_PID 2>/dev/null
+    kill $LOGIC_PID 2>/dev/null
+    rm -rf /tmp/azurite
+}
+
+# Set up trap for cleanup
+trap cleanup EXIT
+
+# Main execution
+main() {
+    check_prerequisites
+    create_function_configs
+    create_host_json
+    create_local_settings
+    start_location_intelligence
+    start_logic_app "hello-world" 7072
+    start_logic_app "travel-assistant" 7073
+    
+    echo -e "\nLocal environment is ready!"
+    echo "Hello World Logic App: http://localhost:7072/api/workflow"
+    echo "Travel Assistant Logic App: http://localhost:7073/api/workflow"
+    
+    # Ask if user wants to run tests
+    read -p "Do you want to run test cases now? (y/n) " -n 1 -r
+    echo
+    if [[ $REPLY =~ ^[Yy]$ ]]; then
+        run_tests
+    fi
+    
+    echo -e "\nPress Ctrl+C to stop all services..."
+    wait
+}
+
+main

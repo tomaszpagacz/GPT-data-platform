@@ -28,6 +28,25 @@ param allowedIpRanges array = []
 var storageKeys = listKeys(functionStorageAccountId, '2022-09-01')
 var functionStorageAccountName = last(split(functionStorageAccountId, '/'))
 
+// Create the default deny all rule
+var defaultDenyRule = {
+  ipAddress: '0.0.0.0/0'
+  action: 'Deny'
+  priority: 2147483647
+  name: 'Deny all'
+}
+
+// Create allow rules for specified IP ranges
+var allowRules = [for (cidr, i) in allowedIpRanges: {
+  ipAddress: cidr
+  action: 'Allow'
+  priority: 100 + i
+  name: 'allow-${replace(cidr, '/', '-')}'
+}]
+
+// Combine rules based on whether there are allowed IPs
+var ipRestrictions = empty(allowedIpRanges) ? array(defaultDenyRule) : allowRules
+
 resource hostingPlan 'Microsoft.Web/serverfarms@2022-03-01' = {
   name: functionPlanName
   location: location
@@ -86,13 +105,7 @@ resource functionApp 'Microsoft.Web/sites@2022-03-01' = {
           value: '1'
         }
       ]
-      ipSecurityRestrictionsDefaultAction: empty(allowedIpRanges) ? 'Deny' : 'Allow'
-      ipSecurityRestrictions: [for cidr in allowedIpRanges: {
-        ipAddress: cidr
-        action: 'Allow'
-        priority: 100 + indexOf(allowedIpRanges, cidr)
-        name: 'allow-${replace(cidr, '/', '-')}'
-      }]
+      ipSecurityRestrictions: ipRestrictions
     }
   }
 }

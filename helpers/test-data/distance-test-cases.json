@@ -1,0 +1,165 @@
+{
+    "testCases": [
+        {
+            "name": "NYC to LA - Driving",
+            "input": {
+                "origin": {
+                    "latitude": 40.7128,
+                    "longitude": -74.0060
+                },
+                "destination": {
+                    "latitude": 34.0522,
+                    "longitude": -118.2437
+                }
+            },
+            "expectedDistanceKm": 4490.72,
+            "description": "Driving route between New York City and Los Angeles",
+            "mockResponse": {
+                "routes": [
+                    {
+                        "summary": {
+                            "lengthInMeters": 4490720,
+                            "travelTimeInSeconds": 147600,
+                            "trafficDelayInSeconds": 0,
+                            "departureTime": "2025-10-04T10:00:00Z",
+                            "arrivalTime": "2025-10-06T07:00:00Z"
+                        }
+                    }
+                ]
+            },
+            "tags": ["long-distance", "interstate", "driving"],
+            "routeOptions": {
+                "mode": "car",
+                "avoid": ["unpavedRoads"]
+            }
+        },
+        {
+            "name": "London to Paris - With Tunnel",
+            "input": {
+                "origin": {
+                    "latitude": 51.5074,
+                    "longitude": -0.1278
+                },
+                "destination": {
+                    "latitude": 48.8566,
+                    "longitude": 2.3522
+                }
+            },
+            "expectedDistanceKm": 456.32,
+            "description": "Driving route between London and Paris via Channel Tunnel",
+            "mockResponse": {
+                "routes": [
+                    {
+                        "summary": {
+                            "lengthInMeters": 456320,
+                            "travelTimeInSeconds": 21600,
+                            "trafficDelayInSeconds": 1200,
+                            "departureTime": "2025-10-04T10:00:00Z",
+                            "arrivalTime": "2025-10-04T16:00:00Z"
+                        }
+                    }
+                ]
+            },
+            "tags": ["international", "tunnel", "toll-road"],
+            "routeOptions": {
+                "mode": "car",
+                "avoid": ["ferries"]
+            }
+        },
+        {
+            "name": "Zurich Local - One Way Streets",
+            "input": {
+                "origin": {
+                    "latitude": 47.3769,
+                    "longitude": 8.5417
+                },
+                "destination": {
+                    "latitude": 47.3784,
+                    "longitude": 8.5383
+                }
+            },
+            "expectedDistanceKm": 2.5,
+            "description": "Short urban route in Zurich with one-way streets consideration",
+            "mockResponse": {
+                "routes": [
+                    {
+                        "summary": {
+                            "lengthInMeters": 2500,
+                            "travelTimeInSeconds": 480,
+                            "trafficDelayInSeconds": 120,
+                            "departureTime": "2025-10-04T10:00:00Z",
+                            "arrivalTime": "2025-10-04T10:08:00Z"
+                        }
+                    }
+                ]
+            },
+            "tags": ["urban", "one-way", "local"],
+            "routeOptions": {
+                "mode": "car",
+                "computeTravelTimeFor": "currentTraffic"
+            }
+        },
+        {
+            "name": "Invalid Coordinates Test",
+            "input": {
+                "origin": {
+                    "latitude": 91.0,
+                    "longitude": 0.0
+                },
+                "destination": {
+                    "latitude": 45.0,
+                    "longitude": 180.1
+                }
+            },
+            "expectedError": true,
+            "description": "Test case with invalid coordinates that should trigger an error response",
+            "mockResponse": {
+                "error": {
+                    "code": "400",
+                    "message": "Invalid coordinates provided"
+                }
+            },
+            "tags": ["error-case", "validation"]
+        }
+    ],
+    "apiResponseExamples": {
+        "successResponse": {
+            "routes": [
+                {
+                    "summary": {
+                        "lengthInMeters": 435800,
+                        "travelTimeInSeconds": 15600,
+                        "trafficDelayInSeconds": 300,
+                        "departureTime": "2025-10-04T10:00:00Z",
+                        "arrivalTime": "2025-10-04T14:20:00Z"
+                    },
+                    "legs": [
+                        {
+                            "summary": {
+                                "lengthInMeters": 435800,
+                                "travelTimeInSeconds": 15600,
+                                "trafficDelayInSeconds": 300
+                            },
+                            "points": [
+                                {
+                                    "latitude": 48.1351,
+                                    "longitude": 11.5820
+                                },
+                                {
+                                    "latitude": 48.2082,
+                                    "longitude": 16.3738
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        "errorResponse": {
+            "error": {
+                "code": "400",
+                "message": "Invalid coordinates provided"
+            }
+        }
+    }
+}

@@ -1,0 +1,6 @@
+/workspaces/GPT-data-platform/src/functions/location-intelligence/obj/Debug/net7.0/location-intelligence.csproj.AssemblyReference.cache
+/workspaces/GPT-data-platform/src/functions/location-intelligence/obj/Debug/net7.0/location-intelligence.GeneratedMSBuildEditorConfig.editorconfig
+/workspaces/GPT-data-platform/src/functions/location-intelligence/obj/Debug/net7.0/location-intelligence.AssemblyInfoInputs.cache
+/workspaces/GPT-data-platform/src/functions/location-intelligence/obj/Debug/net7.0/location-intelligence.AssemblyInfo.cs
+/workspaces/GPT-data-platform/src/functions/location-intelligence/obj/Debug/net7.0/location-intelligence.csproj.CoreCompileInputs.cache
+/workspaces/GPT-data-platform/src/functions/location-intelligence/obj/Debug/net7.0/location-intelligence.sourcelink.json

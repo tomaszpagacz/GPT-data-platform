@@ -1,0 +1,47 @@
+{
+    "recommendations": [
+        // Core development extensions
+        "ms-dotnettools.csharp",                   // C# language support
+        "ms-azuretools.vscode-azurefunctions",     // Azure Functions development
+        "ms-azuretools.vscode-logicapps",          // Logic Apps development
+        "ms-azuretools.vscode-bicep",              // Bicep language support
+        "ms-vscode.azure-account",                 // Azure account management
+        "ms-azuretools.vscode-azureresourcegroups", // Azure Resource Groups
+        "ms-vscode.azurecli",                      // Azure CLI tools
+        
+        // Testing and debugging
+        "formulahendry.dotnet-test-explorer",      // .NET test explorer
+        "ryanluker.vscode-coverage-gutters",       // Code coverage visualization
+        "ms-vscode.test-adapter-converter",        // Test adapter support
+        
+        // Infrastructure and DevOps
+        "ms-azure-devops.azure-pipelines",         // Azure Pipelines
+        "ms-kubernetes-tools.vscode-aks-tools",    // Azure Kubernetes Service
+        "ms-azuretools.vscode-docker",             // Docker support
+        
+        // JSON and Data
+        "ms-azuretools.vscode-cosmosdb",          // Azure Cosmos DB
+        "redhat.vscode-yaml",                      // YAML support
+        "eriklynd.json-tools",                     // JSON tools
+        
+        // Productivity and code quality
+        "streetsidesoftware.code-spell-checker",   // Spell checker
+        "editorconfig.editorconfig",               // EditorConfig support
+        "visualstudioexptteam.vscodeintellicode",  // AI-assisted development
+        "github.copilot",                          // GitHub Copilot
+        "github.copilot-chat",                     // GitHub Copilot Chat
+        
+        // REST API testing
+        "humao.rest-client",                       // REST Client
+        
+        // Git integration
+        "eamodio.gitlens",                        // Git supercharged
+        "mhutchie.git-graph",                     // Git Graph visualization
+        
+        // Azure specific
+        "ms-vscode.vscode-node-azure-pack",       // Azure Tools
+        "ms-azuretools.vscode-azurestorage",      // Azure Storage
+        "ms-azuretools.vscode-apimanagement"      // API Management
+    ],
+    "unwantedRecommendations": []
+}

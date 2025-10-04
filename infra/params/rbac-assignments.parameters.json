@@ -1,0 +1,115 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "environment": {
+            "value": "dev"
+        },
+        "roleAssignments": {
+            "value": [
+                {
+                    "name": "platform-admins-owner",
+                    "principalId": "${PLATFORM_ADMINS_GROUP_ID}",
+                    "roleDefinition": "owner",
+                    "principalType": "Group",
+                    "description": "Full platform access for administrators",
+                    "category": "platform"
+                },
+                {
+                    "name": "platform-devs-contributor",
+                    "principalId": "${PLATFORM_DEVS_GROUP_ID}",
+                    "roleDefinition": "contributor",
+                    "principalType": "Group",
+                    "description": "Platform access for developers",
+                    "category": "platform"
+                },
+                {
+                    "name": "platform-readers",
+                    "principalId": "${PLATFORM_READERS_GROUP_ID}",
+                    "roleDefinition": "reader",
+                    "principalType": "Group",
+                    "description": "Read access for support team",
+                    "category": "platform"
+                },
+                {
+                    "name": "platform-data-contributors",
+                    "principalId": "${PLATFORM_DATA_CONTRIBUTORS_GROUP_ID}",
+                    "roleDefinition": "storageBlobDataContributor",
+                    "principalType": "Group",
+                    "description": "Data contributors for storage",
+                    "category": "storage"
+                },
+                {
+                    "name": "functions-storage-contributor",
+                    "principalId": "${FUNCTIONS_MI_ID}",
+                    "roleDefinition": "storageBlobDataContributor",
+                    "description": "Functions access to storage",
+                    "category": "storage"
+                },
+                {
+                    "name": "platform-keyvault-admins",
+                    "principalId": "${PLATFORM_ADMINS_GROUP_ID}",
+                    "roleDefinition": "keyVaultAdministrator",
+                    "principalType": "Group",
+                    "description": "Key Vault administration",
+                    "category": "keyvault"
+                },
+                {
+                    "name": "functions-keyvault-secrets",
+                    "principalId": "${FUNCTIONS_MI_ID}",
+                    "roleDefinition": "keyVaultSecretsUser",
+                    "description": "Functions access to secrets",
+                    "category": "keyvault"
+                },
+                {
+                    "name": "logicapp-keyvault-secrets",
+                    "principalId": "${LOGICAPP_MI_ID}",
+                    "roleDefinition": "keyVaultSecretsUser",
+                    "description": "Logic Apps access to secrets",
+                    "category": "keyvault"
+                },
+                {
+                    "name": "functions-cognitive-user",
+                    "principalId": "${FUNCTIONS_MI_ID}",
+                    "roleDefinition": "cognitiveServicesUser",
+                    "description": "Functions access to Cognitive Services",
+                    "category": "cognitive"
+                },
+                {
+                    "name": "functions-maps-reader",
+                    "principalId": "${FUNCTIONS_MI_ID}",
+                    "roleDefinition": "azureMapsDataReader",
+                    "description": "Functions access to Azure Maps",
+                    "category": "maps"
+                },
+                {
+                    "name": "logicapp-contributor",
+                    "principalId": "${LOGICAPP_MI_ID}",
+                    "roleDefinition": "logicAppContributor",
+                    "description": "Logic Apps operation permissions",
+                    "category": "logicapp"
+                },
+                {
+                    "name": "platform-synapse-admins",
+                    "principalId": "${PLATFORM_DATA_ADMINS_GROUP_ID}",
+                    "roleDefinition": "contributor",
+                    "principalType": "Group",
+                    "description": "Synapse workspace administration",
+                    "category": "synapse"
+                }
+            ]
+        },
+        "environmentExclusions": {
+            "value": {
+                "dev": [],
+                "sit": [
+                    "platform-admins-owner"
+                ],
+                "prod": [
+                    "platform-admins-owner",
+                    "platform-devs-contributor"
+                ]
+            }
+        }
+    }
+}

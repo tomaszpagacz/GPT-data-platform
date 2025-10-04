@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.38.5.1644",
-      "templateHash": "3480962643860944180"
+      "templateHash": "6676437962751622808"
     }
   },
   "parameters": {
@@ -779,7 +779,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.38.5.1644",
-              "templateHash": "12263140887916030592"
+              "templateHash": "7837388415150775142"
             }
           },
           "parameters": {
@@ -834,24 +834,17 @@
               {
                 "name": "blobDnsZoneIds",
                 "count": "[length(parameters('privateDnsZoneIds'))]",
-                "input": "[if(endsWith(parameters('privateDnsZoneIds')[copyIndex('blobDnsZoneIds')], '/privatelink.blob.core.windows.net'), parameters('privateDnsZoneIds')[copyIndex('blobDnsZoneIds')], null())]"
-              },
-              {
-                "name": "blobDnsZoneIdsFiltered",
-                "count": "[length(variables('blobDnsZoneIds'))]",
-                "input": "[if(contains(variables('blobDnsZoneIds')[copyIndex('blobDnsZoneIdsFiltered')], 'privatelink.blob.core.windows.net'), variables('blobDnsZoneIds')[copyIndex('blobDnsZoneIdsFiltered')], null())]"
+                "input": "[if(endsWith(parameters('privateDnsZoneIds')[copyIndex('blobDnsZoneIds')], format('/privatelink.blob{0}', variables('blobEndpoint'))), parameters('privateDnsZoneIds')[copyIndex('blobDnsZoneIds')], null())]"
               },
               {
                 "name": "dfsDnsZoneIds",
                 "count": "[length(parameters('privateDnsZoneIds'))]",
-                "input": "[if(endsWith(parameters('privateDnsZoneIds')[copyIndex('dfsDnsZoneIds')], '/privatelink.dfs.core.windows.net'), parameters('privateDnsZoneIds')[copyIndex('dfsDnsZoneIds')], null())]"
-              },
-              {
-                "name": "dfsDnsZoneIdsFiltered",
-                "count": "[length(variables('dfsDnsZoneIds'))]",
-                "input": "[if(contains(variables('dfsDnsZoneIds')[copyIndex('dfsDnsZoneIdsFiltered')], 'privatelink.dfs.core.windows.net'), variables('dfsDnsZoneIds')[copyIndex('dfsDnsZoneIdsFiltered')], null())]"
+                "input": "[if(endsWith(parameters('privateDnsZoneIds')[copyIndex('dfsDnsZoneIds')], format('/privatelink.dfs{0}', variables('blobEndpoint'))), parameters('privateDnsZoneIds')[copyIndex('dfsDnsZoneIds')], null())]"
               }
-            ]
+            ],
+            "blobEndpoint": "[format('{0}', environment().suffixes.storage)]",
+            "blobDnsZoneIdsFiltered": "[filter(variables('blobDnsZoneIds'), lambda('id', not(equals(lambdaVariables('id'), null()))))]",
+            "dfsDnsZoneIdsFiltered": "[filter(variables('dfsDnsZoneIds'), lambda('id', not(equals(lambdaVariables('id'), null()))))]"
           },
           "resources": [
             {
@@ -874,7 +867,7 @@
             },
             {
               "condition": "[and(not(empty(parameters('filesystemName'))), parameters('isHnsEnabled'))]",
-              "type": "Microsoft.Storage/storageAccounts/fileServices/containers",
+              "type": "Microsoft.Storage/storageAccounts/blobServices/containers",
               "apiVersion": "2022-09-01",
               "name": "[format('{0}/default/{1}', parameters('name'), parameters('filesystemName'))]",
               "properties": {
@@ -1028,7 +1021,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.38.5.1644",
-              "templateHash": "12263140887916030592"
+              "templateHash": "7837388415150775142"
             }
           },
           "parameters": {
@@ -1083,24 +1076,17 @@
               {
                 "name": "blobDnsZoneIds",
                 "count": "[length(parameters('privateDnsZoneIds'))]",
-                "input": "[if(endsWith(parameters('privateDnsZoneIds')[copyIndex('blobDnsZoneIds')], '/privatelink.blob.core.windows.net'), parameters('privateDnsZoneIds')[copyIndex('blobDnsZoneIds')], null())]"
-              },
-              {
-                "name": "blobDnsZoneIdsFiltered",
-                "count": "[length(variables('blobDnsZoneIds'))]",
-                "input": "[if(contains(variables('blobDnsZoneIds')[copyIndex('blobDnsZoneIdsFiltered')], 'privatelink.blob.core.windows.net'), variables('blobDnsZoneIds')[copyIndex('blobDnsZoneIdsFiltered')], null())]"
+                "input": "[if(endsWith(parameters('privateDnsZoneIds')[copyIndex('blobDnsZoneIds')], format('/privatelink.blob{0}', variables('blobEndpoint'))), parameters('privateDnsZoneIds')[copyIndex('blobDnsZoneIds')], null())]"
               },
               {
                 "name": "dfsDnsZoneIds",
                 "count": "[length(parameters('privateDnsZoneIds'))]",
-                "input": "[if(endsWith(parameters('privateDnsZoneIds')[copyIndex('dfsDnsZoneIds')], '/privatelink.dfs.core.windows.net'), parameters('privateDnsZoneIds')[copyIndex('dfsDnsZoneIds')], null())]"
-              },
-              {
-                "name": "dfsDnsZoneIdsFiltered",
-                "count": "[length(variables('dfsDnsZoneIds'))]",
-                "input": "[if(contains(variables('dfsDnsZoneIds')[copyIndex('dfsDnsZoneIdsFiltered')], 'privatelink.dfs.core.windows.net'), variables('dfsDnsZoneIds')[copyIndex('dfsDnsZoneIdsFiltered')], null())]"
+                "input": "[if(endsWith(parameters('privateDnsZoneIds')[copyIndex('dfsDnsZoneIds')], format('/privatelink.dfs{0}', variables('blobEndpoint'))), parameters('privateDnsZoneIds')[copyIndex('dfsDnsZoneIds')], null())]"
               }
-            ]
+            ],
+            "blobEndpoint": "[format('{0}', environment().suffixes.storage)]",
+            "blobDnsZoneIdsFiltered": "[filter(variables('blobDnsZoneIds'), lambda('id', not(equals(lambdaVariables('id'), null()))))]",
+            "dfsDnsZoneIdsFiltered": "[filter(variables('dfsDnsZoneIds'), lambda('id', not(equals(lambdaVariables('id'), null()))))]"
           },
           "resources": [
             {
@@ -1123,7 +1109,7 @@
             },
             {
               "condition": "[and(not(empty(parameters('filesystemName'))), parameters('isHnsEnabled'))]",
-              "type": "Microsoft.Storage/storageAccounts/fileServices/containers",
+              "type": "Microsoft.Storage/storageAccounts/blobServices/containers",
               "apiVersion": "2022-09-01",
               "name": "[format('{0}/default/{1}', parameters('name'), parameters('filesystemName'))]",
               "properties": {
@@ -1286,7 +1272,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.38.5.1644",
-              "templateHash": "9626492694903163913"
+              "templateHash": "7569900795436012602"
             }
           },
           "parameters": {
@@ -1348,7 +1334,26 @@
             }
           },
           "variables": {
-            "functionStorageAccountName": "[last(split(parameters('functionStorageAccountId'), '/'))]"
+            "copy": [
+              {
+                "name": "allowRules",
+                "count": "[length(parameters('allowedIpRanges'))]",
+                "input": {
+                  "ipAddress": "[parameters('allowedIpRanges')[copyIndex('allowRules')]]",
+                  "action": "Allow",
+                  "priority": "[add(100, copyIndex('allowRules'))]",
+                  "name": "[format('allow-{0}', replace(parameters('allowedIpRanges')[copyIndex('allowRules')], '/', '-'))]"
+                }
+              }
+            ],
+            "functionStorageAccountName": "[last(split(parameters('functionStorageAccountId'), '/'))]",
+            "defaultDenyRule": {
+              "ipAddress": "0.0.0.0/0",
+              "action": "Deny",
+              "priority": 2147483647,
+              "name": "Deny all"
+            },
+            "ipRestrictions": "[if(empty(parameters('allowedIpRanges')), array(variables('defaultDenyRule')), variables('allowRules'))]"
           },
           "resources": [
             {
@@ -1381,18 +1386,6 @@
                 "serverFarmId": "[resourceId('Microsoft.Web/serverfarms', parameters('functionPlanName'))]",
                 "virtualNetworkSubnetId": "[parameters('functionSubnetId')]",
                 "siteConfig": {
-                  "copy": [
-                    {
-                      "name": "ipSecurityRestrictions",
-                      "count": "[length(parameters('allowedIpRanges'))]",
-                      "input": {
-                        "ipAddress": "[parameters('allowedIpRanges')[copyIndex('ipSecurityRestrictions')]]",
-                        "action": "Allow",
-                        "priority": "[add(100, indexOf(parameters('allowedIpRanges'), parameters('allowedIpRanges')[copyIndex('ipSecurityRestrictions')]))]",
-                        "name": "[format('allow-{0}', replace(parameters('allowedIpRanges')[copyIndex('ipSecurityRestrictions')], '/', '-'))]"
-                      }
-                    }
-                  ],
                   "linuxFxVersion": "DOTNET|6.0",
                   "appSettings": [
                     {
@@ -1424,7 +1417,7 @@
                       "value": "1"
                     }
                   ],
-                  "ipSecurityRestrictionsDefaultAction": "[if(empty(parameters('allowedIpRanges')), 'Deny', 'Allow')]"
+                  "ipSecurityRestrictions": "[variables('ipRestrictions')]"
                 }
               },
               "dependsOn": [

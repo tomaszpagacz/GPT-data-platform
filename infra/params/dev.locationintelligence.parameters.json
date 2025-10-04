@@ -1,0 +1,42 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "locationIntelligenceFunctionUrl": {
+            "value": "https://location-intelligence-dev.azurewebsites.net"
+        },
+        "locationIntelligenceFunctionKey": {
+            "reference": {
+                "keyVault": {
+                    "id": "/subscriptions/{subscription-id}/resourceGroups/{resource-group}/providers/Microsoft.KeyVault/vaults/{keyvault-name}"
+                },
+                "secretName": "LocationIntelligence-Function-Key"
+            }
+        },
+        "azureMapsEndpoint": {
+            "value": "https://atlas.microsoft.com"
+        },
+        "azureMapsKey": {
+            "reference": {
+                "keyVault": {
+                    "id": "/subscriptions/{subscription-id}/resourceGroups/{resource-group}/providers/Microsoft.KeyVault/vaults/{keyvault-name}"
+                },
+                "secretName": "AzureMaps-Key"
+            }
+        },
+        "translatorEndpoint": {
+            "value": "https://api.cognitive.microsofttranslator.com"
+        },
+        "translatorKey": {
+            "reference": {
+                "keyVault": {
+                    "id": "/subscriptions/{subscription-id}/resourceGroups/{resource-group}/providers/Microsoft.KeyVault/vaults/{keyvault-name}"
+                },
+                "secretName": "Translator-Key"
+            }
+        },
+        "translatorRegion": {
+            "value": "westeurope"
+        }
+    }
+}

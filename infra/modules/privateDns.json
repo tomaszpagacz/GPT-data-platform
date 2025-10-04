@@ -1,0 +1,84 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "_generator": {
+      "name": "bicep",
+      "version": "0.38.5.1644",
+      "templateHash": "563290849737304139"
+    }
+  },
+  "parameters": {
+    "zoneSuffixes": {
+      "type": "array",
+      "metadata": {
+        "description": "Private DNS zone suffixes to create for private endpoint resolution."
+      }
+    },
+    "vnetId": {
+      "type": "string",
+      "metadata": {
+        "description": "Virtual network to link with the private DNS zones."
+      }
+    },
+    "tags": {
+      "type": "object",
+      "defaultValue": {},
+      "metadata": {
+        "description": "Tags applied to the DNS zones."
+      }
+    }
+  },
+  "variables": {
+    "copy": [
+      {
+        "name": "zones",
+        "count": "[length(parameters('zoneSuffixes'))]",
+        "input": {
+          "name": "[format('privatelink.{0}', parameters('zoneSuffixes')[copyIndex('zones')])]"
+        }
+      }
+    ]
+  },
+  "resources": [
+    {
+      "copy": {
+        "name": "privateDnsZones",
+        "count": "[length(variables('zones'))]"
+      },
+      "type": "Microsoft.Network/privateDnsZones",
+      "apiVersion": "2020-06-01",
+      "name": "[variables('zones')[copyIndex()].name]",
+      "location": "global",
+      "tags": "[parameters('tags')]"
+    },
+    {
+      "copy": {
+        "name": "vnetLinks",
+        "count": "[length(variables('zones'))]"
+      },
+      "type": "Microsoft.Network/privateDnsZones/virtualNetworkLinks",
+      "apiVersion": "2020-06-01",
+      "name": "[format('{0}/{1}', variables('zones')[copyIndex()].name, format('link-{0}', last(split(parameters('vnetId'), '/'))))]",
+      "location": "global",
+      "properties": {
+        "virtualNetwork": {
+          "id": "[parameters('vnetId')]"
+        },
+        "registrationEnabled": false
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/privateDnsZones', variables('zones')[copyIndex()].name)]"
+      ]
+    }
+  ],
+  "outputs": {
+    "privateDnsZoneIds": {
+      "type": "array",
+      "copy": {
+        "count": "[length(range(0, length(variables('zones'))))]",
+        "input": "[resourceId('Microsoft.Network/privateDnsZones', variables('zones')[range(0, length(variables('zones')))[copyIndex()]].name)]"
+      }
+    }
+  }
+}

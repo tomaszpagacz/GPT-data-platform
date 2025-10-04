@@ -1,0 +1,12 @@
+{
+  "IsEncrypted": false,
+  "Values": {
+    "AzureWebJobsStorage": "UseDevelopmentStorage=true",
+    "FUNCTIONS_WORKER_RUNTIME": "dotnet",
+    "AzureMapsEndpoint": "https://{your-maps-instance}.azure.com",
+    "AzureMapsKey": "",
+    "TranslatorEndpoint": "https://{your-translator-instance}.cognitiveservices.azure.com/",
+    "TranslatorKey": "",
+    "TranslatorRegion": "westeurope"
+  }
+}

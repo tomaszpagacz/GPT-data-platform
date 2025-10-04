@@ -1,0 +1,203 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "_generator": {
+      "name": "bicep",
+      "version": "0.38.5.1644",
+      "templateHash": "7569900795436012602"
+    }
+  },
+  "parameters": {
+    "location": {
+      "type": "string",
+      "metadata": {
+        "description": "Azure region for the hosting resources."
+      }
+    },
+    "tags": {
+      "type": "object",
+      "defaultValue": {},
+      "metadata": {
+        "description": "Tags applied to hosting resources."
+      }
+    },
+    "functionPlanName": {
+      "type": "string",
+      "metadata": {
+        "description": "Name of the Elastic Premium plan for Functions."
+      }
+    },
+    "functionAppName": {
+      "type": "string",
+      "metadata": {
+        "description": "Name of the Function App."
+      }
+    },
+    "functionPlanSku": {
+      "type": "string",
+      "metadata": {
+        "description": "SKU for the Functions Elastic Premium plan."
+      }
+    },
+    "functionSubnetId": {
+      "type": "string",
+      "metadata": {
+        "description": "Subnet ID used for VNet integration."
+      }
+    },
+    "functionStorageAccountId": {
+      "type": "string",
+      "metadata": {
+        "description": "Storage account used for Function runtime state."
+      }
+    },
+    "logAnalyticsWorkspaceId": {
+      "type": "string",
+      "metadata": {
+        "description": "Log Analytics workspace for diagnostics."
+      }
+    },
+    "allowedIpRanges": {
+      "type": "array",
+      "defaultValue": [],
+      "metadata": {
+        "description": "IP ranges permitted to reach the Function App publicly."
+      }
+    }
+  },
+  "variables": {
+    "copy": [
+      {
+        "name": "allowRules",
+        "count": "[length(parameters('allowedIpRanges'))]",
+        "input": {
+          "ipAddress": "[parameters('allowedIpRanges')[copyIndex('allowRules')]]",
+          "action": "Allow",
+          "priority": "[add(100, copyIndex('allowRules'))]",
+          "name": "[format('allow-{0}', replace(parameters('allowedIpRanges')[copyIndex('allowRules')], '/', '-'))]"
+        }
+      }
+    ],
+    "functionStorageAccountName": "[last(split(parameters('functionStorageAccountId'), '/'))]",
+    "defaultDenyRule": {
+      "ipAddress": "0.0.0.0/0",
+      "action": "Deny",
+      "priority": 2147483647,
+      "name": "Deny all"
+    },
+    "ipRestrictions": "[if(empty(parameters('allowedIpRanges')), array(variables('defaultDenyRule')), variables('allowRules'))]"
+  },
+  "resources": [
+    {
+      "type": "Microsoft.Web/serverfarms",
+      "apiVersion": "2022-03-01",
+      "name": "[parameters('functionPlanName')]",
+      "location": "[parameters('location')]",
+      "tags": "[parameters('tags')]",
+      "sku": {
+        "name": "[parameters('functionPlanSku')]",
+        "tier": "ElasticPremium"
+      },
+      "properties": {
+        "reserved": true,
+        "maximumElasticWorkerCount": 20
+      }
+    },
+    {
+      "type": "Microsoft.Web/sites",
+      "apiVersion": "2022-03-01",
+      "name": "[parameters('functionAppName')]",
+      "location": "[parameters('location')]",
+      "tags": "[parameters('tags')]",
+      "kind": "functionapp,linux",
+      "identity": {
+        "type": "SystemAssigned"
+      },
+      "properties": {
+        "httpsOnly": true,
+        "serverFarmId": "[resourceId('Microsoft.Web/serverfarms', parameters('functionPlanName'))]",
+        "virtualNetworkSubnetId": "[parameters('functionSubnetId')]",
+        "siteConfig": {
+          "linuxFxVersion": "DOTNET|6.0",
+          "appSettings": [
+            {
+              "name": "FUNCTIONS_EXTENSION_VERSION",
+              "value": "~4"
+            },
+            {
+              "name": "FUNCTIONS_WORKER_RUNTIME",
+              "value": "dotnet"
+            },
+            {
+              "name": "AzureWebJobsStorage",
+              "value": "[format('DefaultEndpointsProtocol=https;AccountName={0};AccountKey={1};EndpointSuffix={2}', variables('functionStorageAccountName'), listKeys(parameters('functionStorageAccountId'), '2022-09-01').keys[0].value, environment().suffixes.storage)]"
+            },
+            {
+              "name": "WEBSITE_CONTENTAZUREFILECONNECTIONSTRING",
+              "value": "[format('DefaultEndpointsProtocol=https;AccountName={0};AccountKey={1};EndpointSuffix={2}', variables('functionStorageAccountName'), listKeys(parameters('functionStorageAccountId'), '2022-09-01').keys[0].value, environment().suffixes.storage)]"
+            },
+            {
+              "name": "WEBSITE_CONTENTSHARE",
+              "value": "[toLower(parameters('functionAppName'))]"
+            },
+            {
+              "name": "WEBSITE_RUN_FROM_PACKAGE",
+              "value": "1"
+            },
+            {
+              "name": "WEBSITE_VNET_ROUTE_ALL",
+              "value": "1"
+            }
+          ],
+          "ipSecurityRestrictions": "[variables('ipRestrictions')]"
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Web/serverfarms', parameters('functionPlanName'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Insights/diagnosticSettings",
+      "apiVersion": "2021-05-01-preview",
+      "scope": "[format('Microsoft.Web/sites/{0}', parameters('functionAppName'))]",
+      "name": "[format('{0}-logs', parameters('functionAppName'))]",
+      "properties": {
+        "workspaceId": "[parameters('logAnalyticsWorkspaceId')]",
+        "logs": [
+          {
+            "category": "FunctionAppLogs",
+            "enabled": true
+          },
+          {
+            "category": "AppServiceHTTPLogs",
+            "enabled": true
+          },
+          {
+            "category": "AppServicePlatformLogs",
+            "enabled": true
+          }
+        ],
+        "metrics": [
+          {
+            "category": "AllMetrics",
+            "enabled": true
+          }
+        ]
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Web/sites', parameters('functionAppName'))]"
+      ]
+    }
+  ],
+  "outputs": {
+    "functionAppName": {
+      "type": "string",
+      "value": "[parameters('functionAppName')]"
+    },
+    "functionAppResourceId": {
+      "type": "string",
+      "value": "[resourceId('Microsoft.Web/sites', parameters('functionAppName'))]"
+    }
+  }
+}

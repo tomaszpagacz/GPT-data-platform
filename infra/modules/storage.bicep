@@ -19,10 +19,11 @@ param privateEndpointSubnetId string
 @description('Private DNS zones to link to the created private endpoints.')
 param privateDnsZoneIds array
 
-var blobDnsZoneIds = [for zoneId in privateDnsZoneIds: endsWith(zoneId, '/privatelink.blob.core.windows.net') ? zoneId : null]
-var blobDnsZoneIdsFiltered = [for zoneId in blobDnsZoneIds: contains(zoneId, 'privatelink.blob.core.windows.net') ? zoneId : null]
-var dfsDnsZoneIds = [for zoneId in privateDnsZoneIds: endsWith(zoneId, '/privatelink.dfs.core.windows.net') ? zoneId : null]
-var dfsDnsZoneIdsFiltered = [for zoneId in dfsDnsZoneIds: contains(zoneId, 'privatelink.dfs.core.windows.net') ? zoneId : null]
+var blobEndpoint = '${environment().suffixes.storage}'
+var blobDnsZoneIds = [for zoneId in privateDnsZoneIds: endsWith(zoneId, '/privatelink.blob${blobEndpoint}') ? zoneId : null]
+var blobDnsZoneIdsFiltered = filter(blobDnsZoneIds, id => id != null)
+var dfsDnsZoneIds = [for zoneId in privateDnsZoneIds: endsWith(zoneId, '/privatelink.dfs${blobEndpoint}') ? zoneId : null]
+var dfsDnsZoneIdsFiltered = filter(dfsDnsZoneIds, id => id != null)
 
 resource storageAccount 'Microsoft.Storage/storageAccounts@2022-09-01' = {
   name: name
@@ -41,7 +42,7 @@ resource storageAccount 'Microsoft.Storage/storageAccounts@2022-09-01' = {
   }
 }
 
-resource fileSystem 'Microsoft.Storage/storageAccounts/fileServices/containers@2022-09-01' = if (!empty(filesystemName) && isHnsEnabled) {
+resource fileSystem 'Microsoft.Storage/storageAccounts/blobServices/containers@2022-09-01' = if (!empty(filesystemName) && isHnsEnabled) {
   name: '${name}/default/${filesystemName}'
   properties: {
     publicAccess: 'None'

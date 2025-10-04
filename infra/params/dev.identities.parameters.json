@@ -1,0 +1,79 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "environment": {
+            "value": "dev"
+        },
+        "userAssignedIdentities": {
+            "value": [
+                {
+                    "name": "functions",
+                    "purpose": "Azure Functions Runtime",
+                    "application": "Data Platform Functions"
+                },
+                {
+                    "name": "logicapp",
+                    "purpose": "Logic Apps Runtime",
+                    "application": "Data Platform Workflows"
+                }
+            ]
+        },
+        "roleAssignments": {
+            "value": [
+                {
+                    "name": "platform-admins",
+                    "principalId": "{platform-admins-group-id}",
+                    "roleDefinition": "owner",
+                    "principalType": "Group",
+                    "description": "Platform Administrators"
+                },
+                {
+                    "name": "platform-developers",
+                    "principalId": "{platform-developers-group-id}",
+                    "roleDefinition": "contributor",
+                    "principalType": "Group",
+                    "description": "Platform Developers"
+                },
+                {
+                    "name": "platform-readers",
+                    "principalId": "{platform-readers-group-id}",
+                    "roleDefinition": "reader",
+                    "principalType": "Group",
+                    "description": "Platform Readers"
+                },
+                {
+                    "name": "functions-kv-secrets",
+                    "principalId": "{functions-mi-principal-id}",
+                    "roleDefinition": "keyVaultSecretsUser",
+                    "description": "Functions Key Vault Access"
+                },
+                {
+                    "name": "functions-cognitive",
+                    "principalId": "{functions-mi-principal-id}",
+                    "roleDefinition": "cognitiveServicesUser",
+                    "description": "Functions Cognitive Services Access"
+                },
+                {
+                    "name": "functions-maps",
+                    "principalId": "{functions-mi-principal-id}",
+                    "roleDefinition": "azureMapsDataReader",
+                    "description": "Functions Azure Maps Access"
+                },
+                {
+                    "name": "logicapp-functions",
+                    "principalId": "{logicapp-mi-principal-id}",
+                    "roleDefinition": "contributor",
+                    "description": "Logic Apps Function Access"
+                }
+            ]
+        },
+        "environmentExclusions": {
+            "value": {
+                "dev": [],
+                "sit": ["platform-admins"],
+                "prod": ["platform-admins", "platform-developers"]
+            }
+        }
+    }
+}
