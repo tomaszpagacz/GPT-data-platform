@@ -57,4 +57,14 @@ The `infra/` directory introduces a modular [Bicep](https://learn.microsoft.com/
 - `main.bicep` orchestrates shared services (Log Analytics, networking, Key Vault), data landing zones (ADLS Gen2), orchestration runtimes (Azure Functions, Logic App Standard), analytics engines (Synapse workspace and Spark pools), Azure Maps, Azure AI services, and integration primitives (Event Grid). Parameters provide environment-specific values such as the name prefix, Synapse SQL admin credentials, and optional IP allow lists.
 - `modules/` contains reusable building blocks for monitoring, networking, private DNS, secure storage, application hosting, Logic Apps, Event Grid, Synapse, Azure Maps, and Azure AI (Cognitive Services).
 
-> **Note:** The repository assumes Bicep CLI version `0.20` or later for deployment. If the CLI is not available locally, install it via `az bicep install` (Azure CLI) or download the standalone binary before running `bicep build`/`az deployment`. Future updates will introduce CI/CD workflows to validate and publish the infrastructure templates automatically.
+> **Note:** The repository assumes Bicep CLI version `0.20` or later for deployment. Use the helper script in `scripts/install-azure-tools.sh` to install both the Azure CLI and the Bicep CLI on Debian/Ubuntu environments before running `bicep build` or `az deployment` commands. Future updates will introduce CI/CD workflows to validate and publish the infrastructure templates automatically.
+
+## Local tooling
+
+Before running validation commands such as `bicep build` or `az deployment sub create`, install the required CLIs:
+
+```bash
+sudo ./scripts/install-azure-tools.sh
+```
+
+The script installs the Azure CLI from the Microsoft package repository and bootstraps the matching Bicep CLI version via `az bicep install`.
