@@ -1,6 +1,9 @@
 @description('Azure region for all resources. Defaults to Switzerland North to satisfy data residency requirements.')
 param location string = 'switzerlandnorth'
 
+@description('Location used for the Azure Maps account (Azure Maps is a global resource).')
+param azureMapsLocation string = 'global'
+
 @description('Prefix used for resource names. Should be 3-11 characters to comply with Azure naming rules.')
 param namePrefix string
 
@@ -64,6 +67,8 @@ var naming = {
   logAnalytics: '${namePrefix}-${environment}-la'
   eventGridTopic: ingestionEventTopicName
   logicApp: '${namePrefix}-${environment}-logicapp'
+  azureMaps: '${namePrefix}-${environment}-maps'
+  cognitiveServices: '${namePrefix}-${environment}-aisvc'
   privateDnsZoneSuffixes: [
     'blob.core.windows.net'
     'dfs.core.windows.net'
@@ -75,6 +80,7 @@ var naming = {
     'privatelink.database.windows.net'
     'privatelink.servicebus.windows.net'
     'privatelink.eventgrid.azure.net'
+    'privatelink.cognitiveservices.azure.com'
   ]
 }
 
@@ -199,8 +205,33 @@ module synapse 'modules/synapse.bicep' = {
   }
 }
 
+module azureMaps 'modules/azureMaps.bicep' = {
+  name: 'azureMaps'
+  params: {
+    name: naming.azureMaps
+    location: azureMapsLocation
+    tags: tags
+    logAnalyticsWorkspaceId: logging.outputs.workspaceId
+  }
+}
+
+module cognitiveServices 'modules/cognitiveServices.bicep' = {
+  name: 'cognitiveServices'
+  params: {
+    name: naming.cognitiveServices
+    location: location
+    tags: tags
+    privateEndpointSubnetId: networking.outputs.privateEndpointsSubnetId
+    privateDnsZoneIds: privateDns.outputs.privateDnsZoneIds
+    logAnalyticsWorkspaceId: logging.outputs.workspaceId
+  }
+}
+
 output storageAccountId string = storage.outputs.storageAccountId
 output synapseWorkspaceName string = synapse.outputs.synapseWorkspaceName
 output functionAppName string = appHosting.outputs.functionAppName
 output logicAppName string = logicApp.outputs.logicAppName
 output eventGridTopicEndpoint string = eventing.outputs.topicEndpoint
+output azureMapsAccountId string = azureMaps.outputs.mapsAccountId
+output cognitiveAccountId string = cognitiveServices.outputs.cognitiveAccountId
+output cognitiveAccountEndpoint string = cognitiveServices.outputs.cognitiveAccountEndpoint

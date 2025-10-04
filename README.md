@@ -8,6 +8,7 @@ Key Azure services:
 - **Azure Logic Apps Standard** for low-code, connector-rich orchestration of SaaS and on-premises workflows.
 - **Azure Event Grid** to propagate change notifications and trigger Synapse pipelines.
 - **Azure Synapse Analytics** (serverless SQL, dedicated SQL for metadata, and multiple Spark pools) for data engineering, governance, and analytics.
+- **Azure AI (Cognitive Services)** to provide scalable machine learning APIs and enrichments with private connectivity.
 - **Azure Data Lake Storage Gen2** as the central data lake with raw, curated, and consumption zones.
 - **Azure Maps** for spatial enrichment when required.
 - **Microsoft Purview**, **Azure Monitor / Log Analytics**, and **Application Insights** for governance and observability.
@@ -53,7 +54,7 @@ This networking strategy minimises operational burden by avoiding Azure Firewall
 
 The `infra/` directory introduces a modular [Bicep](https://learn.microsoft.com/azure/azure-resource-manager/bicep/overview) codebase that provisions the core platform resources:
 
-- `main.bicep` orchestrates shared services (Log Analytics, networking, Key Vault), data landing zones (ADLS Gen2), orchestration runtimes (Azure Functions, Logic App Standard), analytics engines (Synapse workspace and Spark pools), and integration primitives (Event Grid). Parameters provide environment-specific values such as the name prefix, Synapse SQL admin credentials, and optional IP allow lists.
-- `modules/` contains reusable building blocks for monitoring, networking, private DNS, secure storage, application hosting, Logic Apps, Event Grid, and Synapse.
+- `main.bicep` orchestrates shared services (Log Analytics, networking, Key Vault), data landing zones (ADLS Gen2), orchestration runtimes (Azure Functions, Logic App Standard), analytics engines (Synapse workspace and Spark pools), Azure Maps, Azure AI services, and integration primitives (Event Grid). Parameters provide environment-specific values such as the name prefix, Synapse SQL admin credentials, and optional IP allow lists.
+- `modules/` contains reusable building blocks for monitoring, networking, private DNS, secure storage, application hosting, Logic Apps, Event Grid, Synapse, Azure Maps, and Azure AI (Cognitive Services).
 
 > **Note:** The repository assumes Bicep CLI version `0.20` or later for deployment. If the CLI is not available locally, install it via `az bicep install` (Azure CLI) or download the standalone binary before running `bicep build`/`az deployment`. Future updates will introduce CI/CD workflows to validate and publish the infrastructure templates automatically.
