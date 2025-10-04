@@ -1,0 +1,129 @@
+@description('Azure region for the hosting resources.')
+param location string
+
+@description('Tags applied to hosting resources.')
+param tags object = {}
+
+@description('Name of the Elastic Premium plan for Functions.')
+param functionPlanName string
+
+@description('Name of the Function App.')
+param functionAppName string
+
+@description('SKU for the Functions Elastic Premium plan.')
+param functionPlanSku string
+
+@description('Subnet ID used for VNet integration.')
+param functionSubnetId string
+
+@description('Storage account used for Function runtime state.')
+param functionStorageAccountId string
+
+@description('Log Analytics workspace for diagnostics.')
+param logAnalyticsWorkspaceId string
+
+@description('IP ranges permitted to reach the Function App publicly.')
+param allowedIpRanges array = []
+
+var storageKeys = listKeys(functionStorageAccountId, '2022-09-01')
+var functionStorageAccountName = last(split(functionStorageAccountId, '/'))
+
+resource hostingPlan 'Microsoft.Web/serverfarms@2022-03-01' = {
+  name: functionPlanName
+  location: location
+  tags: tags
+  sku: {
+    name: functionPlanSku
+    tier: 'ElasticPremium'
+  }
+  properties: {
+    reserved: true
+    maximumElasticWorkerCount: 20
+  }
+}
+
+resource functionApp 'Microsoft.Web/sites@2022-03-01' = {
+  name: functionAppName
+  location: location
+  tags: tags
+  kind: 'functionapp,linux'
+  identity: {
+    type: 'SystemAssigned'
+  }
+  properties: {
+    httpsOnly: true
+    serverFarmId: hostingPlan.id
+    virtualNetworkSubnetId: functionSubnetId
+    siteConfig: {
+      linuxFxVersion: 'DOTNET|6.0'
+      appSettings: [
+        {
+          name: 'FUNCTIONS_EXTENSION_VERSION'
+          value: '~4'
+        }
+        {
+          name: 'FUNCTIONS_WORKER_RUNTIME'
+          value: 'dotnet'
+        }
+        {
+          name: 'AzureWebJobsStorage'
+          value: 'DefaultEndpointsProtocol=https;AccountName=${functionStorageAccountName};AccountKey=${storageKeys.keys[0].value};EndpointSuffix=${environment().suffixes.storage}'
+        }
+        {
+          name: 'WEBSITE_CONTENTAZUREFILECONNECTIONSTRING'
+          value: 'DefaultEndpointsProtocol=https;AccountName=${functionStorageAccountName};AccountKey=${storageKeys.keys[0].value};EndpointSuffix=${environment().suffixes.storage}'
+        }
+        {
+          name: 'WEBSITE_CONTENTSHARE'
+          value: toLower(functionAppName)
+        }
+        {
+          name: 'WEBSITE_RUN_FROM_PACKAGE'
+          value: '1'
+        }
+        {
+          name: 'WEBSITE_VNET_ROUTE_ALL'
+          value: '1'
+        }
+      ]
+      ipSecurityRestrictionsDefaultAction: empty(allowedIpRanges) ? 'Deny' : 'Allow'
+      ipSecurityRestrictions: [for cidr in allowedIpRanges: {
+        ipAddress: cidr
+        action: 'Allow'
+        priority: 100 + indexOf(allowedIpRanges, cidr)
+        name: 'allow-${replace(cidr, '/', '-')}'
+      }]
+    }
+  }
+}
+
+resource diagnostics 'Microsoft.Insights/diagnosticSettings@2021-05-01-preview' = {
+  name: '${functionAppName}-logs'
+  scope: functionApp
+  properties: {
+    workspaceId: logAnalyticsWorkspaceId
+    logs: [
+      {
+        category: 'FunctionAppLogs'
+        enabled: true
+      }
+      {
+        category: 'AppServiceHTTPLogs'
+        enabled: true
+      }
+      {
+        category: 'AppServicePlatformLogs'
+        enabled: true
+      }
+    ]
+    metrics: [
+      {
+        category: 'AllMetrics'
+        enabled: true
+      }
+    ]
+  }
+}
+
+output functionAppName string = functionApp.name
+output functionAppResourceId string = functionApp.id
