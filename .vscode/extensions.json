@@ -2,18 +2,15 @@
     "recommendations": [
         // Core development extensions
         "ms-dotnettools.csharp",                   // C# language support
-        "ms-azuretools.vscode-azurefunctions",     // Azure Functions development
-        "ms-azuretools.vscode-logicapps",          // Logic Apps development
+        "ms-dotnettools.vscode-dotnet-runtime",    // .NET Runtime support
+        "ms-vscode.vscode-node-azure-pack",        // Azure Tools Pack
         "ms-azuretools.vscode-bicep",              // Bicep language support
-        "ms-vscode.azure-account",                 // Azure account management
-        "ms-vscode.azurecli",                      // Azure CLI tools
         
         // Testing and debugging
         "formulahendry.dotnet-test-explorer",      // .NET test explorer
         
         // Infrastructure and DevOps
         "ms-azure-devops.azure-pipelines",         // Azure Pipelines
-        "ms-kubernetes-tools.vscode-aks-tools",    // Azure Kubernetes Service
         "ms-azuretools.vscode-docker",             // Docker support
         
         // JSON and Data
@@ -22,7 +19,6 @@
         
         // Productivity and code quality
         "editorconfig.editorconfig",               // EditorConfig support
-        "visualstudioexptteam.vscodeintellicode",  // AI-assisted development
         "github.copilot",                          // GitHub Copilot
         "github.copilot-chat",                     // GitHub Copilot Chat
         
