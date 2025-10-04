@@ -1,8 +1,10 @@
 {
     "recommendations": [
         // Core development extensions
+        "ms-dotnettools.csdevkit",                 // C# Dev Kit
         "ms-dotnettools.csharp",                   // C# language support
         "ms-dotnettools.vscode-dotnet-runtime",    // .NET Runtime support
+        "ms-dotnettools.vscodeintellicode-csharp", // C# IntelliCode
         "ms-vscode.vscode-node-azure-pack",        // Azure Tools Pack
         "ms-azuretools.vscode-bicep",              // Bicep language support
         
