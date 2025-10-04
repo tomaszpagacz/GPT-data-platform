@@ -1,4 +1,4 @@
-@description('Name of the Synapse workspace.')
+@description('Name of the Synapse worvar synapseWorkspaceDnsZonesFiltered = [for zoneId in synapseWorkspaceDnsZones: zoneId != null ? zoneId : null]pace.')
 param name string
 
 @description('Azure region for Synapse deployment.')
@@ -33,9 +33,11 @@ param managedPrivateEndpointSubnetId string
 param privateDnsZoneIds array
 
 var storageAccountName = last(split(defaultDataLakeStorageAccountResourceId, '/'))
-var storageAccountUrl = 'https://${storageAccountName}.dfs.${environment().suffixes.storage}'
-var synapseWorkspaceDnsZones = [for zoneId in privateDnsZoneIds: if (endsWith(zoneId, '/privatelink.azuresynapse.net')) zoneId]
-var synapseSqlDnsZones = [for zoneId in privateDnsZoneIds: if (endsWith(zoneId, '/privatelink.sql.azuresynapse.net')) zoneId]
+var storageAccountUrl = 'https://${storageAccountName}.dfs.${az.environment().suffixes.storage}'
+var synapseWorkspaceDnsZones = [for zoneId in privateDnsZoneIds: endsWith(zoneId, '/privatelink.azuresynapse.net') ? zoneId : null]
+var synapseWorkspaceDnsZonesFiltered = [for zoneId in synapseWorkspaceDnsZones: zoneId != null ? zoneId : null]
+var synapseSqlDnsZones = [for zoneId in privateDnsZoneIds: endsWith(zoneId, '/privatelink.sql.azuresynapse.net') ? zoneId : null]
+var synapseSqlDnsZonesFiltered = [for zoneId in synapseSqlDnsZones: zoneId != null ? zoneId : null]
 var sparkPools = [
   {
     name: '${name}-spark-s'
@@ -76,7 +78,7 @@ resource workspace 'Microsoft.Synapse/workspaces@2021-06-01' = {
     managedVirtualNetworkSettings: {
       preventDataExfiltration: true
       allowedAadTenantIdsForLinking: [
-        tenantId()
+        subscription().tenantId
       ]
     }
     publicNetworkAccess: 'Disabled'
@@ -116,7 +118,8 @@ resource workspaceDiagnostics 'Microsoft.Insights/diagnosticSettings@2021-05-01-
 }
 
 resource sparkPoolsResources 'Microsoft.Synapse/workspaces/bigDataPools@2021-06-01' = [for pool in sparkPools: {
-  name: '${name}/${pool.name}'
+  parent: workspace
+  name: pool.name
   location: location
   tags: tags
   properties: {
@@ -198,11 +201,11 @@ resource workspaceSqlOnDemandPrivateEndpoint 'Microsoft.Network/privateEndpoints
   }
 }
 
-resource workspaceDnsZoneGroup 'Microsoft.Network/privateEndpoints/privateDnsZoneGroups@2020-11-01' = if (!empty(synapseWorkspaceDnsZones)) {
+resource workspaceDnsZoneGroup 'Microsoft.Network/privateEndpoints/privateDnsZoneGroups@2020-11-01' = if (!empty(synapseWorkspaceDnsZonesFiltered)) {
   name: 'default'
   parent: workspacePrivateEndpoint
   properties: {
-    privateDnsZoneConfigs: [for zoneId in synapseWorkspaceDnsZones: {
+  privateDnsZoneConfigs: [for zoneId in synapseWorkspaceDnsZonesFiltered: {
       name: last(split(zoneId, '/'))
       properties: {
         privateDnsZoneId: zoneId
@@ -211,11 +214,11 @@ resource workspaceDnsZoneGroup 'Microsoft.Network/privateEndpoints/privateDnsZon
   }
 }
 
-resource workspaceSqlDnsZoneGroup 'Microsoft.Network/privateEndpoints/privateDnsZoneGroups@2020-11-01' = if (!empty(synapseSqlDnsZones)) {
+resource workspaceSqlDnsZoneGroup 'Microsoft.Network/privateEndpoints/privateDnsZoneGroups@2020-11-01' = if (!empty(synapseSqlDnsZonesFiltered)) {
   name: 'default'
   parent: workspaceSqlPrivateEndpoint
   properties: {
-    privateDnsZoneConfigs: [for zoneId in synapseSqlDnsZones: {
+  privateDnsZoneConfigs: [for zoneId in synapseSqlDnsZonesFiltered: {
       name: last(split(zoneId, '/'))
       properties: {
         privateDnsZoneId: zoneId
@@ -224,11 +227,11 @@ resource workspaceSqlDnsZoneGroup 'Microsoft.Network/privateEndpoints/privateDns
   }
 }
 
-resource workspaceSqlOnDemandDnsZoneGroup 'Microsoft.Network/privateEndpoints/privateDnsZoneGroups@2020-11-01' = if (!empty(synapseSqlDnsZones)) {
+resource workspaceSqlOnDemandDnsZoneGroup 'Microsoft.Network/privateEndpoints/privateDnsZoneGroups@2020-11-01' = if (!empty(synapseSqlDnsZonesFiltered)) {
   name: 'default'
   parent: workspaceSqlOnDemandPrivateEndpoint
   properties: {
-    privateDnsZoneConfigs: [for zoneId in synapseSqlDnsZones: {
+  privateDnsZoneConfigs: [for zoneId in synapseSqlDnsZonesFiltered: {
       name: last(split(zoneId, '/'))
       properties: {
         privateDnsZoneId: zoneId

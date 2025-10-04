@@ -56,6 +56,20 @@ param ingestionEventTopicName string = '${namePrefix}${environment}egtopic'
 @description('Optional IP ranges permitted to access publicly exposed endpoints (e.g., Function App SCM). Leave empty to block public ingress.')
 param allowedPublicIpRanges array = []
 
+var privateDnsZoneSuffixes = [
+  'blob.${az.environment().suffixes.storage}'
+  'dfs.${az.environment().suffixes.storage}'
+  'queue.${az.environment().suffixes.storage}'
+  'table.${az.environment().suffixes.storage}'
+  'dfs.fabric.microsoft.com'
+  'privatelink.azuresynapse.net'
+  'privatelink.sql.azuresynapse.net'
+  'privatelink.${az.environment().suffixes.sqlServerHostname}'
+  'servicebus.windows.net'
+  'privatelink.eventgrid.azure.net'
+  'privatelink.cognitiveservices.azure.com'
+]
+
 var naming = {
   vnet: '${namePrefix}-${environment}-vnet'
   storage: toLower('${namePrefix}${environment}dls')
@@ -69,19 +83,7 @@ var naming = {
   logicApp: '${namePrefix}-${environment}-logicapp'
   azureMaps: '${namePrefix}-${environment}-maps'
   cognitiveServices: '${namePrefix}-${environment}-aisvc'
-  privateDnsZoneSuffixes: [
-    'blob.core.windows.net'
-    'dfs.core.windows.net'
-    'queue.core.windows.net'
-    'table.core.windows.net'
-    'dfs.fabric.microsoft.com'
-    'privatelink.azuresynapse.net'
-    'privatelink.sql.azuresynapse.net'
-    'privatelink.database.windows.net'
-    'privatelink.servicebus.windows.net'
-    'privatelink.eventgrid.azure.net'
-    'privatelink.cognitiveservices.azure.com'
-  ]
+
 }
 
 module logging 'modules/monitoring.bicep' = {
@@ -107,7 +109,7 @@ module networking 'modules/networking.bicep' = {
 module privateDns 'modules/privateDns.bicep' = {
   name: 'privateDns'
   params: {
-    zoneSuffixes: naming.privateDnsZoneSuffixes
+    zoneSuffixes: privateDnsZoneSuffixes
     vnetId: networking.outputs.vnetId
     tags: tags
   }
@@ -143,7 +145,6 @@ module functionStorage 'modules/storage.bicep' = {
     location: location
     tags: union(tags, { purpose: 'functions' })
     isHnsEnabled: false
-    supportsNfs: false
     privateEndpointSubnetId: networking.outputs.privateEndpointsSubnetId
     privateDnsZoneIds: privateDns.outputs.privateDnsZoneIds
   }

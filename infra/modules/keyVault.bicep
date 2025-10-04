@@ -20,7 +20,7 @@ resource keyVault 'Microsoft.KeyVault/vaults@2022-11-01' = {
   location: location
   tags: tags
   properties: {
-    tenantId: tenantId()
+    tenantId: subscription().tenantId
     enableRbacAuthorization: true
     enablePurgeProtection: true
     enableSoftDelete: true

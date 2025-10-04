@@ -13,17 +13,16 @@ param filesystemName string = ''
 @description('Indicates whether the storage account should enable hierarchical namespace (Data Lake Storage Gen2).')
 param isHnsEnabled bool = true
 
-@description('Controls NFS 3 support for the storage account.')
-param supportsNfs bool = false
-
 @description('Subnet for deploying private endpoints.')
 param privateEndpointSubnetId string
 
 @description('Private DNS zones to link to the created private endpoints.')
 param privateDnsZoneIds array
 
-var blobDnsZoneIds = [for zoneId in privateDnsZoneIds: if (endsWith(zoneId, '/privatelink.blob.core.windows.net')) zoneId]
-var dfsDnsZoneIds = [for zoneId in privateDnsZoneIds: if (endsWith(zoneId, '/privatelink.dfs.core.windows.net')) zoneId]
+var blobDnsZoneIds = [for zoneId in privateDnsZoneIds: endsWith(zoneId, '/privatelink.blob.core.windows.net') ? zoneId : null]
+var blobDnsZoneIdsFiltered = [for zoneId in blobDnsZoneIds: contains(zoneId, 'privatelink.blob.core.windows.net') ? zoneId : null]
+var dfsDnsZoneIds = [for zoneId in privateDnsZoneIds: endsWith(zoneId, '/privatelink.dfs.core.windows.net') ? zoneId : null]
+var dfsDnsZoneIdsFiltered = [for zoneId in dfsDnsZoneIds: contains(zoneId, 'privatelink.dfs.core.windows.net') ? zoneId : null]
 
 resource storageAccount 'Microsoft.Storage/storageAccounts@2022-09-01' = {
   name: name
@@ -34,18 +33,11 @@ resource storageAccount 'Microsoft.Storage/storageAccounts@2022-09-01' = {
   }
   kind: 'StorageV2'
   properties: {
-    allowBlobPublicAccess: false
-    allowSharedKeyAccess: true
+    defaultToOAuthAuthentication: true
+    publicNetworkAccess: 'Disabled'
     minimumTlsVersion: 'TLS1_2'
+    dnsEndpointType: 'Standard'
     supportsHttpsTrafficOnly: true
-    isHnsEnabled: isHnsEnabled
-    largeFileSharesState: supportsNfs ? 'Enabled' : 'Disabled'
-    networkAcls: {
-      bypass: 'AzureServices'
-      defaultAction: 'Deny'
-      virtualNetworkRules: []
-      ipRules: []
-    }
   }
 }
 
@@ -98,11 +90,11 @@ resource dfsPrivateEndpoint 'Microsoft.Network/privateEndpoints@2021-05-01' = if
   }
 }
 
-resource blobZoneGroup 'Microsoft.Network/privateEndpoints/privateDnsZoneGroups@2020-11-01' = if (!empty(blobDnsZoneIds)) {
+resource blobZoneGroup 'Microsoft.Network/privateEndpoints/privateDnsZoneGroups@2020-11-01' = if (!empty(blobDnsZoneIdsFiltered)) {
   name: 'default'
   parent: blobPrivateEndpoint
   properties: {
-    privateDnsZoneConfigs: [for zoneId in blobDnsZoneIds: {
+  privateDnsZoneConfigs: [for zoneId in blobDnsZoneIdsFiltered: {
       name: last(split(zoneId, '/'))
       properties: {
         privateDnsZoneId: zoneId
@@ -111,11 +103,11 @@ resource blobZoneGroup 'Microsoft.Network/privateEndpoints/privateDnsZoneGroups@
   }
 }
 
-resource dfsZoneGroup 'Microsoft.Network/privateEndpoints/privateDnsZoneGroups@2020-11-01' = if (isHnsEnabled && !empty(dfsDnsZoneIds)) {
+resource dfsZoneGroup 'Microsoft.Network/privateEndpoints/privateDnsZoneGroups@2020-11-01' = if (isHnsEnabled && !empty(dfsDnsZoneIdsFiltered)) {
   name: 'default'
   parent: dfsPrivateEndpoint
   properties: {
-    privateDnsZoneConfigs: [for zoneId in dfsDnsZoneIds: {
+  privateDnsZoneConfigs: [for zoneId in dfsDnsZoneIdsFiltered: {
       name: last(split(zoneId, '/'))
       properties: {
         privateDnsZoneId: zoneId

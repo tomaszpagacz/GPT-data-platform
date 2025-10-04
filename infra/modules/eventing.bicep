@@ -13,7 +13,8 @@ param privateEndpointSubnetId string
 @description('Private DNS zones available for private endpoint associations.')
 param privateDnsZoneIds array
 
-var topicDnsZoneIds = [for zoneId in privateDnsZoneIds: if (endsWith(zoneId, '/privatelink.eventgrid.azure.net')) zoneId]
+var topicDnsZoneIds = [for zoneId in privateDnsZoneIds: endsWith(zoneId, '/privatelink.eventgrid.azure.net') ? zoneId : null]
+var topicDnsZoneIdsFiltered = [for zoneId in topicDnsZoneIds: zoneId != null ? zoneId : null]
 
 resource topic 'Microsoft.EventGrid/topics@2022-06-15' = {
   name: topicName
@@ -46,11 +47,11 @@ resource privateEndpoint 'Microsoft.Network/privateEndpoints@2021-05-01' = {
   }
 }
 
-resource zoneGroup 'Microsoft.Network/privateEndpoints/privateDnsZoneGroups@2020-11-01' = if (!empty(topicDnsZoneIds)) {
+resource zoneGroup 'Microsoft.Network/privateEndpoints/privateDnsZoneGroups@2020-11-01' = if (!empty(topicDnsZoneIdsFiltered)) {
   name: 'default'
   parent: privateEndpoint
   properties: {
-    privateDnsZoneConfigs: [for zoneId in topicDnsZoneIds: {
+  privateDnsZoneConfigs: [for zoneId in topicDnsZoneIdsFiltered: {
       name: last(split(zoneId, '/'))
       properties: {
         privateDnsZoneId: zoneId

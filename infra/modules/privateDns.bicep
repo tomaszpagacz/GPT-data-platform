@@ -29,4 +29,4 @@ resource vnetLinks 'Microsoft.Network/privateDnsZones/virtualNetworkLinks@2020-0
   }
 }]
 
-output privateDnsZoneIds array = [for zone in privateDnsZones: zone.id]
+output privateDnsZoneIds array = [for i in range(0, length(zones)): privateDnsZones[i].id]

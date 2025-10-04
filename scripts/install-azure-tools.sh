@@ -28,8 +28,16 @@ apt-get update
 apt-get install -y azure-cli
 
 # Install the Bicep CLI using the Azure CLI helper.
-az bicep install --yes
+az bicep install
 
-# Verify installations.
+# Add Bicep CLI to PATH permanently for all future sessions (for the invoking user)
+BICEP_BIN="$HOME/.azure/bin"
+PROFILE_FILE="$HOME/.bashrc"
+if ! grep -q "$BICEP_BIN" "$PROFILE_FILE"; then
+  echo "export PATH=\"\$PATH:$BICEP_BIN\"" >> "$PROFILE_FILE"
+fi
+
+# Verify installations for the current session
+export PATH="$PATH:$BICEP_BIN"
 az --version | head -n 1
 bicep --version

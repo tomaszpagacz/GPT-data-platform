@@ -85,7 +85,8 @@ resource irNsg 'Microsoft.Network/networkSecurityGroups@2022-07-01' = {
 }
 
 resource functionSubnet 'Microsoft.Network/virtualNetworks/subnets@2022-07-01' = {
-  name: '${name}/${functionSubnetName}'
+  parent: vnet
+  name: functionSubnetName
   properties: {
     addressPrefix: subnetAddressPrefixes.functionApps
     delegations: [
@@ -107,7 +108,8 @@ resource functionSubnet 'Microsoft.Network/virtualNetworks/subnets@2022-07-01' =
 }
 
 resource integrationSubnet 'Microsoft.Network/virtualNetworks/subnets@2022-07-01' = {
-  name: '${name}/${integrationSubnetName}'
+  parent: vnet
+  name: integrationSubnetName
   properties: {
     addressPrefix: subnetAddressPrefixes.integration
     networkSecurityGroup: {
@@ -120,7 +122,8 @@ resource integrationSubnet 'Microsoft.Network/virtualNetworks/subnets@2022-07-01
 }
 
 resource privateEndpointSubnet 'Microsoft.Network/virtualNetworks/subnets@2022-07-01' = {
-  name: '${name}/${privateEndpointSubnetName}'
+  parent: vnet
+  name: privateEndpointSubnetName
   properties: {
     addressPrefix: subnetAddressPrefixes.privateEndpoints
     networkSecurityGroup: {
@@ -132,7 +135,8 @@ resource privateEndpointSubnet 'Microsoft.Network/virtualNetworks/subnets@2022-0
 }
 
 resource irSubnet 'Microsoft.Network/virtualNetworks/subnets@2022-07-01' = {
-  name: '${name}/${irSubnetName}'
+  parent: vnet
+  name: irSubnetName
   properties: {
     addressPrefix: subnetAddressPrefixes.selfHostedIntegrationRuntime
     networkSecurityGroup: {

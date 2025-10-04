@@ -22,7 +22,8 @@ param privateDnsZoneIds array
 @description('Log Analytics workspace for diagnostics.')
 param logAnalyticsWorkspaceId string
 
-var cognitiveDnsZoneIds = [for zoneId in privateDnsZoneIds: if (endsWith(zoneId, '/privatelink.cognitiveservices.azure.com')) zoneId]
+var cognitiveDnsZoneIds = [for zoneId in privateDnsZoneIds: endsWith(zoneId, '/privatelink.cognitiveservices.azure.com') ? zoneId : null]
+var cognitiveDnsZoneIdsFiltered = [for zoneId in cognitiveDnsZoneIds: zoneId != null ? zoneId : null]
 
 resource cognitiveAccount 'Microsoft.CognitiveServices/accounts@2023-05-01' = {
   name: name
@@ -68,11 +69,11 @@ resource cognitivePrivateEndpoint 'Microsoft.Network/privateEndpoints@2021-05-01
   }
 }
 
-resource cognitiveZoneGroup 'Microsoft.Network/privateEndpoints/privateDnsZoneGroups@2020-11-01' = if (!empty(cognitiveDnsZoneIds)) {
+resource cognitiveZoneGroup 'Microsoft.Network/privateEndpoints/privateDnsZoneGroups@2020-11-01' = if (!empty(cognitiveDnsZoneIdsFiltered)) {
   name: 'default'
   parent: cognitivePrivateEndpoint
   properties: {
-    privateDnsZoneConfigs: [for zoneId in cognitiveDnsZoneIds: {
+  privateDnsZoneConfigs: [for zoneId in cognitiveDnsZoneIdsFiltered: {
       name: last(split(zoneId, '/'))
       properties: {
         privateDnsZoneId: zoneId
