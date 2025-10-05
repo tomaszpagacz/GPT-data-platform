@@ -7,6 +7,21 @@ param storageEventHubName string = 'storage-monitoring'
 @description('Name of the Event Grid topic')
 param eventGridTopicName string
 
+@description('Storage account for queues/tables')
+param storageAccountName string
+
+@description('Main event queue name')
+param queueName string = 'events-synapse'
+
+@description('Dead-letter queue name')
+param dlqName string = 'events-synapse-dlq'
+
+@description('Table to store processed message ids (idempotency)')
+param tableDedupe string = 'ProcessedMessages'
+
+@description('Table to store run history / correlation')
+param tableRuns string = 'RunHistory'
+
 @description('Azure region for resources')
 param location string
 

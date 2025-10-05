@@ -1,0 +1,50 @@
+{
+  "definition":{
+    "$schema":"https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+    "contentVersion":"1.0.0.0",
+    "parameters":{
+      "subscriptionId":{"type":"string","defaultValue":"@appsetting('WORKFLOWS_SUBSCRIPTION_ID')"},
+      "resourceGroup":{"type":"string","defaultValue":"@appsetting('WORKFLOWS_RESOURCE_GROUP_NAME')"},
+      "synapseWorkspace":{"type":"string","defaultValue":"@appsetting('SYNAPSE_WORKSPACE')"},
+      "webhookUrl":{"type":"string","defaultValue":"@appsetting('STATUS_WEBHOOK_URL')"},
+      "pollSeconds":{"type":"int","defaultValue":15},
+      "maxMinutes":{"type":"int","defaultValue":120}
+    },
+    "triggers":{
+      "request":{"type":"Request","kind":"Http","inputs":{"schema":{"type":"object","properties":{"runId":{"type":"string"}},"required":["runId"]}}}
+    },
+    "actions":{
+      "deadline":{"type":"Compose","inputs":"@addMinutes(utcNow(), parameters('maxMinutes'))"},
+      "do_until":{
+        "type":"Until",
+        "expression":"@or(equals(variables('status'),'Succeeded'), equals(variables('status'),'Failed'), equals(variables('status'),'Cancelled'), greaterOrEquals(utcNow(), outputs('deadline')))",
+        "limit":{"count":10000,"timeout":"PT4H"},
+        "actions":{
+          "get_status":{
+            "type":"Http",
+            "inputs":{
+              "method":"GET",
+              "uri":"@concat('https://management.azure.com/subscriptions/',parameters('subscriptionId'),'/resourceGroups/',parameters('resourceGroup'),'/providers/Microsoft.Synapse/workspaces/',parameters('synapseWorkspace'),'/pipelines/runs/', triggerBody()?['runId'], '?api-version=2021-06-01')",
+              "authentication":{"type":"ManagedServiceIdentity","audience":"https://management.azure.com/"}
+            }
+          },
+          "set_status":{"type":"SetVariable","inputs":{"name":"status","value":"@body('get_status')?['status']"}},
+          "sleep":{"type":"Wait","inputs":{"interval":{"count":"@parameters('pollSeconds')","unit":"Second"}}}
+        }
+      },
+      "notify":{
+        "type":"Http",
+        "inputs":{
+          "method":"POST","uri":"@parameters('webhookUrl')",
+          "headers":{"Content-Type":"application/json"},
+          "body":{"runId":"@triggerBody()?['runId']","status":"@variables('status')","timestamp":"@utcNow()"}
+        }
+      },
+      "respond":{"type":"Response","runAfter":{"notify":["Succeeded"]},"inputs":{"statusCode":200,"body":{"status":"@variables('status')"}}}
+    },
+    "outputs":{},
+    "variables":[{"name":"status","type":"string","value":"InProgress"}]
+  },
+  "kind":"Stateful",
+  "connections":{}
+}

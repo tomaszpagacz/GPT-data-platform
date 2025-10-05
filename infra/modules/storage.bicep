@@ -16,6 +16,12 @@ param containerNames array = []
 @description('Name of the runtime container for serverless compute (Functions, Logic Apps).')
 param runtimeContainerName string = 'runtime'
 
+@description('Array of queue names to create in the storage account.')
+param queueNames array = []
+
+@description('Array of table names to create in the storage account.')
+param tableNames array = []
+
 @description('Indicates whether the storage account should enable hierarchical namespace (Data Lake Storage Gen2).')
 param isHnsEnabled bool = true
 
@@ -30,6 +36,10 @@ var blobDnsZoneIds = [for zoneId in privateDnsZoneIds: endsWith(zoneId, '/privat
 var blobDnsZoneIdsFiltered = filter(blobDnsZoneIds, id => id != null)
 var dfsDnsZoneIds = [for zoneId in privateDnsZoneIds: endsWith(zoneId, '/privatelink.dfs${blobEndpoint}') ? zoneId : null]
 var dfsDnsZoneIdsFiltered = filter(dfsDnsZoneIds, id => id != null)
+var queueDnsZoneIds = [for zoneId in privateDnsZoneIds: endsWith(zoneId, '/privatelink.queue${blobEndpoint}') ? zoneId : null]
+var queueDnsZoneIdsFiltered = filter(queueDnsZoneIds, id => id != null)
+var tableDnsZoneIds = [for zoneId in privateDnsZoneIds: endsWith(zoneId, '/privatelink.table${blobEndpoint}') ? zoneId : null]
+var tableDnsZoneIdsFiltered = filter(tableDnsZoneIds, id => id != null)
 
 resource storageAccount 'Microsoft.Storage/storageAccounts@2022-09-01' = {
   name: name
@@ -48,6 +58,8 @@ resource storageAccount 'Microsoft.Storage/storageAccounts@2022-09-01' = {
   }
 }
 
+var storageKeys = storageAccount.listKeys('2022-09-01')
+
 resource fileSystem 'Microsoft.Storage/storageAccounts/blobServices/containers@2022-09-01' = if (!empty(filesystemName) && isHnsEnabled) {
   name: '${name}/default/${filesystemName}'
   properties: {
@@ -60,6 +72,14 @@ resource containers 'Microsoft.Storage/storageAccounts/blobServices/containers@2
   properties: {
     publicAccess: 'None'
   }
+}]
+
+resource queues 'Microsoft.Storage/storageAccounts/queueServices/queues@2023-01-01' = [for queueName in queueNames: {
+  name: '${name}/default/${queueName}'
+}]
+
+resource tables 'Microsoft.Storage/storageAccounts/tableServices/tables@2023-05-01' = [for tableName in tableNames: {
+  name: '${name}/default/${tableName}'
 }]
 
 resource blobPrivateEndpoint 'Microsoft.Network/privateEndpoints@2021-05-01' = {
@@ -104,6 +124,48 @@ resource dfsPrivateEndpoint 'Microsoft.Network/privateEndpoints@2021-05-01' = if
   }
 }
 
+resource queuePrivateEndpoint 'Microsoft.Network/privateEndpoints@2021-05-01' = if (!empty(queueNames)) {
+  name: '${name}-pe-queue'
+  location: location
+  properties: {
+    subnet: {
+      id: privateEndpointSubnetId
+    }
+    privateLinkServiceConnections: [
+      {
+        name: '${name}-queue'
+        properties: {
+          privateLinkServiceId: storageAccount.id
+          groupIds: [
+            'queue'
+          ]
+        }
+      }
+    ]
+  }
+}
+
+resource tablePrivateEndpoint 'Microsoft.Network/privateEndpoints@2021-05-01' = if (!empty(tableNames)) {
+  name: '${name}-pe-table'
+  location: location
+  properties: {
+    subnet: {
+      id: privateEndpointSubnetId
+    }
+    privateLinkServiceConnections: [
+      {
+        name: '${name}-table'
+        properties: {
+          privateLinkServiceId: storageAccount.id
+          groupIds: [
+            'table'
+          ]
+        }
+      }
+    ]
+  }
+}
+
 resource blobZoneGroup 'Microsoft.Network/privateEndpoints/privateDnsZoneGroups@2020-11-01' = if (!empty(blobDnsZoneIdsFiltered)) {
   name: 'default'
   parent: blobPrivateEndpoint
@@ -130,4 +192,31 @@ resource dfsZoneGroup 'Microsoft.Network/privateEndpoints/privateDnsZoneGroups@2
   }
 }
 
+resource queueZoneGroup 'Microsoft.Network/privateEndpoints/privateDnsZoneGroups@2020-11-01' = if (!empty(queueNames) && !empty(queueDnsZoneIdsFiltered)) {
+  name: 'default'
+  parent: queuePrivateEndpoint
+  properties: {
+  privateDnsZoneConfigs: [for zoneId in queueDnsZoneIdsFiltered: {
+      name: last(split(zoneId, '/'))
+      properties: {
+        privateDnsZoneId: zoneId
+      }
+    }]
+  }
+}
+
+resource tableZoneGroup 'Microsoft.Network/privateEndpoints/privateDnsZoneGroups@2020-11-01' = if (!empty(tableNames) && !empty(tableDnsZoneIdsFiltered)) {
+  name: 'default'
+  parent: tablePrivateEndpoint
+  properties: {
+  privateDnsZoneConfigs: [for zoneId in tableDnsZoneIdsFiltered: {
+      name: last(split(zoneId, '/'))
+      properties: {
+        privateDnsZoneId: zoneId
+      }
+    }]
+  }
+}
+
 output storageAccountId string = storageAccount.id
+output storageAccountKey string = storageKeys.keys[0].value

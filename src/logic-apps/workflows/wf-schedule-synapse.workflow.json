@@ -1,0 +1,47 @@
+{
+  "definition":{
+    "$schema":"https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+    "contentVersion":"1.0.0.0",
+    "parameters":{
+      "subscriptionId":{"type":"string","defaultValue":"@appsetting('WORKFLOWS_SUBSCRIPTION_ID')"},
+      "resourceGroup":{"type":"string","defaultValue":"@appsetting('WORKFLOWS_RESOURCE_GROUP_NAME')"},
+      "synapseWorkspace":{"type":"string","defaultValue":"@appsetting('SYNAPSE_WORKSPACE')"},
+      "pipelineName":{"type":"string","defaultValue":"pl_ingest_daily"},
+      "pipelineParameters":{"type":"object","defaultValue":{"RunDate":"@utcNow('yyyy-MM-dd')"}},
+      "lockBlobUrl":{"type":"string","defaultValue":"@appsetting('SCHEDULE_LOCK_BLOB_URL')"},
+      "maxSkewSeconds":{"type":"int","defaultValue":30}
+    },
+    "triggers":{
+      "daily_0400":{
+        "type":"Recurrence",
+        "recurrence":{"frequency":"Day","interval":1,"schedule":{"hours":[4],"minutes":[0]}}
+      }
+    },
+    "actions":{
+      "jitter":{"type":"Wait","inputs":{"interval":{"count":"@rand(0, parameters('maxSkewSeconds'))","unit":"Second"}}},
+      "acquire_lease":{
+        "type":"Http",
+        "runAfter":{"jitter":["Succeeded"]},
+        "inputs":{
+          "method":"PUT",
+          "uri":"@concat(parameters('lockBlobUrl'),'?comp=lease')",
+          "headers":{"x-ms-lease-action":"acquire","x-ms-lease-duration":"120"}
+        }
+      },
+      "run_pipeline":{
+        "type":"Http",
+        "runAfter":{"acquire_lease":["Succeeded"]},
+        "inputs":{
+          "method":"POST",
+          "uri":"@concat('https://management.azure.com/subscriptions/',parameters('subscriptionId'),'/resourceGroups/',parameters('resourceGroup'),'/providers/Microsoft.Synapse/workspaces/',parameters('synapseWorkspace'),'/pipelines/',parameters('pipelineName'),'/createRun?api-version=2021-06-01')",
+          "body":{"isRecovery":false,"parameters":"@parameters('pipelineParameters')"},
+          "authentication":{"type":"ManagedServiceIdentity","audience":"https://management.azure.com/"},
+          "headers":{"Content-Type":"application/json"}
+        }
+      }
+    },
+    "outputs":{}
+  },
+  "kind":"Stateful",
+  "connections":{}
+}

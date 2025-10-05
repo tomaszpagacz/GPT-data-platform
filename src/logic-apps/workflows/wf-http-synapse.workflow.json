@@ -1,0 +1,111 @@
+{
+  "definition": {
+    "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+      "subscriptionId": { "type": "string", "defaultValue": "@appsetting('WORKFLOWS_SUBSCRIPTION_ID')" },
+      "resourceGroup": { "type": "string", "defaultValue": "@appsetting('WORKFLOWS_RESOURCE_GROUP_NAME')" },
+      "synapseWorkspace": { "type": "string", "defaultValue": "@appsetting('SYNAPSE_WORKSPACE')" },
+      "sharedSecret": { "type": "string", "defaultValue": "@appsetting('ONDEMAND_SHARED_SECRET')" }
+    },
+    "triggers": {
+      "manual": {
+        "type": "Request",
+        "kind": "Http",
+        "inputs": {
+          "method": "POST",
+          "schema": {
+            "type": "object",
+            "properties": {
+              "pipelineName": {
+                "type": "string",
+                "description": "Name of the Synapse pipeline to execute"
+              },
+              "parameters": {
+                "type": "object",
+                "description": "Parameters to pass to the pipeline",
+                "additionalProperties": true
+              },
+              "correlationId": {
+                "type": "string",
+                "description": "Optional correlation ID for tracking"
+              }
+            },
+            "required": ["pipelineName"]
+          }
+        }
+      }
+    },
+    "actions": {
+      "validate_secret": {
+        "type": "If",
+        "expression": "@not(equals(triggerOutputs()?['headers']?['x-shared-secret'], parameters('sharedSecret')))",
+        "actions": {
+          "unauthorized_response": {
+            "type": "Response",
+            "inputs": {
+              "statusCode": 401,
+              "body": {
+                "error": "Unauthorized",
+                "message": "Invalid or missing shared secret"
+              }
+            }
+          }
+        },
+        "else": {
+          "actions": {
+            "correlation_id": {
+              "type": "Compose",
+              "inputs": "@coalesce(triggerBody()?['correlationId'], guid())"
+            },
+            "run_pipeline": {
+              "type": "Http",
+              "inputs": {
+                "method": "POST",
+                "uri": "@concat('https://management.azure.com/subscriptions/', parameters('subscriptionId'), '/resourceGroups/', parameters('resourceGroup'), '/providers/Microsoft.Synapse/workspaces/', parameters('synapseWorkspace'), '/pipelines/', triggerBody()?['pipelineName'], '/createRun?api-version=2021-06-01')",
+                "body": {
+                  "isRecovery": false,
+                  "parameters": "@coalesce(triggerBody()?['parameters'], json('{}'))"
+                },
+                "authentication": { "type": "ManagedServiceIdentity", "audience": "https://management.azure.com/" },
+                "headers": { "Content-Type": "application/json" }
+              },
+              "retryPolicy": { "type": "exponential", "interval": "PT5S", "count": 6, "minimumInterval": "PT2S", "maximumInterval": "PT1M" }
+            },
+            "success_response": {
+              "type": "Response",
+              "runAfter": { "run_pipeline": ["Succeeded"] },
+              "inputs": {
+                "statusCode": 200,
+                "body": {
+                  "pipelineName": "@triggerBody()?['pipelineName']",
+                  "runId": "@body('run_pipeline')?['runId']",
+                  "correlationId": "@outputs('correlation_id')",
+                  "status": "Pipeline execution started",
+                  "timestamp": "@utcNow()"
+                }
+              }
+            },
+            "error_response": {
+              "type": "Response",
+              "runAfter": { "run_pipeline": ["Failed", "TimedOut"] },
+              "inputs": {
+                "statusCode": "@if(equals(actions('run_pipeline')?['status'], 'Failed'), 400, 500)",
+                "body": {
+                  "pipelineName": "@triggerBody()?['pipelineName']",
+                  "correlationId": "@outputs('correlation_id')",
+                  "error": "@body('run_pipeline')?['error']?['message']",
+                  "status": "Pipeline execution failed",
+                  "timestamp": "@utcNow()"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "outputs": {}
+  },
+  "kind": "Stateful",
+  "connections": {}
+}

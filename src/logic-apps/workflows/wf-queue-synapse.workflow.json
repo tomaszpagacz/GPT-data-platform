@@ -1,0 +1,105 @@
+{
+  "definition": {
+    "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+      "subscriptionId": { "type": "string", "defaultValue": "@appsetting('WORKFLOWS_SUBSCRIPTION_ID')" },
+      "resourceGroup": { "type": "string", "defaultValue": "@appsetting('WORKFLOWS_RESOURCE_GROUP_NAME')" },
+      "synapseWorkspace": { "type": "string", "defaultValue": "@appsetting('SYNAPSE_WORKSPACE')" },
+      "pipelinesConfig": { "type": "string", "defaultValue": "@appsetting('PIPELINES_CONFIG_JSON')" },
+      "dedupeTable": { "type": "string", "defaultValue": "@appsetting('TABLE_DEDUPE')" },
+      "runsTable": { "type": "string", "defaultValue": "@appsetting('TABLE_RUNS')" }
+    },
+    "triggers": {
+      "from_queue": {
+        "type": "ApiConnection",
+        "inputs": {
+          "host": { "connection": { "name": "@parameters('$connections')['azurequeues']['connectionId']" } },
+          "path": "/onnewmessage",
+          "method": "get",
+          "queries": { "queueName": "@appsetting('EVENT_QUEUE_NAME')", "queueVisibilityTimeout": "PT5M" }
+        },
+        "splitOn": "@triggerBody()?['QueueMessagesList']?['QueueMessage']"
+      }
+    },
+    "actions": {
+      "decode": { "type": "Compose", "inputs": "@json(base64ToString(triggerOutputs()['body']['QueueMessagesList']['QueueMessage']['MessageText']))" },
+      "message_id": { "type": "Compose", "inputs": "@coalesce(outputs('decode')?['messageId'], triggerOutputs()['body']['QueueMessagesList']['QueueMessage']['MessageId'])" },
+      "correlation_id": { "type": "Compose", "inputs": "@coalesce(outputs('decode')?['correlationId'], outputs('message_id'))" },
+
+      "dedupe_get": {
+        "type": "ApiConnection",
+        "inputs": {
+          "host": { "connection": { "name": "@parameters('$connections')['azuretables']['connectionId']" } },
+          "path": "/Tables/GetEntity",
+          "method": "post",
+          "body": { "table": "@parameters('dedupeTable')", "partitionKey": "messages", "rowKey": "@outputs('message_id')" }
+        }
+      },
+
+      "if_duplicate": {
+        "type": "If",
+        "expression": "@equals(actions('dedupe_get')?['statusCode'], 200)",
+        "actions": { "noop": { "type": "Compose", "inputs": "duplicate" } },
+        "else": {
+          "actions": {
+            "dedupe_put": {
+              "type": "ApiConnection",
+              "inputs": {
+                "host": { "connection": { "name": "@parameters('$connections')['azuretables']['connectionId']" } },
+                "path": "/Tables/InsertOrReplaceEntity",
+                "method": "post",
+                "body": { "table": "@parameters('dedupeTable')", "entity": {
+                  "PartitionKey": "messages", "RowKey": "@outputs('message_id')",
+                  "CorrelationId": "@outputs('correlation_id')", "EnqueuedTimeUtc": "@utcNow()"
+                } }
+              }
+            },
+            "choose_pipeline": {
+              "type": "Compose",
+              "inputs": "@coalesce(outputs('decode')?['pipelineName'], json(parameters('pipelinesConfig'))?['routes'][concat('blob:', outputs('decode')?['pathPrefix'])], json(parameters('pipelinesConfig'))?['defaultPipeline'])"
+            },
+            "run_pipeline": {
+              "type": "Http",
+              "inputs": {
+                "method": "POST",
+                "uri": "@concat('https://management.azure.com/subscriptions/', parameters('subscriptionId'), '/resourceGroups/', parameters('resourceGroup'), '/providers/Microsoft.Synapse/workspaces/', parameters('synapseWorkspace'), '/pipelines/', outputs('choose_pipeline'), '/createRun?api-version=2021-06-01')",
+                "body": { "isRecovery": false, "parameters": "@coalesce(outputs('decode')?['parameters'], json('{}'))" },
+                "authentication": { "type": "ManagedServiceIdentity", "audience": "https://management.azure.com/" },
+                "headers": { "Content-Type": "application/json" }
+              },
+              "retryPolicy": { "type": "exponential", "interval": "PT5S", "count": 6, "minimumInterval": "PT2S", "maximumInterval": "PT1M" }
+            },
+            "runs_upsert": {
+              "type": "ApiConnection",
+              "runAfter": { "run_pipeline": ["Succeeded"] },
+              "inputs": {
+                "host": { "connection": { "name": "@parameters('$connections')['azuretables']['connectionId']" } },
+                "path": "/Tables/InsertOrReplaceEntity",
+                "method": "post",
+                "body": { "table": "@parameters('runsTable')", "entity": {
+                  "PartitionKey": "@outputs('choose_pipeline')", "RowKey": "@outputs('correlation_id')",
+                  "MessageId": "@outputs('message_id')", "StartTimeUtc": "@utcNow()"
+                } }
+              }
+            }
+          }
+        }
+      }
+    },
+    "outputs": {}
+  },
+  "kind": "Stateful",
+  "connections": {
+    "azurequeues": {
+      "connectionId": "/subscriptions/@appsetting('WORKFLOWS_SUBSCRIPTION_ID')/resourceGroups/@appsetting('WORKFLOWS_RESOURCE_GROUP_NAME')/providers/Microsoft.Web/connections/azurequeues",
+      "connectionName": "azurequeues",
+      "id": "/subscriptions/@appsetting('WORKFLOWS_SUBSCRIPTION_ID')/providers/Microsoft.Web/locations/@{workflow().location}/managedApis/azurequeues"
+    },
+    "azuretables": {
+      "connectionId": "/subscriptions/@appsetting('WORKFLOWS_SUBSCRIPTION_ID')/resourceGroups/@appsetting('WORKFLOWS_RESOURCE_GROUP_NAME')/providers/Microsoft.Web/connections/azuretables",
+      "connectionName": "azuretables",
+      "id": "/subscriptions/@appsetting('WORKFLOWS_SUBSCRIPTION_ID')/providers/Microsoft.Web/locations/@{workflow().location}/managedApis/azuretables"
+    }
+  }
+}

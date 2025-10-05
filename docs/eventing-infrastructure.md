@@ -39,6 +39,19 @@ The event infrastructure in the GPT Data Platform combines Azure Event Grid and 
   - 7-day message retention
   - Dedicated consumer groups
 
+### Azure Storage Queues & Tables
+- **Purpose**: Reliable event processing and state management
+- **Components**:
+  - **Main Queue** (`events-synapse`): Primary event processing queue
+  - **Dead-Letter Queue** (`events-synapse-dlq`): Failed message handling
+  - **Deduplication Table** (`ProcessedMessages`): Idempotency tracking
+  - **Run History Table** (`RunHistory`): Processing correlation and monitoring
+- **Features**:
+  - Private network access only
+  - Integrated with unified storage account
+  - Message deduplication support
+  - Processing history tracking
+
 ## Architecture
 
 ```mermaid
@@ -50,6 +63,15 @@ graph TB
     subgraph Event Processing
         EG --> |Forward| EH[Event Hub]
         EH --> |Process| CG[Consumer Groups]
+        CG --> |Queue| SQ[Storage Queue]
+        CG --> |State| ST[Storage Tables]
+    end
+    
+    subgraph Storage Services
+        SQ --> |Main| MQ[events-synapse]
+        SQ --> |DLQ| DLQ[events-synapse-dlq]
+        ST --> |Dedupe| DT[ProcessedMessages]
+        ST --> |History| HT[RunHistory]
     end
     
     subgraph Monitoring
@@ -60,9 +82,13 @@ graph TB
     subgraph Network Security
         PE1[Private Endpoint] --> EG
         PE2[Private Endpoint] --> EH
+        PE3[Private Endpoint] --> SQ
+        PE4[Private Endpoint] --> ST
         subgraph Private Network
             PE1
             PE2
+            PE3
+            PE4
         end
     end
 ```
@@ -95,6 +121,10 @@ Event Grid Topic handles the ingestion of storage events with:
 ### Network Security
 
 All components use private endpoints with:
+- **Event Grid Topic**: Private endpoint for secure event routing
+- **Event Hub Namespace**: Private endpoint for event processing
+- **Storage Queues**: Private endpoint for queue-based event processing
+- **Storage Tables**: Private endpoint for state management and deduplication
 - Private DNS zone integration
 - No public network access
 - Subnet-level access control
@@ -105,8 +135,9 @@ All components use private endpoints with:
 
 1. Azure subscription with required permissions
 2. Existing Virtual Network with appropriate subnets
-3. Private DNS zones for Event Hub and Event Grid
-4. Storage account configured for event generation
+3. Private DNS zones for Event Hub, Event Grid, Storage Queues, and Storage Tables
+4. Unified storage account with Data Lake Gen2 enabled
+5. Storage account configured for event generation
 
 ### Environment-Specific Parameters
 

@@ -1,0 +1,52 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "namePrefix": {
+      "value": "gptdata"
+    },
+    "environment": {
+      "value": "dev"
+    },
+    "location": {
+      "value": "switzerlandnorth"
+    },
+    "synapseSqlAdminLogin": {
+      "value": "sqladmin"
+    },
+    "synapseSqlAdminPassword": {
+      "value": "YourSecurePassword123!"
+    },
+    "onDemandSharedSecret": {
+      "value": "YourSecureSharedSecretForAPI123!"
+    },
+    "deployLogicApps": {
+      "value": true
+    },
+    "deploySynapse": {
+      "value": true
+    },
+    "deployStorage": {
+      "value": true
+    },
+    "deployNetworking": {
+      "value": true
+    },
+    "allowedPublicIpRanges": {
+      "value": []
+    },
+    "securityGroups": {
+      "value": {
+        "platformAdmins": "",
+        "platformOperators": "",
+        "platformDevelopers": "",
+        "platformReaders": "",
+        "mlEngineers": "",
+        "dataAnalysts": "",
+        "dataScientists": "",
+        "dataEngineers": "",
+        "dataGovernanceTeam": ""
+      }
+    }
+  }
+}

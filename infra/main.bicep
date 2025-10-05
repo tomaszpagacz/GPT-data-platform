@@ -78,6 +78,10 @@ param synapseSqlAdminLogin string
 @description('Administrator password for the Synapse dedicated SQL pool.')
 param synapseSqlAdminPassword string
 
+@secure()
+@description('Shared secret used for authenticating HTTP requests to the on-demand Logic App workflow.')
+param onDemandSharedSecret string
+
 @description('Name of the Event Grid topic used to trigger orchestration workloads.')
 param ingestionEventTopicName string = '${namePrefix}${environment}egtopic'
 
@@ -140,34 +144,13 @@ var privateDnsZoneSuffixes = [
   'table.${az.environment().suffixes.storage}'
   'file.${az.environment().suffixes.storage}'
   'web.${az.environment().suffixes.storage}'
-  'blob'
-  'queue'
-  'table'
-  'file'
-  'web'
+  '${az.environment().suffixes.sqlServerHostname}'
+  'database.windows.net'
   'vault.${az.environment().suffixes.keyvaultDns}'
-  'vault'
-  'privatelink.${az.environment().suffixes.sqlServerHostname}'
-  'privatelink.database.windows.net'
-  'privatelink.dfs.${az.environment().suffixes.storage}'
-  'privatelink.blob.${az.environment().suffixes.storage}'
-  'privatelink.queue.${az.environment().suffixes.storage}'
-  'privatelink.table.${az.environment().suffixes.storage}'
-  'privatelink.file.${az.environment().suffixes.storage}'
-  'privatelink.web.${az.environment().suffixes.storage}'
-  'privatelink.vault.${az.environment().suffixes.keyvaultDns}'
-  'privatelink.eventgrid.${az.environment().suffixes.eventGridTopicHostname}'
-  'privatelink.servicebus.windows.net'
-  'privatelink.azurewebsites.net'
-  'privatelink.blob.core.windows.net'
-  'privatelink.dfs.core.windows.net'
-  'privatelink.queue.core.windows.net'
-  'privatelink.table.core.windows.net'
-  'privatelink.file.core.windows.net'
-  'privatelink.web.core.windows.net'
-  'privatelink.vault.core.windows.net'
-  'privatelink.eventgrid.azure.net'
-  'privatelink.management.azure.com'
+  'servicebus.windows.net'
+  'azurewebsites.net'
+  'eventgrid.azure.net'
+  '${az.environment().resourceManager}'
 ]
 
 // Location override logic - use specific location if provided, otherwise use global location
@@ -234,12 +217,23 @@ module storage 'modules/storage.bicep' = {
       'test'
       'functional'
       'raw'
+      'curated'
+      'locks'
+      'config'
       'temp'
       'checkpoints'
       'logs'
       'metadata'
       'archive'
       'quarantine'
+    ]
+    queueNames: [
+      'events-synapse'
+      'events-synapse-dlq'
+    ]
+    tableNames: [
+      'ProcessedMessages'
+      'RunHistory'
     ]
     privateEndpointSubnetId: networking.outputs.privateEndpointsSubnetId
     privateDnsZoneIds: privateDns.outputs.privateDnsZoneIds
@@ -269,10 +263,23 @@ module logicApp 'modules/logicApp.bicep' = if (deployLogicApps) {
     location: location
     tags: tags
     sku: logicAppSku
+    environment: environment
+    onDemandSharedSecret: onDemandSharedSecret
     integrationSubnetId: networking.outputs.integrationSubnetId
     logAnalyticsWorkspaceId: logging.outputs.workspaceId
     storageAccountId: storage.outputs.storageAccountId
     runtimeContainerName: 'runtime'
+    synapseWorkspaceName: synapse.outputs.synapseWorkspaceName
+    keyVaultName: resourceNaming.outputs.naming.keyVault
+    connName: 'azurequeues'
+    queueNames: [
+      'events-synapse'
+      'events-synapse-dlq'
+    ]
+    tableNames: [
+      'ProcessedMessages'
+      'RunHistory'
+    ]
   }
 }
 
@@ -281,6 +288,11 @@ module eventing 'modules/eventing.bicep' = {
   params: {
     eventGridTopicName: resourceNaming.outputs.naming.eventGridTopic
     eventHubNamespaceName: resourceNaming.outputs.naming.eventHubNamespace
+    storageAccountName: storage.outputs.storageAccountId
+    queueName: 'events-synapse'
+    dlqName: 'events-synapse-dlq'
+    tableDedupe: 'ProcessedMessages'
+    tableRuns: 'RunHistory'
     eventHubSku: 'Standard'
     eventHubThroughputUnits: 1
     messageRetentionDays: 7

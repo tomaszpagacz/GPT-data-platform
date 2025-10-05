@@ -115,9 +115,17 @@ Data Lake Storage Gen2
 
 ### Operational Containers
 
-#### `raw/`
-**Purpose**: Alternative raw data storage
-- **Data Type**: Raw data from different ingestion methods
+#### `curated/`
+**Purpose**: Curated and standardized data
+- **Data Type**: Processed data with business rules applied
+- **Structure**: `/curated/domain/entity/processed_date.format`
+- **Retention**: 6-12 months (configurable)
+- **Access Pattern**: Read-optimized, standardized schemas
+- **Use Cases**:
+  - Business rule application
+  - Data standardization and normalization
+  - Cross-domain data integration
+  - Analytics-ready datasets
 - **Structure**: `/raw/ingestion_method/source/date.format`
 - **Retention**: 30-90 days
 - **Use Cases**:
@@ -158,6 +166,30 @@ Data Lake Storage Gen2
   - Kafka consumer offsets
   - Event Hub checkpoints
   - Stateful processing state
+
+#### `locks/`
+**Purpose**: Distributed locking and leader election
+- **Data Type**: Lease blobs for coordination
+- **Structure**: `/locks/resource/lock-name`
+- **Retention**: Ephemeral (seconds to minutes)
+- **Use Cases**:
+  - Scheduled job leader election
+  - Distributed mutex operations
+  - Workflow coordination
+  - Preventing duplicate processing
+
+### Configuration Containers
+
+#### `config/`
+**Purpose**: Application configuration and routing rules
+- **Data Type**: JSON configuration files, routing tables
+- **Structure**: `/config/filename.json`
+- **Retention**: Indefinite (configuration data)
+- **Use Cases**:
+  - Pipeline routing configurations
+  - Environment-specific settings
+  - Workflow parameter definitions
+  - Business rule configurations
 
 ### Governance & Compliance Containers
 
@@ -315,8 +347,8 @@ module storage 'modules/storage.bicep' = {
     name: storageAccountName
     location: location
     containerNames: [
-      'bronze', 'silver', 'gold', 'test', 'raw', 'functional',
-      'archive', 'temp', 'logs', 'metadata', 'checkpoints', 'quarantine',
+      'bronze', 'silver', 'gold', 'test', 'raw', 'curated', 'functional',
+      'archive', 'temp', 'logs', 'metadata', 'checkpoints', 'locks', 'config', 'quarantine',
       'backup', 'audit', 'reference', 'staging', 'sandbox'
     ]
   }

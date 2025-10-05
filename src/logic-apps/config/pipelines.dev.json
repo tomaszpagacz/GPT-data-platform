@@ -1,0 +1,8 @@
+{
+  "defaultPipeline": "pl_event_ingest",
+  "routes": {
+    "blob:raw/": "pl_ingest_raw",
+    "blob:curated/": "pl_ingest_curated",
+    "type:daily-batch": "pl_ingest_daily"
+  }
+}

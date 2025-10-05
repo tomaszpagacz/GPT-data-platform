@@ -439,6 +439,385 @@ Common issues and solutions:
 
 Check our Hello World example in `src/logic-apps/hello-world/` for a working implementation following these best practices.
 
+## Workflow Orchestration Suite
+
+This platform includes a comprehensive set of 6 Logic App workflows that provide complete data pipeline orchestration capabilities. These workflows work together to create a robust, event-driven data processing platform.
+
+### Workflow Overview
+
+| Workflow | Purpose | Trigger | Key Features |
+|----------|---------|---------|--------------|
+| **W1 - Scheduled Synapse** | Daily batch processing | Recurrence (4:00 AM) | Distributed locking, jitter |
+| **W2 - Queue Consumer** | Event-driven processing | Queue messages | Deduplication, run tracking |
+| **W3 - HTTP On-Demand** | API-triggered execution | HTTP POST | Shared-secret auth, schema validation |
+| **W4 - Blob Router** | Event Grid normalization | Queue messages | EG payload mapping, canonical format |
+| **W5 - DLQ Replay** | Error recovery | HTTP POST | Retry logic, poison queues |
+| **W6 - Status Poller** | Completion monitoring | HTTP POST | Polling, webhook notifications |
+
+### W1: Scheduled Synapse Pipeline (`wf-schedule-synapse.workflow.json`)
+
+**Purpose:** Executes Synapse pipelines on a scheduled basis with distributed locking to prevent duplicate runs.
+
+**Trigger:** Daily at 4:00 AM with configurable jitter (0-30 seconds).
+
+**Configuration:**
+```json
+{
+  "pipelineName": "pl_ingest_daily",
+  "pipelineParameters": {
+    "RunDate": "@utcNow('yyyy-MM-dd')"
+  },
+  "lockBlobUrl": "@appsetting('SCHEDULE_LOCK_BLOB_URL')",
+  "maxSkewSeconds": 30
+}
+```
+
+**Required App Settings:**
+- `SCHEDULE_LOCK_BLOB_URL`: SAS URL to blob for distributed locking
+- `SYNAPSE_WORKSPACE`: Target Synapse workspace name
+
+**Usage:** Automatically runs daily. No manual intervention required.
+
+---
+
+### W2: Queue Consumer (`wf-queue-synapse.workflow.json`)
+
+**Purpose:** Processes events from Azure Queue Storage, executes Synapse pipelines, and tracks run history with deduplication.
+
+**Trigger:** Azure Queues API connection polling `EVENT_QUEUE_NAME`.
+
+**Message Format:**
+```json
+{
+  "pipelineName": "pl_ingest_raw",
+  "parameters": {
+    "Path": "https://storage.blob.core.windows.net/raw/file.json",
+    "pathPrefix": "/blobServices/default/containers/raw/blobs/file.json"
+  },
+  "messageId": "unique-message-identifier",
+  "correlationId": "optional-tracking-id"
+}
+```
+
+**Required App Settings:**
+- `EVENT_QUEUE_NAME`: Source queue (default: "events-synapse")
+- `TABLE_DEDUPE`: Deduplication table (default: "ProcessedMessages")
+- `TABLE_RUNS`: Run tracking table (default: "RunHistory")
+
+**Features:**
+- Message deduplication using Azure Tables
+- Pipeline run tracking with correlation IDs
+- Automatic retry with exponential backoff
+- Safe property access with coalesce functions
+
+---
+
+### W3: HTTP On-Demand API (`wf-http-synapse.workflow.json`)
+
+**Purpose:** Provides secure HTTP API for on-demand Synapse pipeline execution with shared-secret authentication.
+
+**API Endpoint:**
+```http
+POST /workflows/wf-http-synapse/triggers/manual/paths/invoke
+Headers: x-shared-secret: <your-shared-secret>
+Content-Type: application/json
+
+{
+  "pipelineName": "pl_your_pipeline",
+  "parameters": { "param1": "value1" },
+  "correlationId": "optional-tracking-id"
+}
+```
+
+**Response:**
+```json
+{
+  "pipelineName": "pl_your_pipeline",
+  "runId": "pipeline-run-id",
+  "correlationId": "tracking-id",
+  "status": "Pipeline execution started",
+  "timestamp": "2025-10-05T10:30:00Z"
+}
+```
+
+**Required App Settings:**
+- `ONDEMAND_SHARED_SECRET`: Shared secret for authentication
+
+**Security:** Validates shared secret in request headers. Returns 401 for unauthorized requests.
+
+---
+
+### W4: Blob Router (`wf-blob-router-to-events.workflow.json`)
+
+**Purpose:** Normalizes Event Grid BlobCreated events and forwards them to the main processing queue.
+
+**Trigger:** Azure Queues API connection polling `INGRESS_QUEUE_NAME`.
+
+**Event Grid → Canonical Mapping:**
+```json
+// Input: Event Grid BlobCreated event
+{
+  "id": "event-id",
+  "eventType": "Microsoft.Storage.BlobCreated",
+  "subject": "/blobServices/default/containers/raw/blobs/file.json",
+  "data": {
+    "url": "https://storage.blob.core.windows.net/raw/file.json"
+  }
+}
+
+// Output: Canonical message format
+{
+  "pipelineName": "pl_ingest_raw",
+  "parameters": {
+    "Path": "https://storage.blob.core.windows.net/raw/file.json",
+    "pathPrefix": "/blobServices/default/containers/raw/blobs/file.json",
+    "EventType": "Microsoft.Storage.BlobCreated"
+  },
+  "messageId": "event-id"
+}
+```
+
+**Required App Settings:**
+- `INGRESS_QUEUE_NAME`: Event Grid destination queue
+- `EVENT_QUEUE_NAME`: Main processing queue
+
+**Usage:** Automatically processes Event Grid events. No manual intervention required.
+
+---
+
+### W5: DLQ Replay (`wf-dlq-replay.workflow.json`)
+
+**Purpose:** Recovers failed messages from dead-letter queues with configurable retry logic and poison queue handling.
+
+**API Endpoint:**
+```http
+POST /workflows/wf-dlq-replay/triggers/manual/paths/invoke
+```
+
+**Configuration Parameters:**
+```json
+{
+  "mode": "requeue", // "requeue" or "direct"
+  "maxMessages": 50,
+  "maxRetries": 5,
+  "eventQueue": "@appsetting('EVENT_QUEUE_NAME')",
+  "dlqName": "@appsetting('DLQ_NAME')",
+  "poisonQueue": "@coalesce(appsetting('POISON_QUEUE_NAME'),'events-synapse-poison')"
+}
+```
+
+**Processing Logic:**
+1. Pull messages from DLQ with visibility timeout
+2. Check retry count against maxRetries
+3. Route to poison queue if exceeded
+4. Increment retry count and reprocess
+5. Delete from DLQ after processing
+
+**Required App Settings:**
+- `DLQ_NAME`: Dead-letter queue (default: "events-synapse-dlq")
+- `EVENT_QUEUE_NAME`: Main processing queue
+- `POISON_QUEUE_NAME`: Poison queue (optional, defaults to "events-synapse-poison")
+
+---
+
+### W6: Status Poller (`wf-synapse-run-status.workflow.json`)
+
+**Purpose:** Monitors Synapse pipeline runs until completion and notifies webhooks with final status.
+
+**API Endpoint:**
+```http
+POST /workflows/wf-synapse-run-status/triggers/request/paths/invoke
+Content-Type: application/json
+
+{
+  "runId": "your-pipeline-run-id"
+}
+```
+
+**Response:**
+```json
+{
+  "status": "Succeeded"
+}
+```
+
+**Webhook Notification:**
+```http
+POST <STATUS_WEBHOOK_URL>
+Content-Type: application/json
+
+{
+  "runId": "pipeline-run-id",
+  "status": "Succeeded|Failed|Cancelled",
+  "timestamp": "2025-10-05T10:30:00Z"
+}
+```
+
+**Configuration:**
+```json
+{
+  "pollSeconds": 15,    // Polling interval
+  "maxMinutes": 120     // Maximum polling time
+}
+```
+
+**Required App Settings:**
+- `STATUS_WEBHOOK_URL`: Webhook endpoint for notifications
+
+**Features:**
+- Bounded polling with timeout protection
+- Terminal state detection (Succeeded/Failed/Cancelled)
+- Asynchronous webhook notifications
+- Synchronous API response
+
+## Workflow Configuration
+
+### Required App Settings
+
+All workflows require these base settings:
+
+```json
+{
+  "WORKFLOWS_SUBSCRIPTION_ID": "your-subscription-id",
+  "WORKFLOWS_RESOURCE_GROUP_NAME": "your-resource-group",
+  "SYNAPSE_WORKSPACE": "your-synapse-workspace"
+}
+```
+
+### Queue Configuration
+
+```json
+{
+  "EVENT_QUEUE_NAME": "events-synapse",
+  "DLQ_NAME": "events-synapse-dlq",
+  "INGRESS_QUEUE_NAME": "events-ingress",
+  "POISON_QUEUE_NAME": "events-synapse-poison"
+}
+```
+
+### Table Configuration
+
+```json
+{
+  "TABLE_DEDUPE": "ProcessedMessages",
+  "TABLE_RUNS": "RunHistory"
+}
+```
+
+### Security Settings
+
+```json
+{
+  "ONDEMAND_SHARED_SECRET": "your-secure-shared-secret",
+  "SCHEDULE_LOCK_BLOB_URL": "https://storage.blob.core.windows.net/locks/schedule.lock?sv=...",
+  "STATUS_WEBHOOK_URL": "https://your-webhook-endpoint.com/notify"
+}
+```
+
+## Deployment and Testing
+
+### Deploying Workflows
+
+Use the provided deployment script:
+
+```bash
+# Deploy all workflows
+./scripts/logicapps/deploy-workflows.sh
+
+# Deploy specific workflow
+az logicapp deployment source config-zip \
+  --name "your-logic-app" \
+  --resource-group "your-rg" \
+  --subscription "your-sub" \
+  --src "src/logic-apps/workflows/wf-queue-synapse.workflow.json"
+```
+
+### Testing Workflows
+
+1. **W1 Scheduled:** Monitor Synapse pipeline runs at 4:00 AM daily
+2. **W2 Queue Consumer:** Send test messages to `EVENT_QUEUE_NAME`
+3. **W3 HTTP API:** Use curl with shared secret header
+4. **W4 Blob Router:** Send Event Grid events to `INGRESS_QUEUE_NAME`
+5. **W5 DLQ Replay:** Trigger manually when DLQ has messages
+6. **W6 Status Poller:** Provide runId from any pipeline execution
+
+### Monitoring
+
+```bash
+# Check workflow runs
+az logic workflow run list \
+  --name "wf-queue-synapse" \
+  --resource-group "your-rg" \
+  --query "[].{RunId:name, Status:status, StartTime:startTime}" \
+  -o table
+
+# Get run details
+az logic workflow run show \
+  --name "wf-queue-synapse" \
+  --resource-group "your-rg" \
+  --run-name "run-id"
+```
+
+## Troubleshooting
+
+### Common Issues
+
+1. **Authentication Failures**
+   - Verify Managed Service Identity is enabled
+   - Check Synapse workspace permissions
+   - Validate shared secrets
+
+2. **Queue Connection Issues**
+   - Confirm Azure Queues connection is configured
+   - Verify queue names exist
+   - Check connection permissions
+
+3. **Pipeline Execution Errors**
+   - Validate pipeline names exist in Synapse
+   - Check parameter schemas
+   - Review Synapse activity logs
+
+4. **Webhook Failures**
+   - Verify webhook URL is accessible
+   - Check webhook authentication requirements
+   - Monitor webhook response codes
+
+### Debug Mode
+
+Enable verbose logging by setting:
+
+```json
+{
+  "WorkflowRuntime.LogLevel": "Verbose"
+}
+```
+
+## Integration Examples
+
+### Complete Data Flow
+
+1. **Blob Upload** → Event Grid → W4 → Queue Message
+2. **W2 Consumer** → Deduplication → Synapse Pipeline
+3. **W6 Poller** → Status Monitoring → Webhook Notification
+4. **Failed Messages** → DLQ → W5 Replay → Recovery
+
+### External Orchestrator Integration
+
+```bash
+# Trigger on-demand pipeline
+curl -X POST "https://logic-app-url/workflows/wf-http-synapse/triggers/manual/paths/invoke" \
+  -H "x-shared-secret: your-secret" \
+  -H "Content-Type: application/json" \
+  -d '{"pipelineName": "pl_custom_pipeline", "parameters": {"env": "prod"}}'
+
+# Monitor completion
+curl -X POST "https://logic-app-url/workflows/wf-synapse-run-status/triggers/request/paths/invoke" \
+  -H "Content-Type: application/json" \
+  -d '{"runId": "returned-run-id"}'
+```
+
+This orchestration suite provides enterprise-grade data pipeline automation with comprehensive error handling, monitoring, and recovery capabilities.
+
 ## Monitoring and Troubleshooting
 
 1. **Diagnostic Settings**

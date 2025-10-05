@@ -133,6 +133,7 @@ az ml workspace show --name gptdata-dev-ml --resource-group rg-gptdata-dev
 
 #### Storage & Data Services
 - [ ] Data Lake Storage containers created
+- [ ] Pipeline configuration files uploaded to config container
 - [ ] Blob storage accessible with correct permissions
 - [ ] File shares mounted correctly
 - [ ] Data encryption enabled

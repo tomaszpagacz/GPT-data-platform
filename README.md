@@ -15,6 +15,15 @@ This repository implements a comprehensive, Azure-native data analytics platform
 
    # Or using PowerShell
    .\scripts\create-storage-containers.ps1 -StorageAccountName "<storage-account>" -ResourceGroupName "<resource-group>"
+   ```
+
+5. Pipeline Configurations:
+   ```bash
+   # Upload Logic Apps pipeline routing configurations
+   ./scripts/upload-pipeline-configs.sh -g <resource-group> -s <storage-account>
+
+   # Upload specific environment config
+   ./scripts/upload-pipeline-configs.sh -g <resource-group> -s <storage-account> -e dev
    ``` Lake Storage Gen2. The solution emphasizes cost efficiency, GDPR-compliant operations, and extensibility for future machine learning and analytics workloads.
 
 ## Core Components
@@ -208,3 +217,13 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 ## Logic Apps (Standard)
 Workflows live in `src/logic-apps/workflows`, config in `src/logic-apps/config`.
 Use `orchestration/` names no longer; new path is `src/logic-apps`.
+
+### Available Workflows
+- **wf-schedule-synapse**: Daily scheduled Synapse pipeline execution with distributed locking
+  - Runs at 4:00 AM UTC with jitter to prevent thundering herd
+  - Uses blob lease for leader election across multiple instances
+  - Calls Synapse pipelines with date parameters via REST API
+- **wf-queue-synapse**: Event-driven Synapse pipeline execution from storage queues
+  - Processes messages from Azure Storage Queues with deduplication
+  - Config-driven routing based on blob path patterns
+  - Idempotent processing with correlation IDs and dead letter queues
