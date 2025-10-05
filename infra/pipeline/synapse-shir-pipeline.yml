@@ -1,0 +1,144 @@
+name: $(Build.DefinitionName)_$(Date:yyyyMMdd)$(Rev:.r)
+
+trigger:
+  branches:
+    include:
+      - main
+  paths:
+    include:
+      - infra/modules/synapse-shir.bicep
+      - infra/params/*synapse-shir.parameters.json
+      - scripts/setup-shir.ps1
+
+parameters:
+  - name: environment
+    displayName: Target Environment
+    type: string
+    default: dev
+    values:
+      - dev
+      - sit
+      - prod
+
+variables:
+  - name: resourceGroup
+    value: rg-gpt-data-platform-${{ parameters.environment }}
+  - name: vmName
+    value: vm-synapse-shir-${{ parameters.environment }}
+
+stages:
+  - stage: ValidateInfrastructure
+    displayName: Validate Infrastructure
+    jobs:
+      - job: ValidateTemplates
+        steps:
+          - task: AzureCLI@2
+            inputs:
+              azureSubscription: 'Azure-${{ parameters.environment }}'
+              scriptType: bash
+              scriptLocation: inlineScript
+              inlineScript: |
+                az bicep build --file infra/modules/synapse-shir.bicep --verify
+                
+                # Verify the setup script exists
+                if [ ! -f "scripts/setup-shir.ps1" ]; then
+                  echo "##vso[task.logissue type=error]SHIR setup script not found"
+                  exit 1
+                fi
+
+  - stage: ValidateEnvironment
+    displayName: Validate Environment
+    dependsOn: ValidateInfrastructure
+    jobs:
+      - job: CheckPrerequisites
+        steps:
+          - task: AzureCLI@2
+            inputs:
+              azureSubscription: 'Azure-${{ parameters.environment }}'
+              scriptType: bash
+              scriptLocation: inlineScript
+              inlineScript: |
+                # Check Synapse workspace exists
+                SYNAPSE_NAME=$(az synapse workspace list \
+                  --resource-group $(resourceGroup) \
+                  --query "[0].name" -o tsv)
+                
+                if [ -z "$SYNAPSE_NAME" ]; then
+                  echo "##vso[task.logissue type=error]Synapse workspace not found"
+                  exit 1
+                fi
+                
+                # Check required subnet exists
+                SUBNET_ID=$(az network vnet subnet show \
+                  --resource-group $(resourceGroup) \
+                  --vnet-name "vnet-${{ parameters.environment }}" \
+                  --name "snet-synapse" \
+                  --query id -o tsv)
+                
+                if [ -z "$SUBNET_ID" ]; then
+                  echo "##vso[task.logissue type=error]Required subnet not found"
+                  exit 1
+                fi
+
+  - stage: DeployInfrastructure
+    displayName: Deploy Infrastructure
+    dependsOn: ValidateEnvironment
+    jobs:
+      - job: DeployVM
+        steps:
+          - task: AzureCLI@2
+            inputs:
+              azureSubscription: 'Azure-${{ parameters.environment }}'
+              scriptType: bash
+              scriptLocation: inlineScript
+              inlineScript: |
+                # Get subnet ID
+                SUBNET_ID=$(az network vnet subnet show \
+                  --resource-group $(resourceGroup) \
+                  --vnet-name "vnet-${{ parameters.environment }}" \
+                  --name "snet-synapse" \
+                  --query id -o tsv)
+                
+                # Deploy SHIR VM
+                az deployment group create \
+                  --resource-group $(resourceGroup) \
+                  --template-file infra/modules/synapse-shir.bicep \
+                  --parameters "@infra/params/${{ parameters.environment }}.synapse-shir.parameters.json" \
+                  --parameters subnetId="$SUBNET_ID"
+
+  - stage: ConfigureSHIR
+    displayName: Configure SHIR
+    dependsOn: DeployInfrastructure
+    jobs:
+      - job: ValidateSHIR
+        steps:
+          - task: AzureCLI@2
+            inputs:
+              azureSubscription: 'Azure-${{ parameters.environment }}'
+              scriptType: bash
+              scriptLocation: inlineScript
+              inlineScript: |
+                # Check VM status
+                VM_STATUS=$(az vm show \
+                  --resource-group $(resourceGroup) \
+                  --name $(vmName) \
+                  --query "provisioningState" -o tsv)
+                
+                if [ "$VM_STATUS" != "Succeeded" ]; then
+                  echo "##vso[task.logissue type=error]VM deployment failed"
+                  exit 1
+                fi
+                
+                # Check SHIR service status using custom script extension
+                EXTENSION_STATUS=$(az vm extension show \
+                  --resource-group $(resourceGroup) \
+                  --vm-name $(vmName) \
+                  --name "InstallSHIR" \
+                  --query "provisioningState" -o tsv)
+                
+                if [ "$EXTENSION_STATUS" != "Succeeded" ]; then
+                  echo "##vso[task.logissue type=error]SHIR installation failed"
+                  exit 1
+                fi
+                
+                echo "SHIR deployment completed successfully!"

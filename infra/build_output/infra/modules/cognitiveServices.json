@@ -1,0 +1,190 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "_generator": {
+      "name": "bicep",
+      "version": "0.38.5.1644",
+      "templateHash": "11756930050638165108"
+    }
+  },
+  "parameters": {
+    "name": {
+      "type": "string",
+      "metadata": {
+        "description": "Name of the Azure AI (Cognitive Services) account."
+      }
+    },
+    "location": {
+      "type": "string",
+      "metadata": {
+        "description": "Azure region for the Cognitive Services account."
+      }
+    },
+    "tags": {
+      "type": "object",
+      "defaultValue": {},
+      "metadata": {
+        "description": "Tags applied to the Cognitive Services resources."
+      }
+    },
+    "skuName": {
+      "type": "string",
+      "defaultValue": "S0",
+      "metadata": {
+        "description": "SKU name for the Cognitive Services account."
+      }
+    },
+    "customSubdomainName": {
+      "type": "string",
+      "defaultValue": "[toLower(replace(parameters('name'), '-', ''))]",
+      "metadata": {
+        "description": "Custom subdomain used for the Cognitive Services endpoint. Must be globally unique."
+      }
+    },
+    "privateEndpointSubnetId": {
+      "type": "string",
+      "metadata": {
+        "description": "Subnet into which the private endpoint should be deployed."
+      }
+    },
+    "privateDnsZoneIds": {
+      "type": "array",
+      "metadata": {
+        "description": "Private DNS zones available for private endpoint association."
+      }
+    },
+    "logAnalyticsWorkspaceId": {
+      "type": "string",
+      "metadata": {
+        "description": "Log Analytics workspace for diagnostics."
+      }
+    }
+  },
+  "variables": {
+    "copy": [
+      {
+        "name": "cognitiveDnsZoneIds",
+        "count": "[length(parameters('privateDnsZoneIds'))]",
+        "input": "[if(endsWith(parameters('privateDnsZoneIds')[copyIndex('cognitiveDnsZoneIds')], '/privatelink.cognitiveservices.azure.com'), parameters('privateDnsZoneIds')[copyIndex('cognitiveDnsZoneIds')], null())]"
+      },
+      {
+        "name": "cognitiveDnsZoneIdsFiltered",
+        "count": "[length(variables('cognitiveDnsZoneIds'))]",
+        "input": "[if(not(equals(variables('cognitiveDnsZoneIds')[copyIndex('cognitiveDnsZoneIdsFiltered')], null())), variables('cognitiveDnsZoneIds')[copyIndex('cognitiveDnsZoneIdsFiltered')], null())]"
+      }
+    ]
+  },
+  "resources": [
+    {
+      "type": "Microsoft.CognitiveServices/accounts",
+      "apiVersion": "2023-05-01",
+      "name": "[parameters('name')]",
+      "location": "[parameters('location')]",
+      "kind": "CognitiveServices",
+      "sku": {
+        "name": "[parameters('skuName')]"
+      },
+      "tags": "[parameters('tags')]",
+      "properties": {
+        "customSubDomainName": "[parameters('customSubdomainName')]",
+        "publicNetworkAccess": "Disabled",
+        "disableLocalAuth": true,
+        "encryption": {
+          "keySource": "Microsoft.CognitiveServices"
+        },
+        "networkAcls": {
+          "defaultAction": "Deny",
+          "virtualNetworkRules": [],
+          "ipRules": []
+        }
+      }
+    },
+    {
+      "type": "Microsoft.Network/privateEndpoints",
+      "apiVersion": "2021-05-01",
+      "name": "[format('{0}-pe', parameters('name'))]",
+      "location": "[parameters('location')]",
+      "properties": {
+        "subnet": {
+          "id": "[parameters('privateEndpointSubnetId')]"
+        },
+        "privateLinkServiceConnections": [
+          {
+            "name": "[format('{0}-connection', parameters('name'))]",
+            "properties": {
+              "privateLinkServiceId": "[resourceId('Microsoft.CognitiveServices/accounts', parameters('name'))]",
+              "groupIds": [
+                "account"
+              ]
+            }
+          }
+        ]
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.CognitiveServices/accounts', parameters('name'))]"
+      ]
+    },
+    {
+      "condition": "[not(empty(variables('cognitiveDnsZoneIdsFiltered')))]",
+      "type": "Microsoft.Network/privateEndpoints/privateDnsZoneGroups",
+      "apiVersion": "2020-11-01",
+      "name": "[format('{0}/{1}', format('{0}-pe', parameters('name')), 'default')]",
+      "properties": {
+        "copy": [
+          {
+            "name": "privateDnsZoneConfigs",
+            "count": "[length(variables('cognitiveDnsZoneIdsFiltered'))]",
+            "input": {
+              "name": "[last(split(variables('cognitiveDnsZoneIdsFiltered')[copyIndex('privateDnsZoneConfigs')], '/'))]",
+              "properties": {
+                "privateDnsZoneId": "[variables('cognitiveDnsZoneIdsFiltered')[copyIndex('privateDnsZoneConfigs')]]"
+              }
+            }
+          }
+        ]
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/privateEndpoints', format('{0}-pe', parameters('name')))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Insights/diagnosticSettings",
+      "apiVersion": "2021-05-01-preview",
+      "scope": "[format('Microsoft.CognitiveServices/accounts/{0}', parameters('name'))]",
+      "name": "[format('{0}-logs', parameters('name'))]",
+      "properties": {
+        "workspaceId": "[parameters('logAnalyticsWorkspaceId')]",
+        "logs": [
+          {
+            "category": "Audit",
+            "enabled": true
+          },
+          {
+            "category": "RequestResponse",
+            "enabled": true
+          }
+        ],
+        "metrics": [
+          {
+            "category": "AllMetrics",
+            "enabled": true
+          }
+        ]
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.CognitiveServices/accounts', parameters('name'))]"
+      ]
+    }
+  ],
+  "outputs": {
+    "cognitiveAccountId": {
+      "type": "string",
+      "value": "[resourceId('Microsoft.CognitiveServices/accounts', parameters('name'))]"
+    },
+    "cognitiveAccountEndpoint": {
+      "type": "string",
+      "value": "[reference(resourceId('Microsoft.CognitiveServices/accounts', parameters('name')), '2023-05-01').endpoint]"
+    }
+  }
+}

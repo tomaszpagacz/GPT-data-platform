@@ -1,0 +1,24 @@
+{
+    "dotnet.defaultSolution": "GPT-data-platform.sln",
+    "files.exclude": {
+        "**/bin": true,
+        "**/obj": true
+    },
+    "omnisharp.enableRoslynAnalyzers": true,
+    "omnisharp.enableEditorConfigSupport": true,
+    "csharp.suppressDotnetRestoreNotification": false,
+    "azureFunctions.projectSubpath": "src/functions",
+    "debug.internalConsoleOptions": "neverOpen",
+    "[csharp]": {
+        "editor.formatOnType": true,
+        "editor.formatOnSave": true
+    },
+    // Standardize line endings
+    "files.eol": "\n",
+    // Use consistent paths
+    "omnisharp.useGlobalMono": "never",
+    "omnisharp.path": "latest",
+    // Ensure consistent NuGet restore
+    "dotnet.server.useOmnisharp": true,
+    "dotnet.server.path": "latest"
+}

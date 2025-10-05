@@ -5,10 +5,20 @@ param name string
 param location string
 
 @description('Tags applied to Synapse resources.')
-param tags object = {}
+param tags object = {
+  costOptimization: 'enabled'
+  autoScaleDown: 'true'
+  autoPause: 'true'
+}
 
 @description('Resource ID of the default Data Lake Storage account.')
 param defaultDataLakeStorageAccountResourceId string
+
+@description('Name of the Self-Hosted Integration Runtime')
+param shirName string = ''
+
+@description('Create Self-Hosted Integration Runtime')
+param createShir bool = false
 
 @description('Filesystem used as the primary linked service for the Synapse workspace.')
 param defaultDataLakeFilesystem string
@@ -240,5 +250,16 @@ resource workspaceSqlOnDemandDnsZoneGroup 'Microsoft.Network/privateEndpoints/pr
   }
 }
 
+// Self-Hosted Integration Runtime
+resource integrationRuntime 'Microsoft.Synapse/workspaces/integrationRuntimes@2021-06-01' = if (createShir) {
+  parent: workspace
+  name: shirName
+  properties: {
+    type: 'SelfHosted'
+    description: 'Self-hosted integration runtime for on-premises and cross-region data integration'
+  }
+}
+
 output synapseWorkspaceName string = workspace.name
 output synapseWorkspaceId string = workspace.id
+output integrationRuntimeId string = createShir ? integrationRuntime.id : ''

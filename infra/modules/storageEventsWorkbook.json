@@ -1,0 +1,165 @@
+{
+    "version": "Notebook/1.0",
+    "items": [
+        {
+            "type": 1,
+            "content": {
+                "json": "# Storage Events Monitoring Dashboard\nThis workbook provides insights into storage account events and their processing through Event Hub."
+            },
+            "name": "text - 0"
+        },
+        {
+            "type": 9,
+            "content": {
+                "version": "KqlParameterItem/1.0",
+                "parameters": [
+                    {
+                        "id": "a8bcc5a6-80c5-4764-9a4a-82b9f48bdef6",
+                        "version": "KqlParameterItem/1.0",
+                        "name": "TimeRange",
+                        "type": 4,
+                        "value": {
+                            "durationMs": 86400000
+                        },
+                        "typeSettings": {
+                            "selectableValues": [
+                                {"durationMs": 900000},
+                                {"durationMs": 1800000},
+                                {"durationMs": 3600000},
+                                {"durationMs": 14400000},
+                                {"durationMs": 43200000},
+                                {"durationMs": 86400000},
+                                {"durationMs": 172800000},
+                                {"durationMs": 259200000},
+                                {"durationMs": 604800000}
+                            ]
+                        }
+                    }
+                ],
+                "style": "pills",
+                "queryType": 0,
+                "resourceType": "microsoft.eventhub/namespaces"
+            },
+            "name": "parameters - 1"
+        },
+        {
+            "type": 3,
+            "content": {
+                "version": "KqlItem/1.0",
+                "query": "let events = GetMetric('IncomingMessages', 'EventHub', 'storage-monitoring');\nlet errors = GetMetric('ProcessingErrors', 'EventHub', 'storage-monitoring');\nevents\n| join kind=leftouter errors on TimeGenerated\n| project TimeGenerated, IncomingMessages = events['Count'], ProcessingErrors = coalesce(errors['Count'], 0)",
+                "size": 0,
+                "timeContext": {
+                    "durationMs": 86400000
+                },
+                "queryType": 0,
+                "resourceType": "microsoft.eventhub/namespaces",
+                "visualization": "timechart",
+                "chartSettings": {
+                    "seriesLabelSettings": [
+                        {
+                            "seriesName": "IncomingMessages",
+                            "label": "Events Received",
+                            "color": "blue"
+                        },
+                        {
+                            "seriesName": "ProcessingErrors",
+                            "label": "Processing Errors",
+                            "color": "red"
+                        }
+                    ]
+                }
+            },
+            "name": "Event Flow"
+        },
+        {
+            "type": 3,
+            "content": {
+                "version": "KqlItem/1.0",
+                "query": "let data = GetMetric('ThrottledRequests', 'EventHub', 'storage-monitoring');\ndata\n| project TimeGenerated, ThrottledRequests = ['Count']",
+                "size": 0,
+                "timeContext": {
+                    "durationMs": 86400000
+                },
+                "queryType": 0,
+                "resourceType": "microsoft.eventhub/namespaces",
+                "visualization": "timechart",
+                "chartSettings": {
+                    "ySettings": {
+                        "min": 0
+                    }
+                }
+            },
+            "name": "Throttling"
+        },
+        {
+            "type": 3,
+            "content": {
+                "version": "KqlItem/1.0",
+                "query": "StorageBlobLogs\n| where TimeGenerated > ago(1d)\n| summarize count() by OperationName\n| sort by count_ desc",
+                "size": 0,
+                "timeContext": {
+                    "durationMs": 86400000
+                },
+                "queryType": 0,
+                "resourceType": "microsoft.storage/storageaccounts",
+                "visualization": "piechart"
+            },
+            "name": "Storage Operations"
+        },
+        {
+            "type": 3,
+            "content": {
+                "version": "KqlItem/1.0",
+                "query": "let events = GetMetric('IncomingBytes', 'EventHub', 'storage-monitoring');\nevents\n| project TimeGenerated, BytesPerSecond = ['Count']\n| render timechart",
+                "size": 0,
+                "timeContext": {
+                    "durationMs": 86400000
+                },
+                "queryType": 0,
+                "resourceType": "microsoft.eventhub/namespaces",
+                "visualization": "linechart"
+            },
+            "name": "Throughput"
+        },
+        {
+            "type": 1,
+            "content": {
+                "json": "## Event Processing Status\nThis section shows the current status of event processing including throughput, errors, and latency."
+            },
+            "name": "text - 2"
+        },
+        {
+            "type": 10,
+            "content": {
+                "chartId": "workbookc80712dd-c10c-44b4-a29d-4c36891c7e7d",
+                "version": "MetricsItem/2.0",
+                "size": 0,
+                "chartType": 2,
+                "resourceType": "microsoft.eventhub/namespaces",
+                "metricScope": 0,
+                "resourceParameter": "Resource",
+                "resourceIds": [
+                    "{Resource}"
+                ],
+                "timeContext": {
+                    "durationMs": 86400000
+                },
+                "metrics": [
+                    {
+                        "namespace": "microsoft.eventhub/namespaces",
+                        "metric": "microsoft.eventhub/namespaces--IncomingMessages",
+                        "aggregation": 1,
+                        "splitBy": null
+                    }
+                ],
+                "title": "Events Per Second",
+                "gridSettings": {
+                    "rowLimit": 10000
+                }
+            },
+            "name": "metric - 3"
+        }
+    ],
+    "fallbackResourceIds": [],
+    "$schema": "https://github.com/Microsoft/Application-Insights-Workbooks/blob/master/schema/workbook.json"
+}

@@ -1,0 +1,36 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "name": {
+            "value": "apim-gpt-data-dev"
+        },
+        "sku": {
+            "value": "Developer"
+        },
+        "skuCount": {
+            "value": 1
+        },
+        "publisherEmail": {
+            "value": "admin@contoso.com"
+        },
+        "publisherName": {
+            "value": "Contoso GPT Data Platform"
+        },
+        "virtualNetworkEnabled": {
+            "value": true
+        },
+        "customDomains": {
+            "value": {
+                "enabled": false,
+                "hostnames": []
+            }
+        },
+        "tags": {
+            "value": {
+                "environment": "dev",
+                "project": "gpt-data-platform"
+            }
+        }
+    }
+}

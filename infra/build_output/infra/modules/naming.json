@@ -1,0 +1,44 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "_generator": {
+      "name": "bicep",
+      "version": "0.38.5.1644",
+      "templateHash": "3482763254261089769"
+    }
+  },
+  "parameters": {
+    "namePrefix": {
+      "type": "string"
+    },
+    "environment": {
+      "type": "string"
+    }
+  },
+  "variables": {
+    "naming": {
+      "prefix": "[parameters('namePrefix')]",
+      "eventHubNamespace": "[format('{0}-evthub-{1}', parameters('namePrefix'), parameters('environment'))]",
+      "eventGridTopic": "[format('{0}-evtgrid-{1}', parameters('namePrefix'), parameters('environment'))]",
+      "functionApp": "[format('{0}-func-{1}', parameters('namePrefix'), parameters('environment'))]",
+      "functionPlan": "[format('{0}-plan-{1}', parameters('namePrefix'), parameters('environment'))]",
+      "functionStorage": "[format('{0}func{1}', parameters('namePrefix'), parameters('environment'))]",
+      "keyVault": "[format('{0}-kv-{1}', parameters('namePrefix'), parameters('environment'))]",
+      "logAnalytics": "[format('{0}-log-{1}', parameters('namePrefix'), parameters('environment'))]",
+      "logicApp": "[format('{0}-logic-{1}', parameters('namePrefix'), parameters('environment'))]",
+      "storage": "[format('{0}stor{1}', parameters('namePrefix'), parameters('environment'))]",
+      "synapse": "[format('{0}-syn-{1}', parameters('namePrefix'), parameters('environment'))]",
+      "vnet": "[format('{0}-vnet-{1}', parameters('namePrefix'), parameters('environment'))]",
+      "cognitiveServices": "[format('{0}-cog-{1}', parameters('namePrefix'), parameters('environment'))]",
+      "azureMaps": "[format('{0}-maps-{1}', parameters('namePrefix'), parameters('environment'))]"
+    }
+  },
+  "resources": [],
+  "outputs": {
+    "naming": {
+      "type": "object",
+      "value": "[variables('naming')]"
+    }
+  }
+}

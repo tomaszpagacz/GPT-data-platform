@@ -1,0 +1,196 @@
+trigger:
+  branches:
+    include:
+    - main
+  paths:
+    include:
+    - infra/*
+    - infra/modules/*
+    - infra/params/*
+
+# Security scanning schedule
+schedules:
+- cron: "0 0 * * 0"
+  displayName: Weekly security scan
+  branches:
+    include:
+    - main
+  always: true
+
+parameters:
+- name: performSecurityScan
+  type: boolean
+  default: true
+  displayName: 'Perform Security Scan'
+- name: validateResourceLocks
+  type: boolean
+  default: true
+  displayName: 'Validate Resource Locks'
+
+variables:
+  # Enable secure variables handling
+  - group: infrastructure-variables
+  - group: security-scanning-variables
+  # Enforce secure access pattern
+  - name: System.Debug
+    value: false # Prevent sensitive info in logs
+  # Pipeline-specific variables
+  - name: artifactName
+    value: 'infrastructure'
+  - name: bicepPath
+    value: '$(System.DefaultWorkingDirectory)/infra'
+  - name: deploymentName
+    value: '$(environment)-$(Build.BuildNumber)'
+  - name: monitoringEnabled
+    value: true
+  - name: autoRollbackEnabled
+    value: true
+  # Cost optimization controls
+  - name: costOptimizationEnabled
+    value: true
+  # Granular cost controls for dev/test environments
+  - name: synapseSqlPoolsPause
+    value: true
+  - name: synapseShirOptimize
+    value: false  # Keep SHIR running by default for development
+  - name: appServiceScaleDown
+    value: true
+  - name: eventHubsScaleDown
+    value: true
+  - name: vmDeallocate
+    value: true
+  - name: aksScaleDown
+    value: true
+
+stages:
+- stage: PreDeploymentCheck
+  displayName: 'Pre-deployment Validation'
+  jobs:
+  - job: ValidatePrerequisites
+    pool:
+      vmImage: 'ubuntu-latest'
+    steps:
+    - task: AzureCLI@2
+      displayName: 'Check Prerequisites'
+      inputs:
+        azureSubscription: '$(serviceConnection)'
+        scriptType: 'bash'
+        scriptPath: '$(System.DefaultWorkingDirectory)/infra/pipeline/check-prerequisites.sh'
+        arguments: '$(location) $(namePrefix) $(environment)'
+
+    - task: AzureCLI@2
+      displayName: 'Validate Resource Names'
+      inputs:
+        azureSubscription: '$(serviceConnection)'
+        scriptType: 'bash'
+        scriptLocation: 'inlineScript'
+        inlineScript: |
+          az deployment sub validate \
+            --location $(location) \
+            --template-file $(System.DefaultWorkingDirectory)/infra/modules/validation.bicep \
+            --parameters \
+              namePrefix=$(namePrefix) \
+              environment=$(environment)
+
+- stage: SecurityScan
+  displayName: 'Security Scan'
+  dependsOn: PreDeploymentCheck
+  condition: succeeded() && eq(${{ parameters.performSecurityScan }}, true)
+  jobs:
+  - job: SecurityChecks
+    pool:
+      vmImage: 'ubuntu-latest'
+    steps:
+    - task: AzureCLI@2
+      displayName: 'Run Checkov Security Scan'
+      inputs:
+        azureSubscription: '$(serviceConnection)'
+        scriptType: 'bash'
+        scriptLocation: 'inlineScript'
+        inlineScript: |
+          pip install checkov
+          checkov -d $(System.DefaultWorkingDirectory)/infra --framework bicep
+
+    - task: AzureCLI@2
+      displayName: 'Run Tfsec Scan'
+      inputs:
+        azureSubscription: '$(serviceConnection)'
+        scriptType: 'bash'
+        scriptLocation: 'inlineScript'
+        inlineScript: |
+          wget -q -O - https://raw.githubusercontent.com/aquasecurity/tfsec/master/scripts/install_linux.sh | bash
+          tfsec $(System.DefaultWorkingDirectory)/infra
+
+- stage: Build
+  displayName: 'Build Infrastructure'
+  dependsOn: SecurityScan
+  condition: succeeded()
+  jobs:
+  - job: BuildAndValidate
+    pool:
+      vmImage: 'ubuntu-latest'
+    steps:
+    - task: AzurePolicyCheckGate@0
+      displayName: 'Azure Policy Compliance Check'
+      inputs:
+        azureSubscription: '$(serviceConnection)'
+        resourceGroupName: '$(resourceGroup)'
+        
+    - task: AzureKeyVault@2
+      inputs:
+        azureSubscription: '$(serviceConnection)'
+        KeyVaultName: '$(keyVaultName)'
+        SecretsFilter: '*'
+        RunAsPreJob: true
+    - task: AzureCLI@2
+      displayName: 'Install Bicep Tools'
+      inputs:
+        azureSubscription: '$(serviceConnection)'
+        scriptType: 'bash'
+        scriptLocation: 'inlineScript'
+        inlineScript: |
+          az bicep install
+          az bicep version
+
+    - task: AzureCLI@2
+      displayName: 'Validate Bicep Files'
+      inputs:
+        azureSubscription: '$(serviceConnection)'
+        scriptType: 'bash'
+        scriptLocation: 'inlineScript'
+        inlineScript: |
+          az bicep build --file $(bicepPath)/main.bicep --outfile $(Build.ArtifactStagingDirectory)/main.json
+          az deployment sub what-if --location $(location) --template-file $(bicepPath)/main.bicep
+
+    - task: CopyFiles@2
+      displayName: 'Copy Infrastructure Files'
+      inputs:
+        Contents: |
+          infra/**
+          !infra/**/*.md
+        TargetFolder: '$(Build.ArtifactStagingDirectory)'
+
+    - task: PublishBuildArtifacts@1
+      displayName: 'Publish Infrastructure Artifacts'
+      inputs:
+        PathtoPublish: '$(Build.ArtifactStagingDirectory)'
+        ArtifactName: '$(artifactName)'
+        publishLocation: 'Container'
+
+# Development Deployment
+- template: deployment-stage-template.yml
+  parameters:
+    environment: 'DEV'
+    dependsOn: 'Build'
+
+# SIT Deployment
+- template: deployment-stage-template.yml
+  parameters:
+    environment: 'SIT'
+    dependsOn: 'DeployToDEV'
+
+# Production Deployment
+- template: deployment-stage-template.yml
+  parameters:
+    environment: 'PROD'
+    dependsOn: 'DeployToSIT'

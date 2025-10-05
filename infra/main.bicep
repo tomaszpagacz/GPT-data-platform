@@ -29,6 +29,15 @@ param subnetAddressPrefixes object = {
 @description('Name of the primary data lake filesystem created within the storage account.')
 param dataLakeFilesystem string = 'raw'
 
+// Resource naming module
+module resourceNaming 'modules/naming.bicep' = {
+  name: 'naming'
+  params: {
+    namePrefix: namePrefix
+    environment: environment
+  }
+}
+
 @description('Logic App Standard SKU. For VNet integration, a minimum of Standard is recommended.')
 @allowed([
   'Standard'
@@ -89,7 +98,7 @@ var naming = {
 module logging 'modules/monitoring.bicep' = {
   name: 'logging'
   params: {
-    name: naming.logAnalytics
+    name: resourceNaming.outputs.naming.logAnalytics
     location: location
     tags: tags
   }
@@ -98,7 +107,7 @@ module logging 'modules/monitoring.bicep' = {
 module networking 'modules/networking.bicep' = {
   name: 'networking'
   params: {
-    name: naming.vnet
+    name: resourceNaming.outputs.naming.vnet
     location: location
     tags: tags
     addressSpace: vnetAddressSpace
@@ -118,7 +127,7 @@ module privateDns 'modules/privateDns.bicep' = {
 module keyVault 'modules/keyVault.bicep' = {
   name: 'keyVault'
   params: {
-    name: naming.keyVault
+    name: resourceNaming.outputs.naming.keyVault
     location: location
     tags: tags
     logAnalyticsWorkspaceId: logging.outputs.workspaceId
@@ -129,7 +138,7 @@ module keyVault 'modules/keyVault.bicep' = {
 module storage 'modules/storage.bicep' = {
   name: 'storage'
   params: {
-    name: naming.storage
+    name: resourceNaming.outputs.naming.storage
     location: location
     tags: tags
     filesystemName: dataLakeFilesystem
@@ -141,7 +150,7 @@ module storage 'modules/storage.bicep' = {
 module functionStorage 'modules/storage.bicep' = {
   name: 'functionStorage'
   params: {
-    name: naming.functionStorage
+    name: resourceNaming.outputs.naming.functionStorage
     location: location
     tags: union(tags, { purpose: 'functions' })
     isHnsEnabled: false
@@ -155,8 +164,8 @@ module appHosting 'modules/appHosting.bicep' = {
   params: {
     location: location
     tags: tags
-    functionPlanName: naming.functionPlan
-    functionAppName: naming.functionApp
+    functionPlanName: resourceNaming.outputs.naming.functionPlan
+    functionAppName: resourceNaming.outputs.naming.functionApp
     functionPlanSku: functionPlanSku
     functionSubnetId: networking.outputs.functionSubnetId
     functionStorageAccountId: functionStorage.outputs.storageAccountId
@@ -168,7 +177,7 @@ module appHosting 'modules/appHosting.bicep' = {
 module logicApp 'modules/logicApp.bicep' = {
   name: 'logicApp'
   params: {
-    name: naming.logicApp
+    name: resourceNaming.outputs.naming.logicApp
     location: location
     tags: tags
     sku: logicAppSku
@@ -181,7 +190,12 @@ module logicApp 'modules/logicApp.bicep' = {
 module eventing 'modules/eventing.bicep' = {
   name: 'eventing'
   params: {
-    topicName: naming.eventGridTopic
+    eventGridTopicName: resourceNaming.outputs.naming.eventGridTopic
+    eventHubNamespaceName: resourceNaming.outputs.naming.eventHubNamespace
+    eventHubSku: 'Standard'
+    eventHubThroughputUnits: 1
+    messageRetentionDays: 7
+    storageEventHubName: '${resourceNaming.outputs.naming.prefix}-storage-events'
     location: location
     tags: tags
     privateEndpointSubnetId: networking.outputs.privateEndpointsSubnetId
@@ -192,7 +206,7 @@ module eventing 'modules/eventing.bicep' = {
 module synapse 'modules/synapse.bicep' = {
   name: 'synapse'
   params: {
-    name: naming.synapse
+    name: resourceNaming.outputs.naming.synapse
     location: location
     tags: tags
     defaultDataLakeStorageAccountResourceId: storage.outputs.storageAccountId
@@ -209,7 +223,7 @@ module synapse 'modules/synapse.bicep' = {
 module azureMaps 'modules/azureMaps.bicep' = {
   name: 'azureMaps'
   params: {
-    name: naming.azureMaps
+    name: resourceNaming.outputs.naming.azureMaps
     location: azureMapsLocation
     tags: tags
     logAnalyticsWorkspaceId: logging.outputs.workspaceId
@@ -219,7 +233,7 @@ module azureMaps 'modules/azureMaps.bicep' = {
 module cognitiveServices 'modules/cognitiveServices.bicep' = {
   name: 'cognitiveServices'
   params: {
-    name: naming.cognitiveServices
+    name: resourceNaming.outputs.naming.cognitiveServices
     location: location
     tags: tags
     privateEndpointSubnetId: networking.outputs.privateEndpointsSubnetId
@@ -232,7 +246,7 @@ output storageAccountId string = storage.outputs.storageAccountId
 output synapseWorkspaceName string = synapse.outputs.synapseWorkspaceName
 output functionAppName string = appHosting.outputs.functionAppName
 output logicAppName string = logicApp.outputs.logicAppName
-output eventGridTopicEndpoint string = eventing.outputs.topicEndpoint
+output eventGridTopicEndpoint string = eventing.outputs.eventGridTopicEndpoint
 output azureMapsAccountId string = azureMaps.outputs.mapsAccountId
 output cognitiveAccountId string = cognitiveServices.outputs.cognitiveAccountId
 output cognitiveAccountEndpoint string = cognitiveServices.outputs.cognitiveAccountEndpoint

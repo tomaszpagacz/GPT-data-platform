@@ -17,6 +17,7 @@ var functionSubnetName = 'function-apps'
 var integrationSubnetName = 'integration'
 var privateEndpointSubnetName = 'private-endpoints'
 var irSubnetName = 'self-hosted-ir'
+var apimSubnetName = 'apim'
 
 resource vnet 'Microsoft.Network/virtualNetworks@2022-07-01' = {
   name: name
@@ -132,6 +133,36 @@ resource privateEndpointSubnet 'Microsoft.Network/virtualNetworks/subnets@2022-0
     privateEndpointNetworkPolicies: 'Disabled'
     privateLinkServiceNetworkPolicies: 'Disabled'
   }
+}
+
+resource apimNsg 'Microsoft.Network/networkSecurityGroups@2022-07-01' = {
+  name: '${name}-apim-nsg'
+  location: location
+  tags: tags
+  properties: loadJsonContent('apimNsgRules.json').properties
+}
+
+resource apimSubnet 'Microsoft.Network/virtualNetworks/subnets@2022-07-01' = {
+  parent: vnet
+  name: apimSubnetName
+  properties: {
+    addressPrefix: subnetAddressPrefixes.apim
+    networkSecurityGroup: {
+      id: apimNsg.id
+    }
+    serviceEndpoints: [
+      {
+        service: 'Microsoft.Web'
+      }
+      {
+        service: 'Microsoft.KeyVault'
+      }
+    ]
+    delegations: []
+  }
+  dependsOn: [
+    functionSubnet
+  ]
 }
 
 resource irSubnet 'Microsoft.Network/virtualNetworks/subnets@2022-07-01' = {

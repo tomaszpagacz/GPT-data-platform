@@ -1,0 +1,77 @@
+# Cost Optimization Configuration
+# This file controls resource optimization behavior across different environments
+# Adjust these parameters based on your development and testing needs
+
+# Global switch for cost optimization
+# Set to false to disable all optimizations at once
+costOptimizationEnabled: true
+
+# Environment-specific configurations
+# These settings override the default configurations for specific environments
+environments:
+  dev:
+    # Synapse Analytics Controls
+    synapseSqlPoolsPause: true      # Control automatic pausing of SQL pools
+    synapseShirOptimize: false      # Keep false if you need SHIR for development
+    
+    # Compute Resources
+    appServiceScaleDown: true       # Scale down App Service Plans to minimum SKU
+    vmDeallocate: true             # Deallocate development VMs when not in use
+    aksScaleDown: true             # Scale down AKS node pools to minimum
+    
+    # Event Processing
+    eventHubsScaleDown: true       # Scale down Event Hubs to Standard tier
+    
+    # Retention Periods (in days)
+    logRetentionDays: 7            # Shorter retention for dev logs
+    backupRetentionDays: 7         # Shorter retention for dev backups
+
+  sit:
+    # Testing environment might need more resources available
+    synapseSqlPoolsPause: true
+    synapseShirOptimize: false     # Keep SHIR running for integration tests
+    appServiceScaleDown: true
+    vmDeallocate: false           # Keep VMs running for continuous testing
+    aksScaleDown: true
+    eventHubsScaleDown: true
+    logRetentionDays: 14
+    backupRetentionDays: 14
+
+  uat:
+    synapseSqlPoolsPause: false    # Keep resources running for user acceptance testing
+    synapseShirOptimize: false
+    appServiceScaleDown: false
+    vmDeallocate: false
+    aksScaleDown: false
+    eventHubsScaleDown: false
+    logRetentionDays: 30
+    backupRetentionDays: 30
+
+  prod:
+    # Production environment - minimal cost optimization
+    synapseSqlPoolsPause: false    # No automatic pausing in production
+    synapseShirOptimize: false     # No SHIR optimization in production
+    appServiceScaleDown: false     # Maintain production performance
+    vmDeallocate: false           # Keep production VMs running
+    aksScaleDown: false           # Maintain production AKS capacity
+    eventHubsScaleDown: false     # Maintain production Event Hubs tier
+    logRetentionDays: 90         # Longer retention for production
+    backupRetentionDays: 90      # Longer retention for production backups
+
+# Resource-specific thresholds and schedules
+thresholds:
+  # Idle time thresholds (in minutes) before resource optimization
+  synapseSqlPoolIdleTime: 60      # Time before pausing SQL pools
+  vmIdleTime: 120                 # Time before deallocating VMs
+  
+  # Scale down thresholds
+  appServiceMinInstances: 1       # Minimum instances to maintain
+  aksMinNodes: 1                 # Minimum AKS nodes to maintain
+  eventHubsMinThroughput: 1      # Minimum Event Hubs throughput units
+
+# Schedule windows (in UTC)
+schedules:
+  # Define time windows when optimizations should NOT run
+  # Format: "HH:MM-HH:MM"
+  businessHours: "08:00-18:00"    # No optimizations during business hours
+  maintenanceWindow: "22:00-04:00" # Preferred time for optimization tasks

@@ -1,0 +1,122 @@
+{
+  "version": "Notebook/1.0",
+  "items": [
+    {
+      "type": 1,
+      "content": {
+        "json": "# Storage Account Traffic Analysis\nMonitoring outbound traffic patterns and potential data exfiltration"
+      },
+      "name": "text - 0"
+    },
+    {
+      "type": 9,
+      "content": {
+        "version": "KqlParameterItem/1.0",
+        "parameters": [
+          {
+            "id": "4f8e5ef1-6c5f-4f53-a37f-09a15e1731b6",
+            "version": "KqlParameterItem/1.0",
+            "name": "TimeRange",
+            "type": 4,
+            "isRequired": true,
+            "value": {
+              "durationMs": 86400000
+            },
+            "typeSettings": {
+              "selectableValues": [
+                {
+                  "durationMs": 3600000
+                },
+                {
+                  "durationMs": 86400000
+                },
+                {
+                  "durationMs": 604800000
+                }
+              ]
+            }
+          }
+        ],
+        "style": "pills",
+        "queryType": 0
+      },
+      "name": "parameters - 1"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "StorageBlobLogs\n| where TimeGenerated > ago({TimeRange})\n| summarize EgressBytes=sum(ResponseBodySize) by bin(TimeGenerated, 1h)\n| render timechart",
+        "size": 0,
+        "title": "Egress Traffic Over Time",
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces"
+      },
+      "name": "query - 2"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "StorageBlobLogs\n| where TimeGenerated > ago({TimeRange})\n| where OperationName in (\"GetBlob\", \"CopyBlob\")\n| summarize TotalEgress=sum(ResponseBodySize), Operations=count() by CallerIpAddress\n| top 10 by TotalEgress desc",
+        "size": 0,
+        "title": "Top IP Addresses by Egress Volume",
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "gridSettings": {
+          "formatters": [
+            {
+              "columnMatch": "TotalEgress",
+              "formatter": 8,
+              "formatOptions": {
+                "min": 0,
+                "palette": "blue"
+              }
+            }
+          ]
+        }
+      },
+      "name": "query - 3"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "StorageBlobLogs\n| where TimeGenerated > ago({TimeRange})\n| where OperationName in (\"GetBlob\", \"CopyBlob\")\n| summarize EgressBytes=sum(ResponseBodySize) by UserAgentHeader\n| top 10 by EgressBytes desc",
+        "size": 0,
+        "title": "Top User Agents by Egress Volume",
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces"
+      },
+      "name": "query - 4"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "StorageBlobLogs\n| where TimeGenerated > ago({TimeRange})\n| where ResponseBodySize > 100000000 // 100MB\n| project TimeGenerated, CallerIpAddress, UserAgentHeader, BlobUrl, ResponseBodySize\n| order by ResponseBodySize desc",
+        "size": 0,
+        "title": "Large File Downloads (>100MB)",
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces"
+      },
+      "name": "query - 5"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "StorageBlobLogs\n| where TimeGenerated > ago({TimeRange})\n| summarize UniqueIPs=dcount(CallerIpAddress) by bin(TimeGenerated, 1h)\n| render timechart",
+        "size": 0,
+        "title": "Unique IP Addresses Over Time",
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces"
+      },
+      "name": "query - 6"
+    }
+  ],
+  "styleSettings": {
+    "paddingStyle": "wide"
+  },
+  "$schema": "https://github.com/Microsoft/Application-Insights-Workbooks/blob/master/schema/workbook.json"
+}

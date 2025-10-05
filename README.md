@@ -1,16 +1,61 @@
 # GPT Data Platform
 
 ## Overview
-This repository captures the high-level architecture for a modular, Azure-native data analytics platform that ingests heterogeneous sources (APIs, databases, files, and streaming IoT feeds) into Azure Data Lake Storage Gen2. The solution emphasises cost efficiency, GDPR-compliant operations in Switzerland, and extensibility for future machine learning and analytics workloads.
+This repository implements a comprehensive, Azure-native data analytics platform that ingests heterogeneous sources into Azure Data Lake Storage Gen2. The solution emphasizes cost efficiency, GDPR-compliant operations, and extensibility for future machine learning and analytics workloads.
 
-Key Azure services:
-- **Azure Functions** for custom, event-driven ingestion and lightweight API façades.
-- **Azure Logic Apps Standard** for low-code, connector-rich orchestration of SaaS and on-premises workflows.
-- **Azure Event Grid** to propagate change notifications and trigger Synapse pipelines.
-- **Azure Synapse Analytics** (serverless SQL, dedicated SQL for metadata, and multiple Spark pools) for data engineering, governance, and analytics.
-- **Azure AI (Cognitive Services)** to provide scalable machine learning APIs and enrichments with private connectivity.
-- **Azure Data Lake Storage Gen2** as the central data lake with raw, curated, and consumption zones.
-- **Azure Maps** for spatial enrichment when required.
+## Core Components
+
+### Data Processing & Analytics
+- **Azure Synapse Analytics**
+  - Serverless SQL for ad-hoc queries
+  - Dedicated SQL pools for metadata
+  - Multiple Spark pools for data engineering
+  - Self-hosted Integration Runtime for hybrid scenarios
+
+### Event Processing & Integration
+- **Azure Event Grid** & **Event Hub**
+  - Storage account monitoring
+  - Event-driven architectures
+  - Real-time data processing
+  
+### Compute & Processing
+- **Azure Functions** 
+  - Event-driven ingestion
+  - Custom API facades
+  - Lightweight data transformations
+
+- **Azure Logic Apps Standard**
+  - Workflow orchestration
+  - SaaS integration
+  - Business process automation
+
+### Storage & Data Management
+- **Azure Data Lake Storage Gen2**
+  - Raw data landing
+  - Curated datasets
+  - Consumption-ready data
+
+### AI & Enrichment
+- **Azure AI (Cognitive Services)**
+  - Machine learning APIs
+  - Data enrichment
+  - Private connectivity
+
+- **Azure Maps**
+  - Spatial data processing
+  - Location intelligence
+  - Geospatial analytics
+
+### Security & Monitoring
+- **Azure Monitor / Application Insights**
+  - Comprehensive logging
+  - Performance monitoring
+  - Custom dashboards
+
+- **Private Endpoints & NSGs**
+  - Network isolation
+  - Secure access
+  - Traffic control
 - **Microsoft Purview**, **Azure Monitor / Log Analytics**, and **Application Insights** for governance and observability.
 
 ## Networking architecture (without Azure Firewall)
@@ -50,21 +95,82 @@ To satisfy GDPR requirements, reduce operational overhead, and protect the platf
 
 This networking strategy minimises operational burden by avoiding Azure Firewall while still providing strong isolation through VNets, private endpoints, and NSGs. It ensures compliant, secure connectivity for ingestion, processing, and consumption workloads with room for future enhancements.
 
-## Infrastructure as Code layout
+## Infrastructure as Code
 
-The `infra/` directory introduces a modular [Bicep](https://learn.microsoft.com/azure/azure-resource-manager/bicep/overview) codebase that provisions the core platform resources:
+### Core Infrastructure (`/infra`)
+- `main.bicep` - Primary deployment template
+- `modules/` - Reusable components
+  - `apiManagement.bicep` - API Management setup
+  - `eventing.bicep` - Event Grid & Event Hub
+  - `synapse.bicep` - Synapse workspace & pools
+  - `synapse-shir.bicep` - Self-hosted runtime
+  - `monitoring.bicep` - Observability stack
+  - `networking.bicep` - Network components
+  - `storage.bicep` - Data Lake configuration
 
-- `main.bicep` orchestrates shared services (Log Analytics, networking, Key Vault), data landing zones (ADLS Gen2), orchestration runtimes (Azure Functions, Logic App Standard), analytics engines (Synapse workspace and Spark pools), Azure Maps, Azure AI services, and integration primitives (Event Grid). Parameters provide environment-specific values such as the name prefix, Synapse SQL admin credentials, and optional IP allow lists.
-- `modules/` contains reusable building blocks for monitoring, networking, private DNS, secure storage, application hosting, Logic Apps, Event Grid, Synapse, Azure Maps, and Azure AI (Cognitive Services).
+### Environment Configuration (`/infra/params`)
+- Development (`dev.*parameters.json`)
+- Testing (`sit.*parameters.json`)
+- Production (`prod.*parameters.json`)
 
 > **Note:** The repository assumes Bicep CLI version `0.20` or later for deployment. Use the helper script in `scripts/install-azure-tools.sh` to install both the Azure CLI and the Bicep CLI on Debian/Ubuntu environments before running `bicep build` or `az deployment` commands. Future updates will introduce CI/CD workflows to validate and publish the infrastructure templates automatically.
 
-## Local tooling
+## Deployment & Operations
 
-Before running validation commands such as `bicep build` or `az deployment sub create`, install the required CLIs:
+### Prerequisites
+1. Azure CLI & Bicep
+   ```bash
+   ./scripts/install-azure-tools.sh
+   ```
 
-```bash
-sudo ./scripts/install-azure-tools.sh
-```
+2. Required Azure Resources:
+   - Resource Group
+   - Virtual Network
+   - Private DNS Zones
+   - Key Vault
 
-The script installs the Azure CLI from the Microsoft package repository and bootstraps the matching Bicep CLI version via `az bicep install`.
+### Deployment Process
+1. Base Infrastructure:
+   ```bash
+   az deployment group create \
+     --resource-group <rg-name> \
+     --template-file infra/main.bicep \
+     --parameters @infra/params/dev.parameters.json
+   ```
+
+2. Event Infrastructure:
+   ```bash
+   ./scripts/deploy-eventing.sh <env> <region> <resource-group>
+   ```
+
+3. Synapse SHIR:
+   ```bash
+   az pipeline create \
+     --name "Synapse-SHIR-Deployment" \
+     --yml-path infra/pipeline/synapse-shir-pipeline.yml
+   ```
+
+## Development Guides
+
+### Documentation
+- [API Management](docs/api-management-deployment.md)
+- [Event Infrastructure](docs/eventing-infrastructure.md)
+- [Functions Development](docs/functions-development.md)
+- [Logic Apps](docs/logic-apps-development.md)
+- [RBAC Management](docs/rbac-management.md)
+- [Security Assessment](docs/security-assessment.md)
+
+### Helper Scripts (`/helpers`)
+- Environment setup
+- Dependency management
+- Testing utilities
+- Validation tools
+
+## Contributing
+1. Fork the repository
+2. Create a feature branch
+3. Commit your changes
+4. Create a pull request
+
+## License
+This project is licensed under the MIT License - see the LICENSE file for details

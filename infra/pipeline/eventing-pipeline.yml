@@ -1,0 +1,172 @@
+name: $(Build.DefinitionName)_$(Date:yyyyMMdd)$(Rev:.r)
+
+trigger:
+  branches:
+    include:
+      - main
+  paths:
+    include:
+      - infra/**
+      - scripts/**
+
+parameters:
+  - name: environment
+    displayName: Target Environment
+    type: string
+    default: dev
+    values:
+      - dev
+      - sit
+      - prod
+  - name: region
+    displayName: Deployment Region
+    type: string
+    default: westeurope
+
+variables:
+  - name: resourceGroup
+    value: rg-gpt-data-platform-${{ parameters.environment }}
+
+stages:
+  - stage: ValidateInfrastructure
+    displayName: Validate Infrastructure
+    jobs:
+      - job: ValidateTemplates
+        steps:
+          - task: AzureCLI@2
+            inputs:
+              azureSubscription: 'Azure-${{ parameters.environment }}'
+              scriptType: bash
+              scriptLocation: inlineScript
+              inlineScript: |
+                az bicep build --file infra/modules/eventing.bicep --verify
+                az bicep build --file infra/modules/eventMonitoringWorkbook.bicep --verify
+
+  - stage: DeployBaseInfrastructure
+    displayName: Deploy Base Infrastructure
+    dependsOn: ValidateInfrastructure
+    jobs:
+      - job: DeployNetworking
+        steps:
+          - task: AzureCLI@2
+            inputs:
+              azureSubscription: 'Azure-${{ parameters.environment }}'
+              scriptType: bash
+              scriptLocation: inlineScript
+              inlineScript: |
+                # Deploy networking infrastructure first
+                az deployment group create \
+                  --resource-group $(resourceGroup) \
+                  --template-file infra/modules/networking.bicep \
+                  --parameters @infra/params/${{ parameters.environment }}.networking.parameters.json
+
+      - job: DeployPrivateDNS
+        dependsOn: DeployNetworking
+        steps:
+          - task: AzureCLI@2
+            inputs:
+              azureSubscription: 'Azure-${{ parameters.environment }}'
+              scriptType: bash
+              scriptLocation: inlineScript
+              inlineScript: |
+                # Deploy private DNS zones
+                az deployment group create \
+                  --resource-group $(resourceGroup) \
+                  --template-file infra/modules/privateDns.bicep \
+                  --parameters @infra/params/${{ parameters.environment }}.privateDns.parameters.json
+
+  - stage: DeployEventInfrastructure
+    displayName: Deploy Event Infrastructure
+    dependsOn: DeployBaseInfrastructure
+    jobs:
+      - job: DeployEventing
+        steps:
+          - task: AzureCLI@2
+            inputs:
+              azureSubscription: 'Azure-${{ parameters.environment }}'
+              scriptType: bash
+              scriptLocation: inlineScript
+              inlineScript: |
+                # Make deployment script executable
+                chmod +x scripts/deploy-eventing.sh
+                
+                # Deploy event infrastructure
+                ./scripts/deploy-eventing.sh \
+                  ${{ parameters.environment }} \
+                  ${{ parameters.region }} \
+                  $(resourceGroup)
+
+  - stage: DeployMonitoring
+    displayName: Deploy Monitoring
+    dependsOn: DeployEventInfrastructure
+    jobs:
+      - job: DeployWorkbook
+        steps:
+          - task: AzureCLI@2
+            inputs:
+              azureSubscription: 'Azure-${{ parameters.environment }}'
+              scriptType: bash
+              scriptLocation: inlineScript
+              inlineScript: |
+                # Deploy monitoring workbook
+                az deployment group create \
+                  --resource-group $(resourceGroup) \
+                  --template-file infra/modules/eventMonitoringWorkbook.bicep \
+                  --parameters workbookDisplayName="Storage Events Monitor - ${ENVIRONMENT^^}"
+
+  - stage: ValidateDeployment
+    displayName: Validate Deployment
+    dependsOn: DeployMonitoring
+    jobs:
+      - job: ValidateResources
+        steps:
+          - task: AzureCLI@2
+            inputs:
+              azureSubscription: 'Azure-${{ parameters.environment }}'
+              scriptType: bash
+              scriptLocation: inlineScript
+              inlineScript: |
+                # Validate Event Hub
+                NAMESPACE_NAME=$(az eventhubs namespace list \
+                  --resource-group $(resourceGroup) \
+                  --query "[?contains(name, 'evthub')].name" -o tsv)
+                
+                if [ -z "$NAMESPACE_NAME" ]; then
+                  echo "##vso[task.logissue type=error]Event Hub namespace not found"
+                  exit 1
+                fi
+                
+                # Validate Event Grid
+                TOPIC_NAME=$(az eventgrid topic list \
+                  --resource-group $(resourceGroup) \
+                  --query "[?contains(name, 'evtgrid')].name" -o tsv)
+                
+                if [ -z "$TOPIC_NAME" ]; then
+                  echo "##vso[task.logissue type=error]Event Grid topic not found"
+                  exit 1
+                fi
+                
+                # Validate Private Endpoints
+                PRIVATE_ENDPOINTS=$(az network private-endpoint list \
+                  --resource-group $(resourceGroup) \
+                  --query "[?contains(name, 'evthub') || contains(name, 'evtgrid')].provisioningState" \
+                  -o tsv)
+                
+                if ! echo "$PRIVATE_ENDPOINTS" | grep -q "Succeeded"; then
+                  echo "##vso[task.logissue type=error]Private endpoints not provisioned correctly"
+                  exit 1
+                fi
+                
+                # Validate Workbook
+                WORKBOOK_ID=$(az resource list \
+                  --resource-group $(resourceGroup) \
+                  --resource-type "microsoft.insights/workbooks" \
+                  --query "[?contains(name, 'storage-events')].id" \
+                  -o tsv)
+                
+                if [ -z "$WORKBOOK_ID" ]; then
+                  echo "##vso[task.logissue type=error]Monitoring workbook not found"
+                  exit 1
+                fi
+                
+                echo "All resources validated successfully!"

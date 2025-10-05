@@ -1,0 +1,34 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "eventHubNamespaceName": {
+            "value": "gpt-data-platform-evthub-prod"
+        },
+        "storageEventHubName": {
+            "value": "storage-monitoring"
+        },
+        "eventGridTopicName": {
+            "value": "gpt-data-platform-evtgrid-prod"
+        },
+        "location": {
+            "value": "westeurope"
+        },
+        "eventHubSku": {
+            "value": "Premium"
+        },
+        "eventHubThroughputUnits": {
+            "value": 4
+        },
+        "messageRetentionDays": {
+            "value": 7
+        },
+        "tags": {
+            "value": {
+                "environment": "prod",
+                "purpose": "storage-monitoring",
+                "project": "gpt-data-platform"
+            }
+        }
+    }
+}

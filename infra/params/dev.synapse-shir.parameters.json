@@ -1,0 +1,36 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "vmName": {
+            "value": "vm-synapse-shir-dev"
+        },
+        "vmSize": {
+            "value": "Standard_D2s_v3"
+        },
+        "adminUsername": {
+            "value": "shiradmin"
+        },
+        "adminPassword": {
+            "reference": {
+                "keyVault": {
+                    "id": "/subscriptions/{subscription-id}/resourceGroups/rg-gpt-data-platform-dev/providers/Microsoft.KeyVault/vaults/kv-gpt-data-platform-dev"
+                },
+                "secretName": "shir-admin-password"
+            }
+        },
+        "synapseWorkspaceName": {
+            "value": "synw-gpt-data-platform-dev"
+        },
+        "osDiskType": {
+            "value": "StandardSSD_LRS"
+        },
+        "tags": {
+            "value": {
+                "environment": "dev",
+                "purpose": "synapse-shir",
+                "project": "gpt-data-platform"
+            }
+        }
+    }
+}

@@ -1,0 +1,154 @@
+parameters:
+  - name: environment
+    type: string
+  - name: dependsOn
+    type: string
+    default: ''
+
+stages:
+- stage: DeployTo${{ parameters.environment }}
+  displayName: 'Deploy to ${{ parameters.environment }}'
+  dependsOn: ${{ parameters.dependsOn }}
+  condition: succeeded()
+  variables:
+    environment: '${{ lower(parameters.environment) }}'
+  jobs:
+  - deployment: DeployInfrastructure
+    environment: '${{ lower(parameters.environment) }}'
+    strategy:
+      runOnce:
+        preDeploy:
+          steps:
+          # Copy deployment scripts
+          - task: CopyFiles@2
+            displayName: 'Copy Deployment Scripts'
+            inputs:
+              Contents: |
+                infra/pipeline/monitor-deployment.sh
+                infra/pipeline/rollback-deployment.sh
+              TargetFolder: '$(Pipeline.Workspace)/scripts'
+              flattenFolders: true
+
+          # Make scripts executable
+          - task: Bash@3
+            displayName: 'Prepare Scripts'
+            inputs:
+              targetType: 'inline'
+              script: |
+                chmod +x $(Pipeline.Workspace)/scripts/*.sh
+
+        deploy:
+          steps:
+          - download: current
+            artifact: '$(artifactName)'
+          
+          - task: AzureCLI@2
+            displayName: 'Deploy Infrastructure'
+            inputs:
+              azureSubscription: '$(serviceConnection)'
+              scriptType: 'bash'
+              scriptLocation: 'inlineScript'
+              inlineScript: |
+                # Initialize deployment monitoring if enabled
+                if [[ "$(monitoringEnabled)" == "true" ]]; then
+                  $(Pipeline.Workspace)/scripts/monitor-deployment.sh \
+                    "$(deploymentName)" \
+                    "$(subscription)" \
+                    "$(environment)" &
+                  MONITOR_PID=$!
+                fi
+
+                # Start deployment
+                if az deployment sub create \
+                  --name "$(deploymentName)" \
+                  --location "$(location)" \
+                  --template-file "$(Pipeline.Workspace)/$(artifactName)/infra/main.bicep" \
+                  --parameters environment=$(environment); then
+                  
+                  echo "Deployment succeeded"
+                  DEPLOY_STATUS=0
+                else
+                  echo "Deployment failed"
+                  DEPLOY_STATUS=1
+                fi
+
+                # Stop monitoring
+                if [[ "$(monitoringEnabled)" == "true" ]]; then
+                  kill $MONITOR_PID 2>/dev/null || true
+                fi
+
+                # Handle deployment failure
+                if [[ $DEPLOY_STATUS -ne 0 && "$(autoRollbackEnabled)" == "true" ]]; then
+                  echo "Initiating rollback..."
+                  $(Pipeline.Workspace)/scripts/rollback-deployment.sh \
+                    "$(deploymentName)" \
+                    "$(resourceGroup)-$(environment)" \
+                    "$(subscription)" \
+                    "$(environment)"
+                  exit 1
+                fi
+
+                exit $DEPLOY_STATUS
+
+        postDeploy:
+          steps:
+          # Run cost optimization steps
+          - task: AzureCLI@2
+            condition: and(succeeded(), eq(variables['costOptimizationEnabled'], 'true'))
+            displayName: 'Optimize Resource Costs'
+            inputs:
+              azureSubscription: '$(serviceConnection)'
+              scriptType: 'bash'
+              scriptLocation: 'inlineScript'
+              inlineScript: |
+                chmod +x $(Pipeline.Workspace)/scripts/optimize-costs.sh
+                
+                # The script will automatically read settings from cost-optimization-config.yml
+                # Pipeline variables can still override the config if needed
+                if [ -n "$(costOptimizationOverride)" ]; then
+                  echo "Using pipeline override for cost optimization settings"
+                  export SYNAPSE_SQL_PAUSE="$(synapseSqlPoolsPause)"
+                  export SYNAPSE_SHIR_OPTIMIZE="$(synapseShirOptimize)"
+                  export APP_SERVICE_SCALE_DOWN="$(appServiceScaleDown)"
+                  export EVENT_HUBS_SCALE_DOWN="$(eventHubsScaleDown)"
+                  export VM_DEALLOCATE="$(vmDeallocate)"
+                  export AKS_SCALE_DOWN="$(aksScaleDown)"
+                fi
+                
+                $(Pipeline.Workspace)/scripts/optimize-costs.sh \
+                  "$(subscription)" \
+                  "$(resourceGroup)-$(environment)" \
+                  "$(environment)"
+
+          # Publish monitoring logs as artifacts
+          - task: PublishBuildArtifacts@1
+            condition: and(succeeded(), eq(variables['monitoringEnabled'], 'true'))
+            displayName: 'Publish Monitoring Logs'
+            inputs:
+              PathtoPublish: '$(Pipeline.Workspace)/monitoring'
+              ArtifactName: 'DeploymentMonitoring_$(environment)'
+              publishLocation: 'Container'
+
+          # Run post-deployment health checks
+          - task: AzureCLI@2
+            displayName: 'Post-deployment Health Check'
+            inputs:
+              azureSubscription: '$(serviceConnection)'
+              scriptType: 'bash'
+              scriptLocation: 'inlineScript'
+              inlineScript: |
+                # Get all deployed resources
+                resources=$(az deployment sub show \
+                  --name "$(deploymentName)" \
+                  --query "properties.outputResources[].id" -o tsv)
+
+                # Check each resource's health
+                for resource in $resources; do
+                  state=$(az resource show --ids $resource \
+                    --query "properties.provisioningState" -o tsv)
+                  echo "Resource $resource state: $state"
+                  
+                  if [[ "$state" != "Succeeded" ]]; then
+                    echo "##vso[task.logissue type=warning]Resource $resource is in $state state"
+                  fi
+                done

@@ -1,0 +1,124 @@
+parameters:
+  - name: environment
+    type: string
+  - name: dependsOn
+    type: string
+    default: ''
+
+stages:
+- stage: DeployTo${{ parameters.environment }}
+  displayName: 'Deploy to ${{ parameters.environment }}'
+  dependsOn: ${{ parameters.dependsOn }}
+  condition: succeeded()
+  variables:
+    environment: '${{ lower(parameters.environment) }}'
+  jobs:
+  - deployment: DeployInfrastructure
+    environment: '${{ lower(parameters.environment) }}'
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+          - download: current
+            artifact: '$(artifactName)'
+          
+          - task: AzureCLI@2
+            displayName: 'Pre-deployment Validation'
+            inputs:
+              azureSubscription: '$(serviceConnection)'
+              scriptType: 'bash'
+              scriptLocation: 'inlineScript'
+              inlineScript: |
+                # Verify resource locks
+                if [[ "${{ parameters.validateResourceLocks }}" == "true" ]]; then
+                  echo "Checking resource locks..."
+                  az lock list --resource-group $(resourceGroup)-$(environment) --query "[].name" -o tsv
+                fi
+
+                # Check for existing deployments
+                EXISTING_DEPLOYMENT=$(az deployment sub list --query "[?contains(name, '$(environment)')].name" -o tsv)
+                if [ ! -z "$EXISTING_DEPLOYMENT" ]; then
+                  echo "Found existing deployment: $EXISTING_DEPLOYMENT"
+                fi
+
+                # Cost estimation check
+                if [ "${{ parameters.environment }}" == "PROD" ]; then
+                  ESTIMATED_COST=$(az deployment sub what-if \
+                    --name "$(environment)-cost-check" \
+                    --location "$(location)" \
+                    --template-file "$(Pipeline.Workspace)/$(artifactName)/infra/main.bicep" \
+                    --parameters environment=$(environment) \
+                    --query "changes[].cost" -o tsv)
+                  
+                  if [ "$ESTIMATED_COST" -gt "$(maxAllowedCost)" ]; then
+                    echo "Estimated cost exceeds maximum allowed cost!"
+                    exit 1
+                  fi
+                fi
+
+          - task: AzureCLI@2
+            displayName: 'Deploy Infrastructure'
+            inputs:
+              azureSubscription: '$(serviceConnection)'
+              scriptType: 'bash'
+              scriptLocation: 'inlineScript'
+              inlineScript: |
+                # Deploy with error handling
+                set -e
+                trap 'echo "Error occurred during deployment. Rolling back..."; az deployment sub cancel --name "$(environment)-$(Build.BuildNumber)"' ERR
+
+                # What-if analysis
+                az deployment sub what-if \
+                  --name "$(environment)-$(Build.BuildNumber)" \
+                  --location "$(location)" \
+                  --template-file "$(Pipeline.Workspace)/$(artifactName)/infra/main.bicep" \
+                  --parameters environment=$(environment)
+
+                # Actual deployment with timeout
+                timeout 2h az deployment sub create \
+                  --name "$(environment)-$(Build.BuildNumber)" \
+                  --location "$(location)" \
+                  --template-file "$(Pipeline.Workspace)/$(artifactName)/infra/main.bicep" \
+                  --parameters environment=$(environment)
+
+          - task: AzureCLI@2
+            displayName: 'Post-deployment Validation'
+            inputs:
+              azureSubscription: '$(serviceConnection)'
+              scriptType: 'bash'
+              scriptLocation: 'inlineScript'
+              inlineScript: |
+                # Check deployment state
+                DEPLOYMENT_STATE=$(az deployment sub show \
+                  --name "$(environment)-$(Build.BuildNumber)" \
+                  --query "properties.provisioningState" -o tsv)
+                
+                if [ "$DEPLOYMENT_STATE" != "Succeeded" ]; then
+                  echo "Deployment failed with state: $DEPLOYMENT_STATE"
+                  exit 1
+                fi
+
+                # Resource health check
+                UNHEALTHY_RESOURCES=$(az resource list \
+                  --resource-group $(resourceGroup)-$(environment) \
+                  --query "[?properties.provisioningState!='Succeeded'].{name:name,state:properties.provisioningState}" -o tsv)
+                
+                if [ ! -z "$UNHEALTHY_RESOURCES" ]; then
+                  echo "Found unhealthy resources:"
+                  echo "$UNHEALTHY_RESOURCES"
+                  exit 1
+                fi
+
+                # Security compliance check
+                az policy state trigger-scan --resource-group $(resourceGroup)-$(environment)
+                COMPLIANCE_ISSUES=$(az policy state list \
+                  --resource-group $(resourceGroup)-$(environment) \
+                  --query "[?complianceState=='NonCompliant']" -o tsv)
+                
+                if [ ! -z "$COMPLIANCE_ISSUES" ]; then
+                  echo "Found compliance issues:"
+                  echo "$COMPLIANCE_ISSUES"
+                  if [ "${{ parameters.environment }}" == "PROD" ]; then
+                    exit 1
+                  fi
+                fi

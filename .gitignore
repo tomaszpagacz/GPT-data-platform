@@ -1,0 +1,74 @@
+# .NET build output
+bin/
+obj/
+*.user
+*.dll
+*.pdb
+*.exe
+
+# VS Code specific
+.vscode/*
+!.vscode/extensions.json
+!.vscode/launch.json
+!.vscode/tasks.json
+!.vscode/settings.json
+
+# Local development settings
+local.settings.json
+*.Development.json
+
+# Build results
+[Dd]ebug/
+[Dd]ebugPublic/
+[Rr]elease/
+[Rr]eleases/
+x64/
+x86/
+[Ww][Ii][Nn]32/
+[Aa][Rr][Mm]/
+[Aa][Rr][Mm]64/
+bld/
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+[Ll]ogs/
+
+# NuGet Packages
+*.nupkg
+# NuGet Symbol Packages
+*.snupkg
+# The packages folder can be ignored because of Package Restore
+**/[Pp]ackages/*
+# except build/, which is used as an MSBuild target.
+!**/[Pp]ackages/build/
+
+# Visual Studio Code
+.history/
+
+# Azure Functions localsettings file
+local.settings.json
+
+# macOS system files
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Azure Functions artifacts
+bin
+obj
+appsettings.json
+local.settings.json
+
+# User-specific files
+*.rsuser
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# Temporary files
+*.swp
+*.*~
+project.lock.json
+.project
+.vs/

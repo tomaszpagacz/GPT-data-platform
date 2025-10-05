@@ -1,0 +1,44 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "_generator": {
+      "name": "bicep",
+      "version": "0.38.5.1644",
+      "templateHash": "16499558904961251444"
+    }
+  },
+  "parameters": {
+    "apimName": {
+      "type": "string",
+      "metadata": {
+        "description": "The name of the API Management service."
+      }
+    },
+    "rateLimit": {
+      "type": "int",
+      "defaultValue": 100,
+      "metadata": {
+        "description": "Rate limit calls per subscription."
+      }
+    },
+    "rateLimitRenewalPeriod": {
+      "type": "int",
+      "defaultValue": 60,
+      "metadata": {
+        "description": "Rate limit renewal period in seconds."
+      }
+    }
+  },
+  "resources": [
+    {
+      "type": "Microsoft.ApiManagement/service/policies",
+      "apiVersion": "2021-08-01",
+      "name": "[format('{0}/{1}', parameters('apimName'), 'policy')]",
+      "properties": {
+        "format": "xml",
+        "value": "<policies>\n  <inbound>\n    <rate-limit calls=\"${rateLimit}\" renewal-period=\"${rateLimitRenewalPeriod}\" />\n    <check-header name=\"Ocp-Apim-Subscription-Key\" exists-action=\"error\" />\n    <set-header name=\"X-Frame-Options\" exists-action=\"override\">\n      <value>DENY</value>\n    </set-header>\n    <set-header name=\"X-Content-Type-Options\" exists-action=\"override\">\n      <value>nosniff</value>\n    </set-header>\n    <set-header name=\"X-XSS-Protection\" exists-action=\"override\">\n      <value>1; mode=block</value>\n    </set-header>\n    <set-header name=\"Content-Security-Policy\" exists-action=\"override\">\n      <value>default-src 'self'</value>\n    </set-header>\n  </inbound>\n  <backend>\n    <forward-request />\n  </backend>\n  <outbound>\n    <set-header name=\"Server\" exists-action=\"delete\" />\n  </outbound>\n  <on-error>\n    <base />\n  </on-error>\n</policies>\n"
+      }
+    }
+  ]
+}

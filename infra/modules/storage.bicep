@@ -19,7 +19,7 @@ param privateEndpointSubnetId string
 @description('Private DNS zones to link to the created private endpoints.')
 param privateDnsZoneIds array
 
-var blobEndpoint = '${environment().suffixes.storage}'
+var blobEndpoint = environment().suffixes.storage
 var blobDnsZoneIds = [for zoneId in privateDnsZoneIds: endsWith(zoneId, '/privatelink.blob${blobEndpoint}') ? zoneId : null]
 var blobDnsZoneIdsFiltered = filter(blobDnsZoneIds, id => id != null)
 var dfsDnsZoneIds = [for zoneId in privateDnsZoneIds: endsWith(zoneId, '/privatelink.dfs${blobEndpoint}') ? zoneId : null]

@@ -1,0 +1,86 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "_generator": {
+      "name": "bicep",
+      "version": "0.38.5.1644",
+      "templateHash": "120175538393553541"
+    }
+  },
+  "parameters": {
+    "name": {
+      "type": "string",
+      "metadata": {
+        "description": "Name of the Azure Maps account to deploy."
+      }
+    },
+    "location": {
+      "type": "string",
+      "defaultValue": "global",
+      "metadata": {
+        "description": "Azure location for Azure Maps. Azure Maps is a global resource; use \"global\" unless otherwise required."
+      }
+    },
+    "tags": {
+      "type": "object",
+      "defaultValue": {},
+      "metadata": {
+        "description": "Tags applied to the Azure Maps account."
+      }
+    },
+    "logAnalyticsWorkspaceId": {
+      "type": "string",
+      "metadata": {
+        "description": "Log Analytics workspace for diagnostics collection."
+      }
+    },
+    "disableLocalAuth": {
+      "type": "bool",
+      "defaultValue": true,
+      "metadata": {
+        "description": "Flag indicating whether shared keys/local authentication should be disabled in favour of Azure AD."
+      }
+    }
+  },
+  "resources": [
+    {
+      "type": "Microsoft.Maps/accounts",
+      "apiVersion": "2023-06-01",
+      "name": "[parameters('name')]",
+      "location": "[parameters('location')]",
+      "kind": "Gen2",
+      "sku": {
+        "name": "G2"
+      },
+      "tags": "[parameters('tags')]",
+      "properties": {
+        "disableLocalAuth": "[parameters('disableLocalAuth')]"
+      }
+    },
+    {
+      "type": "Microsoft.Insights/diagnosticSettings",
+      "apiVersion": "2021-05-01-preview",
+      "scope": "[format('Microsoft.Maps/accounts/{0}', parameters('name'))]",
+      "name": "[format('{0}-logs', parameters('name'))]",
+      "properties": {
+        "workspaceId": "[parameters('logAnalyticsWorkspaceId')]",
+        "metrics": [
+          {
+            "category": "AllMetrics",
+            "enabled": true
+          }
+        ]
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Maps/accounts', parameters('name'))]"
+      ]
+    }
+  ],
+  "outputs": {
+    "mapsAccountId": {
+      "type": "string",
+      "value": "[resourceId('Microsoft.Maps/accounts', parameters('name'))]"
+    }
+  }
+}

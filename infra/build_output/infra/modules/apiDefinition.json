@@ -1,0 +1,269 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "_generator": {
+      "name": "bicep",
+      "version": "0.38.5.1644",
+      "templateHash": "18166824463623864248"
+    }
+  },
+  "parameters": {
+    "apimName": {
+      "type": "string",
+      "metadata": {
+        "description": "The name of the API Management service."
+      }
+    },
+    "apiName": {
+      "type": "string",
+      "metadata": {
+        "description": "The name of the API."
+      }
+    },
+    "displayName": {
+      "type": "string",
+      "metadata": {
+        "description": "The display name of the API."
+      }
+    },
+    "backendUrl": {
+      "type": "string",
+      "metadata": {
+        "description": "The backend URL (Azure Function app URL)."
+      }
+    },
+    "apiPath": {
+      "type": "string",
+      "metadata": {
+        "description": "The path to append to the API URL."
+      }
+    },
+    "loggerId": {
+      "type": "string",
+      "defaultValue": "app-insights",
+      "metadata": {
+        "description": "The API Management logger ID for App Insights."
+      }
+    },
+    "namedValueId": {
+      "type": "string",
+      "defaultValue": "backend-url",
+      "metadata": {
+        "description": "The API Management named value ID for backend URL."
+      }
+    },
+    "subscriptionKeyHeaderName": {
+      "type": "string",
+      "defaultValue": "Ocp-Apim-Subscription-Key",
+      "metadata": {
+        "description": "The subscription key header name."
+      }
+    },
+    "corsAllowedOrigins": {
+      "type": "array",
+      "defaultValue": [],
+      "metadata": {
+        "description": "CORS allowed origins."
+      }
+    }
+  },
+  "variables": {
+    "$fxv#0": {
+      "openapi": "3.0.1",
+      "info": {
+        "title": "GPT Data Platform APIs",
+        "description": "APIs for GPT Data Platform services",
+        "version": "1.0.0"
+      },
+      "servers": [
+        {
+          "url": "https://{baseUrl}",
+          "variables": {
+            "baseUrl": {
+              "default": "api.contoso.com"
+            }
+          }
+        }
+      ],
+      "paths": {
+        "/location/distance": {
+          "post": {
+            "summary": "Calculate distance between locations",
+            "operationId": "calculateDistance",
+            "requestBody": {
+              "description": "Distance calculation request",
+              "required": true,
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "type": "object",
+                    "properties": {
+                      "origin": {
+                        "type": "object",
+                        "properties": {
+                          "latitude": {
+                            "type": "number"
+                          },
+                          "longitude": {
+                            "type": "number"
+                          }
+                        }
+                      },
+                      "destination": {
+                        "type": "object",
+                        "properties": {
+                          "latitude": {
+                            "type": "number"
+                          },
+                          "longitude": {
+                            "type": "number"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "responses": {
+              "200": {
+                "description": "Successful operation",
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "type": "object",
+                      "properties": {
+                        "distance": {
+                          "type": "number"
+                        },
+                        "unit": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
+                }
+              },
+              "400": {
+                "description": "Invalid input"
+              }
+            }
+          }
+        },
+        "/hello": {
+          "get": {
+            "summary": "Hello World function",
+            "operationId": "helloWorld",
+            "parameters": [
+              {
+                "name": "name",
+                "in": "query",
+                "description": "Name to say hello to",
+                "required": false,
+                "schema": {
+                  "type": "string"
+                }
+              }
+            ],
+            "responses": {
+              "200": {
+                "description": "Successful operation",
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "type": "object",
+                      "properties": {
+                        "message": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "components": {
+        "securitySchemes": {
+          "apiKeyHeader": {
+            "type": "apiKey",
+            "name": "Ocp-Apim-Subscription-Key",
+            "in": "header"
+          }
+        }
+      },
+      "security": [
+        {
+          "apiKeyHeader": []
+        }
+      ]
+    }
+  },
+  "resources": [
+    {
+      "type": "Microsoft.ApiManagement/service/apis",
+      "apiVersion": "2021-08-01",
+      "name": "[format('{0}/{1}', parameters('apimName'), parameters('apiName'))]",
+      "properties": {
+        "displayName": "[parameters('displayName')]",
+        "description": "[format('API for {0}', parameters('displayName'))]",
+        "subscriptionRequired": true,
+        "type": "http",
+        "protocols": [
+          "https"
+        ],
+        "path": "[parameters('apiPath')]",
+        "apiType": "http",
+        "format": "openapi+json",
+        "value": "[variables('$fxv#0')]",
+        "subscriptionKeyParameterNames": {
+          "header": "[parameters('subscriptionKeyHeaderName')]"
+        }
+      }
+    },
+    {
+      "type": "Microsoft.ApiManagement/service/apis/policies",
+      "apiVersion": "2021-08-01",
+      "name": "[format('{0}/{1}/policy', parameters('apimName'), parameters('apiName'))]",
+      "properties": {
+        "format": "xml",
+        "value": "<policies>\n  <inbound>\n    <base />\n    <set-backend-service base-url=\"{{${namedValueId}}}\" />\n    <cors>\n      <allowed-origins>\n        ${join(corsAllowedOrigins, '\\n        ')}\n      </allowed-origins>\n      <allowed-methods>\n        <method>GET</method>\n        <method>POST</method>\n      </allowed-methods>\n      <allowed-headers>\n        <header>${subscriptionKeyHeaderName}</header>\n        <header>Content-Type</header>\n      </allowed-headers>\n    </cors>\n  </inbound>\n  <backend>\n    <base />\n  </backend>\n  <outbound>\n    <base />\n  </outbound>\n  <on-error>\n    <base />\n    <set-header name=\"Microsoft-Azure-Api-Management-Correlation-Id\" exists-action=\"override\">\n      <value>@(context.RequestId)</value>\n    </set-header>\n  </on-error>\n</policies>\n"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.ApiManagement/service/apis', split(format('{0}/{1}', parameters('apimName'), parameters('apiName')), '/')[0], split(format('{0}/{1}', parameters('apimName'), parameters('apiName')), '/')[1])]"
+      ]
+    },
+    {
+      "type": "Microsoft.ApiManagement/service/apis/diagnostics",
+      "apiVersion": "2021-08-01",
+      "name": "[format('{0}/{1}/applicationinsights', parameters('apimName'), parameters('apiName'))]",
+      "properties": {
+        "loggerId": "[parameters('loggerId')]",
+        "sampling": {
+          "samplingType": "fixed",
+          "percentage": 100
+        },
+        "metrics": true,
+        "httpCorrelationProtocol": "W3C",
+        "verbosity": "information",
+        "logClientIp": true
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.ApiManagement/service/apis', split(format('{0}/{1}', parameters('apimName'), parameters('apiName')), '/')[0], split(format('{0}/{1}', parameters('apimName'), parameters('apiName')), '/')[1])]"
+      ]
+    }
+  ],
+  "outputs": {
+    "apiId": {
+      "type": "string",
+      "value": "[resourceId('Microsoft.ApiManagement/service/apis', split(format('{0}/{1}', parameters('apimName'), parameters('apiName')), '/')[0], split(format('{0}/{1}', parameters('apimName'), parameters('apiName')), '/')[1])]"
+    },
+    "apiPath": {
+      "type": "string",
+      "value": "[reference(resourceId('Microsoft.ApiManagement/service/apis', split(format('{0}/{1}', parameters('apimName'), parameters('apiName')), '/')[0], split(format('{0}/{1}', parameters('apimName'), parameters('apiName')), '/')[1]), '2021-08-01').path]"
+    }
+  }
+}

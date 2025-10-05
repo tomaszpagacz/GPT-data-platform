@@ -1,0 +1,316 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "_generator": {
+      "name": "bicep",
+      "version": "0.38.5.1644",
+      "templateHash": "6671355968664339070"
+    }
+  },
+  "parameters": {
+    "name": {
+      "type": "string",
+      "metadata": {
+        "description": "Name of the virtual network hosting the data platform resources."
+      }
+    },
+    "location": {
+      "type": "string",
+      "metadata": {
+        "description": "Azure region for the network resources."
+      }
+    },
+    "addressSpace": {
+      "type": "string",
+      "metadata": {
+        "description": "Address space allocated to the virtual network."
+      }
+    },
+    "subnetAddressPrefixes": {
+      "type": "object",
+      "metadata": {
+        "description": "Subnet CIDR prefixes for platform components."
+      }
+    },
+    "tags": {
+      "type": "object",
+      "defaultValue": {},
+      "metadata": {
+        "description": "Resource tags applied to networking assets."
+      }
+    }
+  },
+  "variables": {
+    "$fxv#0": {
+      "name": "apim-nsg",
+      "properties": {
+        "securityRules": [
+          {
+            "name": "Management_endpoint",
+            "properties": {
+              "protocol": "Tcp",
+              "sourcePortRange": "*",
+              "destinationPortRange": "3443",
+              "sourceAddressPrefix": "ApiManagement",
+              "destinationAddressPrefix": "VirtualNetwork",
+              "access": "Allow",
+              "priority": 100,
+              "direction": "Inbound"
+            }
+          },
+          {
+            "name": "Client_communication_to_API",
+            "properties": {
+              "protocol": "Tcp",
+              "sourcePortRange": "*",
+              "destinationPortRanges": [
+                "80",
+                "443"
+              ],
+              "sourceAddressPrefix": "Internet",
+              "destinationAddressPrefix": "VirtualNetwork",
+              "access": "Allow",
+              "priority": 110,
+              "direction": "Inbound"
+            }
+          },
+          {
+            "name": "Azure_infrastructure_load_balancer",
+            "properties": {
+              "protocol": "Tcp",
+              "sourcePortRange": "*",
+              "destinationPortRange": "6390",
+              "sourceAddressPrefix": "AzureLoadBalancer",
+              "destinationAddressPrefix": "VirtualNetwork",
+              "access": "Allow",
+              "priority": 120,
+              "direction": "Inbound"
+            }
+          }
+        ]
+      }
+    },
+    "functionSubnetName": "function-apps",
+    "integrationSubnetName": "integration",
+    "privateEndpointSubnetName": "private-endpoints",
+    "irSubnetName": "self-hosted-ir",
+    "apimSubnetName": "apim"
+  },
+  "resources": [
+    {
+      "type": "Microsoft.Network/virtualNetworks",
+      "apiVersion": "2022-07-01",
+      "name": "[parameters('name')]",
+      "location": "[parameters('location')]",
+      "tags": "[parameters('tags')]",
+      "properties": {
+        "addressSpace": {
+          "addressPrefixes": [
+            "[parameters('addressSpace')]"
+          ]
+        }
+      }
+    },
+    {
+      "type": "Microsoft.Network/publicIPAddresses",
+      "apiVersion": "2022-07-01",
+      "name": "[format('{0}-nat-pip', parameters('name'))]",
+      "location": "[parameters('location')]",
+      "tags": "[parameters('tags')]",
+      "sku": {
+        "name": "Standard"
+      },
+      "properties": {
+        "publicIPAllocationMethod": "Static"
+      }
+    },
+    {
+      "type": "Microsoft.Network/natGateways",
+      "apiVersion": "2022-07-01",
+      "name": "[format('{0}-nat', parameters('name'))]",
+      "location": "[parameters('location')]",
+      "tags": "[parameters('tags')]",
+      "sku": {
+        "name": "Standard"
+      },
+      "properties": {
+        "idleTimeoutInMinutes": 10,
+        "publicIpAddresses": [
+          {
+            "id": "[resourceId('Microsoft.Network/publicIPAddresses', format('{0}-nat-pip', parameters('name')))]"
+          }
+        ]
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/publicIPAddresses', format('{0}-nat-pip', parameters('name')))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Network/networkSecurityGroups",
+      "apiVersion": "2022-07-01",
+      "name": "[format('{0}-func-nsg', parameters('name'))]",
+      "location": "[parameters('location')]",
+      "tags": "[parameters('tags')]"
+    },
+    {
+      "type": "Microsoft.Network/networkSecurityGroups",
+      "apiVersion": "2022-07-01",
+      "name": "[format('{0}-integration-nsg', parameters('name'))]",
+      "location": "[parameters('location')]",
+      "tags": "[parameters('tags')]"
+    },
+    {
+      "type": "Microsoft.Network/networkSecurityGroups",
+      "apiVersion": "2022-07-01",
+      "name": "[format('{0}-pe-nsg', parameters('name'))]",
+      "location": "[parameters('location')]",
+      "tags": "[parameters('tags')]"
+    },
+    {
+      "type": "Microsoft.Network/networkSecurityGroups",
+      "apiVersion": "2022-07-01",
+      "name": "[format('{0}-ir-nsg', parameters('name'))]",
+      "location": "[parameters('location')]",
+      "tags": "[parameters('tags')]"
+    },
+    {
+      "type": "Microsoft.Network/virtualNetworks/subnets",
+      "apiVersion": "2022-07-01",
+      "name": "[format('{0}/{1}', parameters('name'), variables('functionSubnetName'))]",
+      "properties": {
+        "addressPrefix": "[parameters('subnetAddressPrefixes').functionApps]",
+        "delegations": [
+          {
+            "name": "delegation",
+            "properties": {
+              "serviceName": "Microsoft.Web/serverFarms"
+            }
+          }
+        ],
+        "privateEndpointNetworkPolicies": "Enabled",
+        "networkSecurityGroup": {
+          "id": "[resourceId('Microsoft.Network/networkSecurityGroups', format('{0}-func-nsg', parameters('name')))]"
+        },
+        "natGateway": {
+          "id": "[resourceId('Microsoft.Network/natGateways', format('{0}-nat', parameters('name')))]"
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/networkSecurityGroups', format('{0}-func-nsg', parameters('name')))]",
+        "[resourceId('Microsoft.Network/natGateways', format('{0}-nat', parameters('name')))]",
+        "[resourceId('Microsoft.Network/virtualNetworks', parameters('name'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Network/virtualNetworks/subnets",
+      "apiVersion": "2022-07-01",
+      "name": "[format('{0}/{1}', parameters('name'), variables('integrationSubnetName'))]",
+      "properties": {
+        "addressPrefix": "[parameters('subnetAddressPrefixes').integration]",
+        "networkSecurityGroup": {
+          "id": "[resourceId('Microsoft.Network/networkSecurityGroups', format('{0}-integration-nsg', parameters('name')))]"
+        },
+        "natGateway": {
+          "id": "[resourceId('Microsoft.Network/natGateways', format('{0}-nat', parameters('name')))]"
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/networkSecurityGroups', format('{0}-integration-nsg', parameters('name')))]",
+        "[resourceId('Microsoft.Network/natGateways', format('{0}-nat', parameters('name')))]",
+        "[resourceId('Microsoft.Network/virtualNetworks', parameters('name'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Network/virtualNetworks/subnets",
+      "apiVersion": "2022-07-01",
+      "name": "[format('{0}/{1}', parameters('name'), variables('privateEndpointSubnetName'))]",
+      "properties": {
+        "addressPrefix": "[parameters('subnetAddressPrefixes').privateEndpoints]",
+        "networkSecurityGroup": {
+          "id": "[resourceId('Microsoft.Network/networkSecurityGroups', format('{0}-pe-nsg', parameters('name')))]"
+        },
+        "privateEndpointNetworkPolicies": "Disabled",
+        "privateLinkServiceNetworkPolicies": "Disabled"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/networkSecurityGroups', format('{0}-pe-nsg', parameters('name')))]",
+        "[resourceId('Microsoft.Network/virtualNetworks', parameters('name'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Network/networkSecurityGroups",
+      "apiVersion": "2022-07-01",
+      "name": "[format('{0}-apim-nsg', parameters('name'))]",
+      "location": "[parameters('location')]",
+      "tags": "[parameters('tags')]",
+      "properties": "[variables('$fxv#0').properties]"
+    },
+    {
+      "type": "Microsoft.Network/virtualNetworks/subnets",
+      "apiVersion": "2022-07-01",
+      "name": "[format('{0}/{1}', parameters('name'), variables('apimSubnetName'))]",
+      "properties": {
+        "addressPrefix": "[parameters('subnetAddressPrefixes').apim]",
+        "networkSecurityGroup": {
+          "id": "[resourceId('Microsoft.Network/networkSecurityGroups', format('{0}-apim-nsg', parameters('name')))]"
+        },
+        "serviceEndpoints": [
+          {
+            "service": "Microsoft.Web"
+          },
+          {
+            "service": "Microsoft.KeyVault"
+          }
+        ],
+        "delegations": []
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/networkSecurityGroups', format('{0}-apim-nsg', parameters('name')))]",
+        "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('name'), variables('functionSubnetName'))]",
+        "[resourceId('Microsoft.Network/virtualNetworks', parameters('name'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Network/virtualNetworks/subnets",
+      "apiVersion": "2022-07-01",
+      "name": "[format('{0}/{1}', parameters('name'), variables('irSubnetName'))]",
+      "properties": {
+        "addressPrefix": "[parameters('subnetAddressPrefixes').selfHostedIntegrationRuntime]",
+        "networkSecurityGroup": {
+          "id": "[resourceId('Microsoft.Network/networkSecurityGroups', format('{0}-ir-nsg', parameters('name')))]"
+        },
+        "natGateway": {
+          "id": "[resourceId('Microsoft.Network/natGateways', format('{0}-nat', parameters('name')))]"
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/networkSecurityGroups', format('{0}-ir-nsg', parameters('name')))]",
+        "[resourceId('Microsoft.Network/natGateways', format('{0}-nat', parameters('name')))]",
+        "[resourceId('Microsoft.Network/virtualNetworks', parameters('name'))]"
+      ]
+    }
+  ],
+  "outputs": {
+    "vnetId": {
+      "type": "string",
+      "value": "[resourceId('Microsoft.Network/virtualNetworks', parameters('name'))]"
+    },
+    "functionSubnetId": {
+      "type": "string",
+      "value": "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('name'), variables('functionSubnetName'))]"
+    },
+    "integrationSubnetId": {
+      "type": "string",
+      "value": "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('name'), variables('integrationSubnetName'))]"
+    },
+    "privateEndpointsSubnetId": {
+      "type": "string",
+      "value": "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('name'), variables('privateEndpointSubnetName'))]"
+    },
+    "selfHostedIntegrationRuntimeSubnetId": {
+      "type": "string",
+      "value": "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('name'), variables('irSubnetName'))]"
+    }
+  }
+}
