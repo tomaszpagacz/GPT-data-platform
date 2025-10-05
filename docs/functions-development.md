@@ -1,21 +1,44 @@
 # Azure Functions Development Guide
 
-This guide will help you get started with developing Azure Functions for our data platform. It includes step-by-step instructions for setting up your development environment, creating your first function, and following best practices.
+> **Last Updated:** 2025-01-15
+> **Audience:** Developer
+> **Prerequisites:** .NET 8.0 SDK, Azure CLI, Visual Studio Code, Azure Functions Core Tools
+
+## Overview
+
+This guide provides comprehensive instructions for developing Azure Functions within the GPT Data Platform. It covers environment setup, project creation, best practices, deployment, and troubleshooting for both .NET and Node.js/TypeScript functions.
+
+## Table of Contents
+
+- [Prerequisites](#prerequisites)
+- [Creating a New Function Project](#creating-a-new-function-project)
+- [Local Development](#local-development)
+- [Project Structure](#project-structure)
+- [Best Practices](#best-practices)
+- [Deployment](#deployment)
+- [Monitoring](#monitoring)
+- [Troubleshooting](#troubleshooting)
+- [Related Documentation](#related-documentation)
 
 ## Prerequisites
 
-1. Install the following tools:
+### Required Tools
+
+1. **Development Environment:**
    - [Visual Studio Code](https://code.visualstudio.com/)
    - [Azure Functions Core Tools](https://learn.microsoft.com/en-us/azure/azure-functions/functions-run-local#install-the-azure-functions-core-tools)
-   - [Node.js](https://nodejs.org/) (for JavaScript/TypeScript functions)
    - [.NET 8.0 SDK](https://dotnet.microsoft.com/download) (for C# functions with isolated worker runtime)
+   - [Node.js](https://nodejs.org/) (for JavaScript/TypeScript functions, v18+ recommended)
+
+2. **Azure Tools:**
    - [Azure CLI](https://docs.microsoft.com/en-us/cli/azure/install-azure-cli)
    - [Azure Functions Extension for VS Code](https://marketplace.visualstudio.com/items?itemName=ms-azuretools.vscode-azurefunctions)
 
-2. Install VS Code Extensions:
+3. **VS Code Extensions:**
    ```bash
    code --install-extension ms-azuretools.vscode-azurefunctions
    code --install-extension ms-dotnettools.csharp
+   code --install-extension ms-vscode.vscode-typescript-next
    ```
 
 ## Creating a New Function Project
@@ -171,6 +194,23 @@ src/functions/my-function/
 ## Sample Code
 
 Check our Hello World example in `src/functions/hello-world/` for a working implementation following these best practices.
+
+## Related Documentation
+
+- [Platform Architecture](architecture.md) - Understanding the overall system design
+- [Logic Apps Development](logic-apps-development.md) - Workflow development guide
+- [API Management](api-management-deployment.md) - API gateway configuration
+- [Deployment Troubleshooting](deployment-troubleshooting.md) - Common deployment issues
+- [RBAC Implementation](rbac-implementation-guide.md) - Access control setup
+
+## Next Steps
+
+After completing function development:
+
+1. Review [Logic Apps Development](logic-apps-development.md) for workflow integration
+2. Configure [API Management](api-management-deployment.md) for your function APIs
+3. Set up monitoring and alerting as described in operational documentation
+4. Follow deployment procedures in the main README
 
 ## Additional Resources
 

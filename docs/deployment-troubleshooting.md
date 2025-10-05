@@ -1,5 +1,21 @@
 # Deployment Troubleshooting Guide
 
+> **Last Updated:** 2025-01-15
+> **Audience:** Developer, Operator
+> **Prerequisites:** Azure CLI installed, basic understanding of Azure services
+
+## Overview
+
+This guide provides solutions for common deployment issues encountered when deploying the GPT Data Platform infrastructure. It covers troubleshooting techniques, diagnostic commands, and preventive measures for successful deployments.
+
+## Table of Contents
+
+- [Common Deployment Issues and Solutions](#common-deployment-issues-and-solutions)
+- [Diagnostic Tools](#diagnostic-tools)
+- [Preventive Measures](#preventive-measures)
+- [Emergency Procedures](#emergency-procedures)
+- [Related Documentation](#related-documentation)
+
 ## Common Deployment Issues and Solutions
 
 ### 1. Resource Provider Registration Failures
@@ -289,3 +305,21 @@ az container exec --resource-group <rg> --name <container-group> --exec-command 
 3. Consult team leads
 4. Open support ticket
 5. Emergency rollback if needed
+
+## Related Documentation
+
+- [Modern Platform Implementation](modern-platform-implementation-guide.md) - Complete deployment procedures
+- [Platform Architecture](architecture.md) - Understanding system components
+- [Security Assessment](security-assessment.md) - Security configuration and compliance
+- [RBAC Implementation](rbac-implementation-guide.md) - Access control setup
+- [Cost Optimization](cost-optimization.md) - Cost management during deployment
+
+## Next Steps
+
+After resolving deployment issues:
+
+1. Document the resolution for future reference
+2. Update deployment runbooks if needed
+3. Review [Cost Optimization](cost-optimization.md) for resource efficiency
+4. Set up monitoring and alerting for the deployed environment
+5. Complete post-deployment validation procedures

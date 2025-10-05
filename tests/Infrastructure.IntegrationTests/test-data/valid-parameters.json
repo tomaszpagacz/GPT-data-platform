@@ -1,0 +1,17 @@
+{
+  "namePrefix": "gptdp",
+  "environment": "dev",
+  "location": "switzerlandnorth",
+  "vnetAddressSpace": "10.10.0.0/21",
+  "subnetAddressPrefixes": {
+    "functionApps": "10.10.0.0/26",
+    "integration": "10.10.0.64/26",
+    "privateEndpoints": "10.10.0.128/26",
+    "selfHostedIntegrationRuntime": "10.10.0.192/27",
+    "apim": "10.10.0.224/27"
+  },
+  "tags": {
+    "project": "gpt-data-platform",
+    "environment": "dev"
+  }
+}

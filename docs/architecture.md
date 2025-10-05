@@ -1,5 +1,24 @@
 # Platform Architecture
 
+> **Last Updated:** 2025-01-15
+> **Audience:** Developer, Architect, Operator
+> **Prerequisites:** Basic understanding of Azure services and data analytics concepts
+
+## Overview
+
+This document provides a comprehensive overview of the GPT Data Platform architecture, detailing the system design, component relationships, security architecture, and integration patterns. The platform implements a modern, Azure-native data analytics solution that ingests heterogeneous data sources into Azure Synapse Analytics and Data Lake Storage Gen2.
+
+## Table of Contents
+
+- [System Architecture](#system-architecture)
+- [Component Descriptions](#component-descriptions)
+- [Security Architecture](#security-architecture)
+- [Integration Patterns](#integration-patterns)
+- [Network Topology](#network-topology)
+- [Data Flow Patterns](#data-flow-patterns)
+- [Scalability Considerations](#scalability-considerations)
+- [Related Documentation](#related-documentation)
+
 ## System Architecture
 
 ```mermaid
@@ -858,4 +877,22 @@ graph TB
     class DC,DS,DSQ,DST,DSA,DSB dev
     class TC,TS,TSQ,TST,TSA,TSB test
     class PC,PS,PSQ,PST,PSA,PSB prod
+```
+
+## Related Documentation
+
+- [Security Assessment](security-assessment.md) - Detailed security architecture and compliance
+- [Cost Optimization](cost-optimization.md) - Cost management and optimization strategies
+- [Modern Platform Implementation](modern-platform-implementation-guide.md) - Infrastructure deployment guide
+- [RBAC Implementation](rbac-implementation-guide.md) - Access control and permissions setup
+- [Eventing Infrastructure](eventing-infrastructure.md) - Event processing and routing architecture
+
+## Next Steps
+
+After understanding the platform architecture:
+
+1. Review the [Security Assessment](security-assessment.md) for compliance requirements
+2. Follow the [Modern Platform Implementation](modern-platform-implementation-guide.md) to deploy infrastructure
+3. Configure [RBAC Implementation](rbac-implementation-guide.md) for access control
+4. Set up monitoring and alerting as described in operational documentation
 ```

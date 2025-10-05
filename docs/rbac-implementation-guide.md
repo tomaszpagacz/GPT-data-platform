@@ -1,8 +1,21 @@
 # RBAC Assignment Implementation Guide
 
+> **Last Updated:** 2025-01-15
+> **Audience:** Administrator, Operator
+> **Prerequisites:** Azure AD Global Administrator access, Azure subscription Owner role
+
 ## Overview
 
-The platform now includes comprehensive RBAC (Role-Based Access Control) assignments for all modern platform components. These assignments are implemented through the `rbacAssignments.bicep` module and automatically configure appropriate permissions for managed identities and security groups.
+This guide provides step-by-step instructions for implementing comprehensive Role-Based Access Control (RBAC) assignments for the GPT Data Platform. The platform includes automated RBAC configuration through the `rbacAssignments.bicep` module, which sets up appropriate permissions for managed identities and security groups across all modern platform components.
+
+## Table of Contents
+
+- [Security Groups Setup](#security-groups-setup)
+- [RBAC Assignments Overview](#rbac-assignments-overview)
+- [Deployment with RBAC](#deployment-with-rbac)
+- [Post-Deployment Verification](#post-deployment-verification)
+- [Troubleshooting](#troubleshooting)
+- [Related Documentation](#related-documentation)
 
 ## Security Groups Setup
 
@@ -210,3 +223,20 @@ az role assignment list --scope "resource-id"
 # Check deployment permissions
 az role assignment list --assignee "deployment-identity-object-id" --all
 ```
+
+## Related Documentation
+
+- [Platform Architecture](architecture.md) - Understanding the overall system design
+- [Security Assessment](security-assessment.md) - Detailed security architecture and compliance
+- [RBAC Management](rbac-management.md) - Ongoing RBAC operations and maintenance
+- [RBAC Migration Strategy](rbac-migration-strategy.md) - Migrating from legacy access control
+- [Modern Platform Implementation](modern-platform-implementation-guide.md) - Infrastructure deployment guide
+
+## Next Steps
+
+After implementing RBAC:
+
+1. Review [RBAC Management](rbac-management.md) for ongoing access control operations
+2. Follow [RBAC Migration Strategy](rbac-migration-strategy.md) if migrating from existing systems
+3. Complete the [Modern Platform Implementation](modern-platform-implementation-guide.md) deployment
+4. Set up monitoring and auditing as described in operational documentation
