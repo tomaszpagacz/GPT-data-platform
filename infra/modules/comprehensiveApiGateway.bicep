@@ -30,6 +30,9 @@ param logAnalyticsWorkspaceId string
 @description('Application Insights for API monitoring.')
 param applicationInsightsId string
 
+@description('Whether Application Insights is deployed and available.')
+param deployApplicationInsights bool = false
+
 @description('Key Vault for secrets management.')
 param keyVaultId string
 
@@ -74,7 +77,7 @@ resource apiManagement 'Microsoft.ApiManagement/service@2023-05-01-preview' = {
 }
 
 // Application Insights Logger
-resource appInsightsLogger 'Microsoft.ApiManagement/service/loggers@2023-05-01-preview' = {
+resource appInsightsLogger 'Microsoft.ApiManagement/service/loggers@2023-05-01-preview' = if (deployApplicationInsights) {
   parent: apiManagement
   name: 'appinsights-logger'
   properties: {

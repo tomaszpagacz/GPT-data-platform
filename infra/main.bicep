@@ -1,8 +1,26 @@
 @description('Azure region for all resources. Defaults to Switzerland North to satisfy data residency requirements.')
 param location string = 'switzerlandnorth'
 
-@description('Location used for the Azure Maps account (Azure Maps is a global resource).')
+@description('Location used for the Azure Maps account (Azure Maps is a global resource). Leave empty to use global location parameter.')
 param azureMapsLocation string = 'global'
+
+@description('Location for Azure Machine Learning workspace. Leave empty to use global location parameter.')
+param machineLearningLocation string = ''
+
+@description('Location for Azure Kubernetes Service. Leave empty to use global location parameter.')
+param aksLocation string = ''
+
+@description('Location for Microsoft Fabric capacity. Leave empty to use global location parameter.')
+param fabricLocation string = ''
+
+@description('Location for Microsoft Purview account. Leave empty to use global location parameter.')
+param purviewLocation string = ''
+
+@description('Location for Azure Container Instances. Leave empty to use global location parameter.')
+param containerInstancesLocation string = ''
+
+@description('Location for Cognitive Services. Leave empty to use global location parameter.')
+param cognitiveServicesLocation string = ''
 
 @description('Prefix used for resource names. Should be 3-11 characters to comply with Azure naming rules.')
 param namePrefix string
@@ -24,6 +42,7 @@ param subnetAddressPrefixes object = {
   integration: '10.10.0.64/26'
   privateEndpoints: '10.10.0.128/26'
   selfHostedIntegrationRuntime: '10.10.0.192/27'
+  apim: '10.10.0.224/27'
 }
 
 @description('Name of the primary data lake filesystem created within the storage account.')
@@ -119,24 +138,46 @@ var privateDnsZoneSuffixes = [
   'dfs.${az.environment().suffixes.storage}'
   'queue.${az.environment().suffixes.storage}'
   'table.${az.environment().suffixes.storage}'
-  'dfs.fabric.microsoft.com'
-  'privatelink.azuresynapse.net'
-  'privatelink.sql.azuresynapse.net'
+  'file.${az.environment().suffixes.storage}'
+  'web.${az.environment().suffixes.storage}'
+  'blob'
+  'queue'
+  'table'
+  'file'
+  'web'
+  'vault.${az.environment().suffixes.keyvaultDns}'
+  'vault'
   'privatelink.${az.environment().suffixes.sqlServerHostname}'
-  'servicebus.windows.net'
+  'privatelink.database.windows.net'
+  'privatelink.dfs.${az.environment().suffixes.storage}'
+  'privatelink.blob.${az.environment().suffixes.storage}'
+  'privatelink.queue.${az.environment().suffixes.storage}'
+  'privatelink.table.${az.environment().suffixes.storage}'
+  'privatelink.file.${az.environment().suffixes.storage}'
+  'privatelink.web.${az.environment().suffixes.storage}'
+  'privatelink.vault.${az.environment().suffixes.keyvaultDns}'
+  'privatelink.eventgrid.${az.environment().suffixes.eventGridTopicHostname}'
+  'privatelink.servicebus.windows.net'
+  'privatelink.azurewebsites.net'
+  'privatelink.blob.core.windows.net'
+  'privatelink.dfs.core.windows.net'
+  'privatelink.queue.core.windows.net'
+  'privatelink.table.core.windows.net'
+  'privatelink.file.core.windows.net'
+  'privatelink.web.core.windows.net'
+  'privatelink.vault.core.windows.net'
   'privatelink.eventgrid.azure.net'
-  'privatelink.cognitiveservices.azure.com'
-  // Modern platform services DNS zones
-  'privatelink.purview.azure.com'
-  'privatelink.purviewstudio.azure.com'
-  'privatelink.api.azureml.ms'
-  'privatelink.notebooks.azure.net'
-  'privatelink.azuredatabricks.net'
-  'privatelink.aks.azure.com'
   'privatelink.management.azure.com'
-  'privatelink.azure-api.net'
-  'privatelink.containerinstance.azure.com'
 ]
+
+// Location override logic - use specific location if provided, otherwise use global location
+var actualAzureMapsLocation = empty(azureMapsLocation) ? location : azureMapsLocation
+var actualMachineLearningLocation = empty(machineLearningLocation) ? location : machineLearningLocation
+var actualAksLocation = empty(aksLocation) ? location : aksLocation
+var actualFabricLocation = empty(fabricLocation) ? location : fabricLocation
+var actualPurviewLocation = empty(purviewLocation) ? location : purviewLocation
+var actualContainerInstancesLocation = empty(containerInstancesLocation) ? location : containerInstancesLocation
+var actualCognitiveServicesLocation = empty(cognitiveServicesLocation) ? location : cognitiveServicesLocation
 
 module logging 'modules/monitoring.bicep' = {
   name: 'logging'
@@ -267,7 +308,7 @@ module azureMaps 'modules/azureMaps.bicep' = if (deployAzureMaps) {
   name: 'azureMaps'
   params: {
     name: resourceNaming.outputs.naming.azureMaps
-    location: azureMapsLocation
+    location: actualAzureMapsLocation
     tags: tags
     logAnalyticsWorkspaceId: logging.outputs.workspaceId
   }
@@ -277,7 +318,7 @@ module cognitiveServices 'modules/cognitiveServices.bicep' = if (deployCognitive
   name: 'cognitiveServices'
   params: {
     name: resourceNaming.outputs.naming.cognitiveServices
-    location: location
+    location: actualCognitiveServicesLocation
     tags: tags
     privateEndpointSubnetId: networking.outputs.privateEndpointsSubnetId
     privateDnsZoneIds: privateDns.outputs.privateDnsZoneIds
@@ -290,7 +331,7 @@ module purview 'modules/purview.bicep' = if (deployPurview) {
   name: 'purview'
   params: {
     name: resourceNaming.outputs.naming.purview
-    location: location
+    location: actualPurviewLocation
     tags: tags
     logAnalyticsWorkspaceId: logging.outputs.workspaceId
     privateEndpointSubnetId: networking.outputs.privateEndpointsSubnetId
@@ -302,7 +343,7 @@ module machineLearning 'modules/machineLearning.bicep' = if (deployMachineLearni
   name: 'machineLearning'
   params: {
     name: resourceNaming.outputs.naming.machineLearning
-    location: location
+    location: actualMachineLearningLocation
     tags: tags
     storageAccountId: storage.outputs.storageAccountId
     keyVaultId: keyVault.outputs.keyVaultId
@@ -317,7 +358,7 @@ module kubernetes 'modules/kubernetes.bicep' = if (deployAKS) {
   name: 'kubernetes'
   params: {
     name: resourceNaming.outputs.naming.kubernetes
-    location: location
+    location: actualAksLocation
     tags: tags
     subnetId: networking.outputs.functionSubnetId  // Reuse existing subnet
     logAnalyticsWorkspaceId: logging.outputs.workspaceId
@@ -328,7 +369,7 @@ module fabric 'modules/fabric.bicep' = if (deployFabric) {
   name: 'fabric'
   params: {
     name: resourceNaming.outputs.naming.fabric
-    location: location
+    location: actualFabricLocation
     tags: tags
     administrators: ['admin@company.com']  // Update with actual admin emails
     logAnalyticsWorkspaceId: logging.outputs.workspaceId
@@ -339,7 +380,7 @@ module containerInstances 'modules/containerInstances.bicep' = if (deployContain
   name: 'containerInstances'
   params: {
     name: resourceNaming.outputs.naming.containerInstances
-    location: location
+    location: actualContainerInstancesLocation
     tags: tags
     subnetId: networking.outputs.integrationSubnetId
     logAnalyticsWorkspaceId: logging.outputs.workspaceId
@@ -357,6 +398,7 @@ module comprehensiveApiGateway 'modules/comprehensiveApiGateway.bicep' = {
     subnetId: networking.outputs.integrationSubnetId
     logAnalyticsWorkspaceId: logging.outputs.workspaceId
     applicationInsightsId: ''  // Will need to create App Insights
+    deployApplicationInsights: false
     keyVaultId: keyVault.outputs.keyVaultId
   }
 }
@@ -372,6 +414,10 @@ module rbacAssignments 'modules/rbacAssignments.bicep' = {
     mlWorkspaceId: deployMachineLearning ? machineLearning.outputs.mlWorkspaceId : ''
     purviewAccountId: deployPurview ? purview.outputs.purviewAccountId : ''
     fabricCapacityId: deployFabric ? fabric.outputs.fabricCapacityId : ''
+    deployAKS: deployAKS
+    deployMachineLearning: deployMachineLearning
+    deployPurview: deployPurview
+    deployFabric: deployFabric
     managedIdentities: {
       functions: appHosting.outputs.functionAppIdentityPrincipalId
       logicApps: deployLogicApps ? logicApp.outputs.logicAppIdentityPrincipalId : ''

@@ -48,16 +48,16 @@ OPTIONS:
 
 EXAMPLES:
     # Dry run to see what would be deleted
-    $0 --dry-run <sub-id> rg-dataplatform-dev dev
+    $0 --dry-run <sub-id> rg-data-platform-dev dev
 
     # Remove development environment resources (preserving data)
-    $0 <sub-id> rg-dataplatform-dev dev
+    $0 <sub-id> rg-data-platform-dev dev
 
     # Force removal without confirmations
-    $0 --force <sub-id> rg-dataplatform-dev dev
+    $0 --force <sub-id> rg-data-platform-dev dev
 
     # Only create backups
-    $0 --backup-only <sub-id> rg-dataplatform-dev dev
+    $0 --backup-only <sub-id> rg-data-platform-dev dev
 
 SUPPORTED ENVIRONMENTS: dev, sit, uat, prod
 

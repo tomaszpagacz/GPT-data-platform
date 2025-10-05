@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Script to deploy event handling infrastructure
-# Usage: ./deploy-eventing.sh <environment> <region> <resource-group>
+# Usage: ./deploy-eventing.sh <name-prefix> <environment> <region> <resource-group>
 
 set -e
 
@@ -36,16 +36,17 @@ log() {
 }
 
 # Validate input parameters
-if [ "$#" -ne 3 ]; then
-    log ERROR "Usage: $0 <environment> <region> <resource-group>"
-    log ERROR "Example: $0 dev westeurope rg-gpt-data-platform-dev"
+if [ "$#" -ne 4 ]; then
+    log ERROR "Usage: $0 <name-prefix> <environment> <region> <resource-group>"
+    log ERROR "Example: $0 gptdata dev westeurope rg-data-platform-dev"
     exit 1
 fi
 
 # Set variables
-ENV=$1
-LOCATION=$2
-RESOURCE_GROUP=$3
+NAME_PREFIX=$1
+ENV=$2
+LOCATION=$3
+RESOURCE_GROUP=$4
 
 # Function to check dependencies
 check_dependencies() {
@@ -69,14 +70,14 @@ check_dependencies() {
     log INFO "Checking networking dependencies..."
     
     # Check VNET exists
-    VNET_NAME="vnet-${ENV}"
+    VNET_NAME="${NAME_PREFIX}-vnet-${ENV}"
     if ! az network vnet show --name "$VNET_NAME" --resource-group "$RESOURCE_GROUP" &> /dev/null; then
         log ERROR "Required VNET '$VNET_NAME' not found in resource group '$RESOURCE_GROUP'"
         exit 1
     fi
     
     # Check required subnets exist
-    SUBNET_NAME="snet-private-endpoints"
+    SUBNET_NAME="private-endpoints"
     if ! az network vnet subnet show --name "$SUBNET_NAME" --vnet-name "$VNET_NAME" --resource-group "$RESOURCE_GROUP" &> /dev/null; then
         log ERROR "Required subnet '$SUBNET_NAME' not found in VNET '$VNET_NAME'"
         exit 1

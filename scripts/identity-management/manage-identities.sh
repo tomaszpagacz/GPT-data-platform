@@ -7,7 +7,7 @@ set -e
 
 # Configuration
 SUBSCRIPTION_ID=$(az account show --query id -o tsv)
-DEFAULT_RESOURCE_GROUP="rg-dataplatform"
+DEFAULT_RESOURCE_GROUP="rg-data-platform"
 
 # Colors for output
 RED='\033[0;31m'
@@ -84,8 +84,8 @@ function remove_role_assignment() {
 function sync_environments() {
     local source_env=$1
     local target_env=$2
-    local source_rg="rg-dataplatform-$source_env"
-    local target_rg="rg-dataplatform-$target_env"
+    local source_rg="rg-data-platform-$source_env"
+    local target_rg="rg-data-platform-$target_env"
 
     echo -e "${GREEN}Synchronizing RBAC from $source_env to $target_env...${NC}"
     

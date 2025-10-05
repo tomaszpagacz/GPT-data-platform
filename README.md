@@ -135,12 +135,12 @@ This networking strategy minimises operational burden by avoiding Azure Firewall
    az deployment group create \
      --resource-group <rg-name> \
      --template-file infra/main.bicep \
-     --parameters @infra/params/dev.parameters.json
+     --parameters @infra/params/dev.main.parameters.json
    ```
 
 2. Event Infrastructure:
    ```bash
-   ./scripts/deploy-eventing.sh <env> <region> <resource-group>
+   ./scripts/deploy-eventing.sh <name-prefix> <env> <region> <resource-group>
    ```
 
 3. Synapse SHIR:

@@ -19,6 +19,18 @@ param purviewAccountId string
 @description('Fabric Capacity resource ID for RBAC assignments')
 param fabricCapacityId string
 
+@description('Whether AKS is deployed')
+param deployAKS bool = false
+
+@description('Whether Machine Learning is deployed')
+param deployMachineLearning bool = false
+
+@description('Whether Purview is deployed')
+param deployPurview bool = false
+
+@description('Whether Fabric is deployed')
+param deployFabric bool = false
+
 @description('Managed Identity Principal IDs')
 param managedIdentities object
 
@@ -38,19 +50,19 @@ resource synapseWorkspace 'Microsoft.Synapse/workspaces@2021-06-01' existing = {
   name: last(split(synapseWorkspaceId, '/'))
 }
 
-resource aksCluster 'Microsoft.ContainerService/managedClusters@2024-02-01' existing = {
+resource aksCluster 'Microsoft.ContainerService/managedClusters@2024-02-01' existing = if (deployAKS) {
   name: last(split(aksClusterId, '/'))
 }
 
-resource mlWorkspace 'Microsoft.MachineLearningServices/workspaces@2024-04-01' existing = {
+resource mlWorkspace 'Microsoft.MachineLearningServices/workspaces@2024-04-01' existing = if (deployMachineLearning) {
   name: last(split(mlWorkspaceId, '/'))
 }
 
-resource purviewAccount 'Microsoft.Purview/accounts@2021-12-01' existing = {
+resource purviewAccount 'Microsoft.Purview/accounts@2021-12-01' existing = if (deployPurview) {
   name: last(split(purviewAccountId, '/'))
 }
 
-resource fabricCapacity 'Microsoft.Fabric/capacities@2023-11-01' existing = {
+resource fabricCapacity 'Microsoft.Fabric/capacities@2023-11-01' existing = if (deployFabric) {
   name: last(split(fabricCapacityId, '/'))
 }
 

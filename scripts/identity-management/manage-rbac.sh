@@ -6,7 +6,7 @@
 set -e
 
 # Default values
-DEFAULT_RG="rg-dataplatform"
+DEFAULT_RG="rg-data-platform"
 DEFAULT_ENV="dev"
 CONFIG_FILE="rbac_config.json"
 
@@ -40,7 +40,7 @@ print_usage() {
     echo
     echo "Examples:"
     echo "  $0 init -e dev"
-    echo "  $0 assign -g platform-admins -r contributor -s /subscriptions/xxx/resourceGroups/rg-dataplatform-dev"
+    echo "  $0 assign -g platform-admins -r contributor -s /subscriptions/xxx/resourceGroups/rg-data-platform-dev"
     echo "  $0 audit -e prod"
 }
 

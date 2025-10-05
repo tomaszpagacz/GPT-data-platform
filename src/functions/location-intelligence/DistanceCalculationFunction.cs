@@ -34,11 +34,15 @@ namespace LocationIntelligence
             var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
             var request = JsonSerializer.Deserialize<DistanceRequest>(requestBody, options);
 
-            if (request?.Origin == null || request?.Destination == null ||
-                request?.Origin?.Latitude == 0 || request?.Origin?.Longitude == 0 ||
-                request?.Destination?.Latitude == 0 || request?.Destination?.Longitude == 0)
+            if (request?.Origin == null || request?.Destination == null)
             {
-                return new BadRequestObjectResult("Please provide valid coordinates for both origin and destination");
+                return new BadRequestObjectResult("Please provide both origin and destination coordinates");
+            }
+
+            // Validate coordinate ranges
+            if (!IsValidCoordinate(request.Origin) || !IsValidCoordinate(request.Destination))
+            {
+                return new BadRequestObjectResult("Coordinates must be within valid ranges: latitude (-90 to 90), longitude (-180 to 180)");
             }
 
             try
@@ -60,30 +64,12 @@ namespace LocationIntelligence
             }
         }
 
-        private static double CalculateHaversineDistance(double lat1, double lon1, double lat2, double lon2)
+        private static bool IsValidCoordinate(Coordinate coordinate)
         {
-            // Convert latitude and longitude from degrees to radians
-            lat1 = ToRad(lat1);
-            lon1 = ToRad(lon1);
-            lat2 = ToRad(lat2);
-            lon2 = ToRad(lon2);
+            if (coordinate == null) return false;
 
-            // Haversine formula
-            double dLat = lat2 - lat1;
-            double dLon = lon2 - lon1;
-            double a = Math.Sin(dLat/2) * Math.Sin(dLat/2) +
-                      Math.Cos(lat1) * Math.Cos(lat2) *
-                      Math.Sin(dLon/2) * Math.Sin(dLon/2);
-            double c = 2 * Math.Asin(Math.Sqrt(a));
-
-            // Earth's radius in kilometers
-            const double radius = 6371;
-            return radius * c;
-        }
-
-        private static double ToRad(double degree)
-        {
-            return degree * Math.PI / 180;
+            return coordinate.Latitude >= -90 && coordinate.Latitude <= 90 &&
+                   coordinate.Longitude >= -180 && coordinate.Longitude <= 180;
         }
     }
 }

@@ -33,7 +33,7 @@ log() {
 # Validate input parameters
 if [ "$#" -ne 3 ]; then
     log ERROR "Usage: $0 <environment> <region> <resource-group>"
-    log ERROR "Example: $0 dev westeurope rg-gpt-data-platform-dev"
+    log ERROR "Example: $0 dev westeurope rg-data-platform-dev"
     exit 1
 fi
 
