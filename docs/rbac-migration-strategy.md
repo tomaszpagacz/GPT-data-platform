@@ -1,5 +1,21 @@
 # RBAC Migration Strategy
 
+> **Last Updated:** 2025-01-15
+> **Audience:** Administrator
+> **Prerequisites:** Azure AD Global Administrator access, existing RBAC configuration
+
+## Overview
+
+This guide provides a comprehensive strategy for migrating from legacy access control systems to the new comprehensive RBAC implementation in the GPT Data Platform.
+
+## Table of Contents
+
+- [Current State Analysis](#current-state-analysis)
+- [Migration Phases](#migration-phases)
+- [Risk Mitigation](#risk-mitigation)
+- [Rollback Procedures](#rollback-procedures)
+- [Related Documentation](#related-documentation)
+
 ## Current State Analysis
 
 The repository contains existing RBAC-related files that need to be handled during the migration to the new comprehensive RBAC system:
@@ -220,13 +236,24 @@ kubectl get nodes
 - No over-privileged assignments
 - Built-in security validation
 
+## Related Documentation
+
+- [RBAC Implementation](rbac-implementation-guide.md) - New RBAC system setup
+- [RBAC Management](rbac-management.md) - Ongoing RBAC operations
+- [Security Assessment](security-assessment.md) - Security compliance and validation
+- [Platform Architecture](architecture.md) - Understanding access control architecture
+- [Deployment Troubleshooting](deployment-troubleshooting.md) - RBAC-related issues
+
+## Next Steps
+
+After completing RBAC migration:
+
+1. Implement [RBAC Management](rbac-management.md) procedures for ongoing operations
+2. Review [Security Assessment](security-assessment.md) for compliance validation
+3. Set up monitoring and auditing for access control changes
+4. Archive legacy RBAC files after successful validation
+5. Train team members on new RBAC procedures
+
 ## Conclusion
 
 The new RBAC system provides significant improvements over the legacy implementation. The migration should be performed gradually with proper validation at each step. The legacy files should be archived rather than deleted to preserve institutional knowledge and enable rollback if needed.
-
-**Next Steps:**
-1. Review and approve this migration strategy
-2. Schedule migration timeline
-3. Begin with development environment migration
-4. Gradually roll out to higher environments
-5. Archive legacy files after successful validation

@@ -1,18 +1,42 @@
 # API Management Deployment Guide
 
-> **Note**: This guide covers the legacy API Management service. For new deployments, consider using the **Comprehensive API Gateway** which includes modern features like GraphQL support, enhanced security patterns, and better integration with containerized workloads. See the [Modern Platform Implementation Guide](modern-platform-implementation-guide.md) for details.
+> **Last Updated:** 2025-01-15
+> **Audience:** Developer, Administrator
+> **Prerequisites:** Azure subscription Contributor role, Azure CLI, Bicep CLI
 
-## Modern API Gateway vs Legacy APIM
+## Overview
 
-The platform now includes a **Comprehensive API Gateway** that provides:
+This guide covers API Management deployment for the GPT Data Platform, including both legacy API Management services and the modern Comprehensive API Gateway with GraphQL support, enhanced security, and container integration.
+
+## Table of Contents
+
+- [API Gateway Options](#api-gateway-options)
+- [Prerequisites](#prerequisites)
+- [Pre-deployment Checklist](#pre-deployment-checklist)
+- [Deployment Procedures](#deployment-procedures)
+- [Configuration](#configuration)
+- [Monitoring](#monitoring)
+- [Related Documentation](#related-documentation)
+
+## API Gateway Options
+
+### Comprehensive API Gateway (Recommended)
+The modern **Comprehensive API Gateway** provides:
 - GraphQL and REST API support
-- OAuth 2.0 and modern authentication patterns  
+- OAuth 2.0 and modern authentication patterns
 - Enhanced rate limiting and throttling
 - Request/response transformation
 - Integration with AKS and Azure ML services
 - Container API support
 
-For new implementations, use the comprehensive gateway instead of the legacy APIM service documented below.
+### Legacy API Management
+The traditional Azure API Management service with:
+- REST API management
+- Basic authentication and security
+- Rate limiting and policies
+- Developer portal
+
+> **Note**: For new deployments, use the **Comprehensive API Gateway**. Legacy APIM is documented for existing implementations.
 
 ## Prerequisites
 
@@ -222,3 +246,21 @@ Additional Costs:
    - Use RBAC for management
    - Implement OAuth2 for APIs
    - Configure IP restrictions if needed
+
+## Related Documentation
+
+- [Platform Architecture](architecture.md) - Understanding API gateway architecture
+- [Azure Functions Development](functions-development.md) - Function API development
+- [Logic Apps Development](logic-apps-development.md) - Workflow API integration
+- [Security Assessment](security-assessment.md) - API security considerations
+- [Deployment Troubleshooting](deployment-troubleshooting.md) - API deployment issues
+
+## Next Steps
+
+After deploying API Management:
+
+1. Configure APIs for [Azure Functions](functions-development.md) and [Logic Apps](logic-apps-development.md)
+2. Set up authentication and authorization policies
+3. Configure monitoring and alerting for API usage
+4. Review [Security Assessment](security-assessment.md) for API security
+5. Test API endpoints and performance

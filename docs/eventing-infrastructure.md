@@ -1,4 +1,23 @@
-# Event Infrastructure Documentation
+# Eventing Infrastructure Guide
+
+> **Last Updated:** 2025-01-15
+> **Audience:** Developer, Architect
+> **Prerequisites:** Azure subscription, understanding of event-driven architectures
+
+## Overview
+
+This guide covers the event infrastructure in the GPT Data Platform, which combines Azure Event Grid and Event Hub to provide a robust, scalable event processing solution for real-time monitoring, storage events, and data integration scenarios.
+
+## Table of Contents
+
+- [Key Components](#key-components)
+- [Event Flow Architecture](#event-flow-architecture)
+- [Configuration](#configuration)
+- [Monitoring](#monitoring)
+- [Troubleshooting](#troubleshooting)
+- [Related Documentation](#related-documentation)
+
+## Key Componentst Infrastructure Documentation
 
 ## Overview
 The event infrastructure in the GPT Data Platform combines Azure Event Grid and Event Hub to provide a robust, scalable event processing solution. This infrastructure enables real-time monitoring of storage events, supports event-driven architectures, and facilitates data integration scenarios.
@@ -244,4 +263,23 @@ $topicEndpoint = "<event-grid-topic-endpoint>"
 $eventGridKey = "<event-grid-key>"
 
 Test-AzEventGridConnection -TopicEndpoint $topicEndpoint -TopicKey $eventGridKey
+```
+
+## Related Documentation
+
+- [Platform Architecture](architecture.md) - Understanding the overall event architecture
+- [Logic Apps Development](logic-apps-development.md) - Workflow integration with events
+- [Azure Functions Development](functions-development.md) - Function event processing
+- [Deployment Troubleshooting](deployment-troubleshooting.md) - Event infrastructure issues
+- [Security Assessment](security-assessment.md) - Event security considerations
+
+## Next Steps
+
+After setting up eventing infrastructure:
+
+1. Review [Logic Apps Development](logic-apps-development.md) for event-driven workflows
+2. Configure [Azure Functions Development](functions-development.md) for event processing
+3. Set up monitoring and alerting for event processing pipelines
+4. Test event flows using the integration examples above
+5. Monitor performance and scale as needed
 ```

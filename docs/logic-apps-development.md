@@ -1,21 +1,41 @@
 # Logic Apps Development Guide
 
-This guide will help you get started with developing Logic Apps for our data platform. It covers both the Visual Designer approach and the code-first development using VS Code.
+> **Last Updated:** 2025-01-15
+> **Audience:** Developer
+> **Prerequisites:** Azure CLI, Visual Studio Code, Azure Logic Apps extension, Azurite
+
+## Overview
+
+This comprehensive guide covers developing Azure Logic Apps for the GPT Data Platform using both visual designer and code-first approaches. It includes best practices, deployment strategies, and integration patterns for enterprise workflow automation.
+
+## Table of Contents
+
+- [Prerequisites](#prerequisites)
+- [Development Approaches](#development-approaches)
+- [Project Structure](#project-structure)
+- [Best Practices](#best-practices)
+- [Deployment](#deployment)
+- [Monitoring](#monitoring)
+- [Troubleshooting](#troubleshooting)
+- [Related Documentation](#related-documentation)
 
 ## Prerequisites
 
-1. Install the following tools:
+### Required Tools
+
+1. **Development Environment:**
    - [Visual Studio Code](https://code.visualstudio.com/)
    - [Azure Logic Apps Extension](https://marketplace.visualstudio.com/items?itemName=ms-azuretools.vscode-logicapps)
    - [Azure Account Extension](https://marketplace.visualstudio.com/items?itemName=ms-vscode.azure-account)
    - [Azurite Storage Emulator](https://github.com/Azure/Azurite)
    - [Azure CLI](https://docs.microsoft.com/en-us/cli/azure/install-azure-cli)
 
-2. Install VS Code Extensions:
+2. **VS Code Extensions:**
    ```bash
    code --install-extension ms-azuretools.vscode-logicapps
    code --install-extension ms-azuretools.vscode-azurelogicapps
    code --install-extension ms-vscode.azure-account
+   code --install-extension ms-vscode.vscode-json
    ```
 
 ## Development Approaches
@@ -818,17 +838,22 @@ curl -X POST "https://logic-app-url/workflows/wf-synapse-run-status/triggers/req
 
 This orchestration suite provides enterprise-grade data pipeline automation with comprehensive error handling, monitoring, and recovery capabilities.
 
-## Monitoring and Troubleshooting
+## Related Documentation
 
-1. **Diagnostic Settings**
-   - Enable workflow runtime logs
-   - Track execution history
-   - Monitor trigger history
+- [Platform Architecture](architecture.md) - Understanding the overall system design
+- [Azure Functions Development](functions-development.md) - Function development best practices
+- [Eventing Infrastructure](eventing-infrastructure.md) - Event processing setup
+- [Deployment Troubleshooting](deployment-troubleshooting.md) - Common deployment issues
+- [RBAC Implementation](rbac-implementation-guide.md) - Access control setup
 
-2. **Common Issues**
-   - Connection problems
-   - Authentication failures
-   - Timeout issues
+## Next Steps
+
+After completing Logic Apps development:
+
+1. Review [Eventing Infrastructure](eventing-infrastructure.md) for event-driven integration
+2. Configure [API Management](api-management-deployment.md) for workflow APIs
+3. Set up monitoring and alerting as described in operational documentation
+4. Follow deployment procedures in the main README
 
 ## Additional Resources
 

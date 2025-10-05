@@ -1,0 +1,58 @@
+# Automated Daily Cleanup Configuration
+# This file controls the behavior of the automated daily resource cleanup script
+
+# Environments to clean up (comma-separated)
+# Only development and testing environments should be included
+# Production environments are automatically excluded for safety
+enabledEnvironments: dev,sit
+
+# Notification settings
+# Email address to receive cleanup reports
+notificationEmail: ""
+
+# Slack webhook URL for notifications
+# Create a webhook at https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK
+slackWebhook: ""
+
+# Dry run mode (set to true to test without actually deleting resources)
+dryRun: false
+
+# Safety settings
+# These cannot be overridden and are always enforced
+safetySettings:
+  # Never clean production environments
+  excludeProd: true
+  # Require explicit confirmation for resource groups containing 'prod'
+  prodConfirmationRequired: true
+  # Create backups before deletion (when possible)
+  createBackups: true
+  # Maximum number of concurrent cleanups
+  maxConcurrentCleanups: 3
+
+# Logging settings
+logging:
+  # Log directory (relative to script location)
+  logDirectory: logs
+  # Maximum log files to keep
+  maxLogFiles: 30
+  # Log level (DEBUG, INFO, WARN, ERROR)
+  logLevel: INFO
+
+# Resource type priorities
+# Resources are cleaned up in this order to avoid dependency issues
+cleanupOrder:
+  - compute: [virtualMachines, containerInstances, functionApps]
+  - storage: [storageAccounts]
+  - databases: [sqlServers, synapseWorkspaces]
+  - analytics: [synapse, databricks]
+  - networking: [loadBalancers, publicIpAddresses, virtualNetworks]
+
+# Cost tracking
+costTracking:
+  # Enable cost estimation before cleanup
+  enableCostEstimation: true
+  # Currency for cost reporting
+  currency: USD
+  # Cost threshold for notifications (monthly)
+  notificationThreshold: 100</content>
+<parameter name="filePath">/workspaces/GPT-data-platform/scripts/daily-cleanup-config.yml

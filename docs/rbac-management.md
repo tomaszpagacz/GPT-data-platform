@@ -1,12 +1,28 @@
 # RBAC and Managed Identities Management Guide
 
-This guide outlines the RBAC (Role-Based Access Control) and Managed Identities implementation for the Data Platform project.
+> **Last Updated:** 2025-01-15
+> **Audience:** Administrator, Operator
+> **Prerequisites:** Azure AD Global Administrator access, Azure subscription Owner role
 
-> **Note**: For comprehensive RBAC deployment instructions, see the [RBAC Implementation Guide](rbac-implementation-guide.md).
+## Overview
+
+This guide outlines the RBAC (Role-Based Access Control) and Managed Identities implementation for the GPT Data Platform. It covers ongoing management, monitoring, and maintenance of access controls across all platform components.
+
+## Table of Contents
+
+- [Automated RBAC Implementation](#automated-rbac-implementation)
+- [Security Groups Structure](#security-groups-structure)
+- [Managed Identities](#managed-identities)
+- [Access Control Management](#access-control-management)
+- [Monitoring and Auditing](#monitoring-and-auditing)
+- [Troubleshooting](#troubleshooting)
+- [Related Documentation](#related-documentation)
 
 ## Automated RBAC Implementation
 
 The platform includes an automated RBAC assignment module (`infra/modules/rbacAssignments.bicep`) that configures all necessary permissions for managed identities and security groups. This ensures consistent security across all platform components.
+
+> **Note**: For comprehensive RBAC deployment instructions, see the [RBAC Implementation Guide](rbac-implementation-guide.md).
 
 ## Security Groups Structure
 
@@ -263,6 +279,23 @@ Run monthly RBAC audits:
    - Check principal ID exists
    - Verify scope is correct
    - Confirm role definition is valid
+
+## Related Documentation
+
+- [RBAC Implementation](rbac-implementation-guide.md) - Initial RBAC setup and deployment
+- [RBAC Migration Strategy](rbac-migration-strategy.md) - Migrating from legacy access control
+- [Platform Architecture](architecture.md) - Understanding security architecture
+- [Security Assessment](security-assessment.md) - Security compliance and assessment
+- [Deployment Troubleshooting](deployment-troubleshooting.md) - RBAC-related deployment issues
+
+## Next Steps
+
+After managing RBAC:
+
+1. Review [Security Assessment](security-assessment.md) for compliance verification
+2. Follow [RBAC Migration Strategy](rbac-migration-strategy.md) if migrating existing systems
+3. Set up monitoring and auditing for access control changes
+4. Document any custom role assignments for future reference
 
 ## Security Contacts
 
