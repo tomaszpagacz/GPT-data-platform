@@ -17,7 +17,10 @@ param functionPlanSku string
 param functionSubnetId string
 
 @description('Storage account used for Function runtime state.')
-param functionStorageAccountId string
+param storageAccountId string
+
+@description('Name of the runtime container for Function App content.')
+param runtimeContainerName string = 'runtime'
 
 @description('Log Analytics workspace for diagnostics.')
 param logAnalyticsWorkspaceId string
@@ -25,8 +28,8 @@ param logAnalyticsWorkspaceId string
 @description('IP ranges permitted to reach the Function App publicly.')
 param allowedIpRanges array = []
 
-var storageKeys = listKeys(functionStorageAccountId, '2022-09-01')
-var functionStorageAccountName = last(split(functionStorageAccountId, '/'))
+var storageKeys = listKeys(storageAccountId, '2022-09-01')
+var storageAccountName = last(split(storageAccountId, '/'))
 
 // Create the default deny all rule
 var defaultDenyRule = {
@@ -90,15 +93,15 @@ resource functionApp 'Microsoft.Web/sites@2022-03-01' = {
         }
         {
           name: 'AzureWebJobsStorage'
-          value: 'DefaultEndpointsProtocol=https;AccountName=${functionStorageAccountName};AccountKey=${storageKeys.keys[0].value};EndpointSuffix=${environment().suffixes.storage}'
+          value: 'DefaultEndpointsProtocol=https;AccountName=${storageAccountName};AccountKey=${storageKeys.keys[0].value};EndpointSuffix=${environment().suffixes.storage}'
         }
         {
           name: 'WEBSITE_CONTENTAZUREFILECONNECTIONSTRING'
-          value: 'DefaultEndpointsProtocol=https;AccountName=${functionStorageAccountName};AccountKey=${storageKeys.keys[0].value};EndpointSuffix=${environment().suffixes.storage}'
+          value: 'DefaultEndpointsProtocol=https;AccountName=${storageAccountName};AccountKey=${storageKeys.keys[0].value};EndpointSuffix=${environment().suffixes.storage}'
         }
         {
           name: 'WEBSITE_CONTENTSHARE'
-          value: toLower(functionAppName)
+          value: runtimeContainerName
         }
         {
           name: 'WEBSITE_RUN_FROM_PACKAGE'

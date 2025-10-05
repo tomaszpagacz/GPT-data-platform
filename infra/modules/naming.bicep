@@ -7,7 +7,6 @@ var naming = {
   eventGridTopic: '${namePrefix}-evtgrid-${environment}'
   functionApp: '${namePrefix}-func-${environment}'
   functionPlan: '${namePrefix}-plan-${environment}'
-  functionStorage: '${namePrefix}funcstor${environment}'
   keyVault: '${namePrefix}-kv-${environment}'
   logAnalytics: '${namePrefix}-log-${environment}'
   logicApp: '${namePrefix}-logic-${environment}'

@@ -10,6 +10,12 @@ param tags object = {}
 @description('Name of the filesystem to create when hierarchical namespace is enabled.')
 param filesystemName string = ''
 
+@description('Array of container names to create in the storage account.')
+param containerNames array = []
+
+@description('Name of the runtime container for serverless compute (Functions, Logic Apps).')
+param runtimeContainerName string = 'runtime'
+
 @description('Indicates whether the storage account should enable hierarchical namespace (Data Lake Storage Gen2).')
 param isHnsEnabled bool = true
 
@@ -48,6 +54,13 @@ resource fileSystem 'Microsoft.Storage/storageAccounts/blobServices/containers@2
     publicAccess: 'None'
   }
 }
+
+resource containers 'Microsoft.Storage/storageAccounts/blobServices/containers@2022-09-01' = [for containerName in union(containerNames, !empty(runtimeContainerName) ? [runtimeContainerName] : []): {
+  name: '${name}/default/${containerName}'
+  properties: {
+    publicAccess: 'None'
+  }
+}]
 
 resource blobPrivateEndpoint 'Microsoft.Network/privateEndpoints@2021-05-01' = {
   name: '${name}-pe-blob'

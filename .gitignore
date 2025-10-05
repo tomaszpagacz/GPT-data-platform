@@ -72,3 +72,6 @@ local.settings.json
 project.lock.json
 .project
 .vs/
+
+.tmp/
+src/logic-apps/.dist.zip

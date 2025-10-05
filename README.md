@@ -1,7 +1,21 @@
 # GPT Data Platform
 
 ## Overview
-This repository implements a comprehensive, Azure-native data analytics platform that ingests heterogeneous sources into Azure Data Lake Storage Gen2. The solution emphasizes cost efficiency, GDPR-compliant operations, and extensibility for future machine learning and analytics workloads.
+This repository implements a comprehensive, Azure-native data analytics platform that ingests heterogeneous sources into Azur3. Synapse SHIR:
+   ```bash
+   az pipeline create \
+     --name "Synapse-SHIR-Deployment" \
+     --yml-path infra/pipeline/synapse-shir-pipeline.yml
+   ```
+
+4. Storage Containers:
+   ```bash
+   # Create medallion and additional containers
+   ./scripts/create-storage-containers.sh -g <resource-group> -s <storage-account>
+
+   # Or using PowerShell
+   .\scripts\create-storage-containers.ps1 -StorageAccountName "<storage-account>" -ResourceGroupName "<resource-group>"
+   ``` Lake Storage Gen2. The solution emphasizes cost efficiency, GDPR-compliant operations, and extensibility for future machine learning and analytics workloads.
 
 ## Core Components
 
@@ -143,7 +157,20 @@ This networking strategy minimises operational burden by avoiding Azure Firewall
    ./scripts/deploy-eventing.sh <name-prefix> <env> <region> <resource-group>
    ```
 
-3. Synapse SHIR:
+3. Synapse Workspace Deployment:
+   ```bash
+   # Deploy Synapse workspace from workspace_publish branch
+   az pipeline create \
+     --name "Synapse-CICD-Pipeline" \
+     --yml-path infra/pipeline/synapse-cicd-pipeline.yml
+
+   # Or trigger manually:
+   az pipelines run \
+     --name "Synapse-CICD-Pipeline" \
+     --parameters targetEnvironment=sit cleanupObsolete=true
+   ```
+
+4. Synapse SHIR:
    ```bash
    az pipeline create \
      --name "Synapse-SHIR-Deployment" \
@@ -159,6 +186,9 @@ This networking strategy minimises operational burden by avoiding Azure Firewall
 - [Logic Apps](docs/logic-apps-development.md)
 - [RBAC Management](docs/rbac-management.md)
 - [Security Assessment](docs/security-assessment.md)
+- [Storage Container Architecture](docs/storage-container-architecture.md)
+- [Storage Account Architecture](docs/storage-account-architecture.md)
+- [Synapse CI/CD Deployment](docs/synapse-cicd-deployment-guide.md)
 
 ### Helper Scripts (`/helpers`)
 - Environment setup
@@ -174,3 +204,7 @@ This networking strategy minimises operational burden by avoiding Azure Firewall
 
 ## License
 This project is licensed under the MIT License - see the LICENSE file for details
+
+## Logic Apps (Standard)
+Workflows live in `src/logic-apps/workflows`, config in `src/logic-apps/config`.
+Use `orchestration/` names no longer; new path is `src/logic-apps`.

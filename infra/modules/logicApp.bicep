@@ -19,6 +19,9 @@ param logAnalyticsWorkspaceId string
 @description('Storage account backing the Logic App runtime.')
 param storageAccountId string
 
+@description('Name of the runtime container for Logic App content.')
+param runtimeContainerName string = 'runtime'
+
 var storageAccountName = last(split(storageAccountId, '/'))
 var storageKeys = listKeys(storageAccountId, '2022-09-01')
 
@@ -82,6 +85,10 @@ resource logicApp 'Microsoft.Web/sites@2022-03-01' = {
         {
           name: 'WORKFLOWS_STORAGE_ACCOUNT_ACCESS_KEY'
           value: storageKeys.keys[0].value
+        }
+        {
+          name: 'WEBSITE_CONTENTSHARE'
+          value: runtimeContainerName
         }
         {
           name: 'WEBSITE_RUN_FROM_PACKAGE'

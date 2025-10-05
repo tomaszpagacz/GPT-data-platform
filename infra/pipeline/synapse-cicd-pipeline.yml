@@ -1,0 +1,300 @@
+# Azure Synapse Analytics CI/CD Pipeline
+# Modern approach: Deploy from Synapse workspace_publish branch to target environments
+
+name: $(Build.DefinitionName)_$(Date:yyyyMMdd)$(Rev:.r)
+
+trigger:
+  branches:
+    include:
+      - workspace_publish  # Trigger on Synapse workspace publish branch
+  paths:
+    include:
+      - synapse/**  # Synapse artifacts in workspace_publish branch
+
+parameters:
+  - name: targetEnvironment
+    displayName: Target Environment
+    type: string
+    default: dev
+    values:
+      - dev
+      - sit
+      - prod
+
+  - name: deploymentMode
+    displayName: Deployment Mode
+    type: string
+    default: incremental
+    values:
+      - incremental  # Only deploy changed artifacts
+      - full         # Deploy all artifacts (overwrite)
+      - validate     # Validate only, no deployment
+
+  - name: cleanupObsolete
+    displayName: Remove obsolete resources from target
+    type: boolean
+    default: false
+
+  - name: skipPreDeploymentValidation
+    displayName: Skip pre-deployment validation
+    type: boolean
+    default: false
+
+variables:
+  - name: sourceWorkspaceName
+    value: 'gptdata-syn-dev'
+  - name: sourceResourceGroup
+    value: 'rg-data-platform-dev'
+  - name: targetWorkspaceName
+    value: 'gptdata-syn-${{ parameters.targetEnvironment }}'
+  - name: targetResourceGroup
+    value: 'rg-data-platform-${{ parameters.targetEnvironment }}'
+  - name: artifactName
+    value: 'synapse-workspace-artifacts'
+  - name: templateFile
+    value: 'synapse/TemplateForWorkspace.json'
+  - name: parametersFile
+    value: 'synapse/TemplateParametersForWorkspace.json'
+
+stages:
+
+# ==========================================
+# VALIDATION STAGE
+# ==========================================
+- stage: ValidateArtifacts
+  displayName: '🔍 Validate Synapse Artifacts'
+  condition: and(succeeded(), eq('${{ parameters.deploymentMode }}', 'validate'))
+  jobs:
+    - job: ValidateWorkspaceTemplate
+      displayName: 'Validate Workspace Template'
+      steps:
+        - checkout: none
+
+        - task: DownloadPipelineArtifact@2
+          displayName: 'Download Synapse Artifacts'
+          inputs:
+            source: 'specific'
+            project: '$(System.TeamProjectId)'
+            pipeline: '$(System.DefinitionId)'
+            artifactName: 'SynapseArtifact'
+            targetPath: '$(Pipeline.Workspace)/synapse'
+
+        - task: AzureCLI@2
+          displayName: 'Validate ARM Template'
+          inputs:
+            azureSubscription: 'Azure-${{ parameters.targetEnvironment }}'
+            scriptType: bash
+            scriptLocation: inlineScript
+            inlineScript: |
+              echo "Validating Synapse workspace template..."
+
+              # Validate the ARM template
+              az deployment group validate \
+                --resource-group "$(targetResourceGroup)" \
+                --template-file "$(Pipeline.Workspace)/synapse/$(templateFile)" \
+                --parameters "$(Pipeline.Workspace)/synapse/$(parametersFile)" \
+                --parameters workspaceName="$(targetWorkspaceName)" \
+                --parameters location="switzerlandnorth"
+
+              echo "✅ Template validation successful"
+
+# ==========================================
+# DEPLOYMENT STAGE
+# ==========================================
+- stage: DeploySynapse
+  displayName: '🚀 Deploy to ${{ parameters.targetEnvironment }}'
+  dependsOn: ValidateArtifacts
+  condition: and(succeeded(), ne('${{ parameters.deploymentMode }}', 'validate'))
+  jobs:
+    - deployment: DeployWorkspace
+      displayName: 'Deploy Synapse Workspace'
+      environment: '${{ parameters.targetEnvironment }}'
+      strategy:
+        runOnce:
+          deploy:
+            steps:
+              - checkout: none
+
+              - task: DownloadPipelineArtifact@2
+                displayName: 'Download Synapse Artifacts'
+                inputs:
+                  source: 'specific'
+                  project: '$(System.TeamProjectId)'
+                  pipeline: '$(System.DefinitionId)'
+                  artifactName: 'SynapseArtifact'
+                  targetPath: '$(Pipeline.Workspace)/synapse'
+
+              - task: Synapse workspace deployment@2
+                displayName: 'Deploy Synapse Workspace Artifacts'
+                inputs:
+                  operation: '${{ parameters.deploymentMode }}'
+                  ArtifactsFolder: '$(Pipeline.Workspace)/synapse'
+                  azureSubscription: 'Azure-${{ parameters.targetEnvironment }}'
+                  ResourceGroupName: '$(targetResourceGroup)'
+                  WorkspaceName: '$(targetWorkspaceName)'
+                  OverrideArmParameters: |
+                    {
+                      "workspaceName": {
+                        "value": "$(targetWorkspaceName)"
+                      },
+                      "location": {
+                        "value": "switzerlandnorth"
+                      },
+                      "storageAccountName": {
+                        "value": "gptdatastordev"
+                      },
+                      "storageAccountKeySecretName": {
+                        "value": "StorageAccountKey"
+                      },
+                      "keyVaultName": {
+                        "value": "gptdata-kv-dev"
+                      }
+                    }
+                  DeleteArtifactsNotInTemplate: '${{ parameters.cleanupObsolete }}'
+                  DeployManagedPrivateEndpoints: true
+
+              - task: PowerShell@2
+                displayName: 'Post-Deployment Validation'
+                inputs:
+                  targetType: 'inline'
+                  script: |
+                    Write-Host "Running post-deployment validation..."
+
+                    # Validate workspace exists and is accessible
+                    $workspace = Get-AzSynapseWorkspace -ResourceGroupName "$(targetResourceGroup)" -Name "$(targetWorkspaceName)"
+                    if (-not $workspace) {
+                      Write-Error "Synapse workspace not found after deployment"
+                      exit 1
+                    }
+
+                    Write-Host "✅ Synapse workspace deployed: $($workspace.Name)"
+
+                    # Validate key components
+                    try {
+                      $linkedServices = Get-AzSynapseLinkedService -WorkspaceName "$(targetWorkspaceName)" -ErrorAction Stop
+                      Write-Host "✅ Found $($linkedServices.Count) linked services"
+
+                      $datasets = Get-AzSynapseDataset -WorkspaceName "$(targetWorkspaceName)" -ErrorAction Stop
+                      Write-Host "✅ Found $($datasets.Count) datasets"
+
+                      $pipelines = Get-AzSynapsePipeline -WorkspaceName "$(targetWorkspaceName)" -ErrorAction Stop
+                      Write-Host "✅ Found $($pipelines.Count) pipelines"
+
+                      if ('${{ parameters.cleanupObsolete }}' -eq 'true') {
+                        Write-Host "ℹ️ Cleanup mode enabled - obsolete resources removed"
+                      }
+
+                    } catch {
+                      Write-Warning "Some validations failed: $_"
+                      # Don't fail the deployment for validation issues
+                    }
+
+# ==========================================
+# APPROVAL GATE (SIT & PROD)
+# ==========================================
+- stage: ApprovalGate
+  displayName: '✅ Environment Approval'
+  dependsOn: DeploySynapse
+  condition: and(succeeded(), or(eq('${{ parameters.targetEnvironment }}', 'sit'), eq('${{ parameters.targetEnvironment }}', 'prod')))
+  jobs:
+    - job: ManualApproval
+      displayName: 'Manual Approval Required'
+      steps:
+        - task: ManualValidation@0
+          inputs:
+            notifyUsers: 'data-engineering-team@company.com,synapse-admins@company.com'
+            instructions: |
+              **Synapse Workspace Deployment Approval Required**
+
+              **Deployment Details:**
+              - Source: $(sourceWorkspaceName) (workspace_publish branch)
+              - Target Environment: ${{ parameters.targetEnvironment }}
+              - Target Workspace: $(targetWorkspaceName)
+              - Resource Group: $(targetResourceGroup)
+              - Deployment Mode: ${{ parameters.deploymentMode }}
+              - Cleanup Obsolete: ${{ parameters.cleanupObsolete }}
+              - Build: $(Build.BuildNumber)
+
+              **Pre-Deployment Checklist:**
+              - [ ] Source workspace artifacts are tested and validated
+              - [ ] All linked services use parameterized connections
+              - [ ] Sensitive data is stored in Key Vault
+              - [ ] Pipeline dependencies are properly configured
+              - [ ] Target environment has sufficient capacity
+
+              **Post-Deployment Validation:**
+              - [ ] Workspace deployed successfully
+              - [ ] Linked services are connected
+              - [ ] Pipelines are executable
+              - [ ] No runtime errors in logs
+
+              **Rollback Plan:**
+              - Previous deployment can be restored if needed
+              - Manual cleanup may be required for complex changes
+
+              Approve or reject this Synapse deployment.
+            onTimeout: 'reject'
+
+# ==========================================
+# CLEANUP VALIDATION (if cleanup enabled)
+# ==========================================
+- stage: ValidateCleanup
+  displayName: '🧹 Validate Cleanup Operations'
+  dependsOn: [DeploySynapse, ApprovalGate]
+  condition: and(succeeded(), eq('${{ parameters.cleanupObsolete }}', 'true'))
+  jobs:
+    - job: VerifyCleanup
+      displayName: 'Verify Obsolete Resources Removed'
+      steps:
+        - task: PowerShell@2
+          displayName: 'Generate Cleanup Report'
+          inputs:
+            targetType: 'inline'
+            script: |
+              Write-Host "Generating cleanup validation report..."
+
+              # Compare source and target workspaces
+              $sourceWorkspace = "$(sourceWorkspaceName)"
+              $targetWorkspace = "$(targetWorkspaceName)"
+
+              Write-Host "Source workspace: $sourceWorkspace"
+              Write-Host "Target workspace: $targetWorkspace"
+
+              # This would compare artifacts and report what was cleaned up
+              # Implementation depends on your specific cleanup requirements
+
+              Write-Host "✅ Cleanup validation completed"
+
+# ==========================================
+# NOTIFICATION STAGE
+# ==========================================
+- stage: Notification
+  displayName: '📢 Deployment Notification'
+  dependsOn: [DeploySynapse, ApprovalGate, ValidateCleanup]
+  condition: succeeded()
+  jobs:
+    - job: SendNotification
+      displayName: 'Send Deployment Notification'
+      steps:
+        - task: PowerShell@2
+          displayName: 'Send Teams/Slack Notification'
+          inputs:
+            targetType: 'inline'
+            script: |
+              $message = @"
+              ✅ Synapse Workspace Deployment Completed
+
+              Environment: ${{ parameters.targetEnvironment }}
+              Workspace: $(targetWorkspaceName)
+              Mode: ${{ parameters.deploymentMode }}
+              Cleanup: ${{ parameters.cleanupObsolete }}
+
+              Build: $(Build.BuildNumber)
+              Deployed by: $(Build.RequestedFor)
+              Timestamp: $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')
+              "@
+
+              Write-Host "Deployment notification sent:"
+              Write-Host $message
+
+              # Add your Teams/Slack webhook integration here

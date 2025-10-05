@@ -226,18 +226,21 @@ module storage 'modules/storage.bicep' = {
     location: location
     tags: tags
     filesystemName: dataLakeFilesystem
-    privateEndpointSubnetId: networking.outputs.privateEndpointsSubnetId
-    privateDnsZoneIds: privateDns.outputs.privateDnsZoneIds
-  }
-}
-
-module functionStorage 'modules/storage.bicep' = {
-  name: 'functionStorage'
-  params: {
-    name: resourceNaming.outputs.naming.functionStorage
-    location: location
-    tags: union(tags, { purpose: 'functions' })
-    isHnsEnabled: false
+    runtimeContainerName: 'runtime'
+    containerNames: [
+      'bronze'
+      'silver'
+      'gold'
+      'test'
+      'functional'
+      'raw'
+      'temp'
+      'checkpoints'
+      'logs'
+      'metadata'
+      'archive'
+      'quarantine'
+    ]
     privateEndpointSubnetId: networking.outputs.privateEndpointsSubnetId
     privateDnsZoneIds: privateDns.outputs.privateDnsZoneIds
   }
@@ -252,7 +255,8 @@ module appHosting 'modules/appHosting.bicep' = {
     functionAppName: resourceNaming.outputs.naming.functionApp
     functionPlanSku: functionPlanSku
     functionSubnetId: networking.outputs.functionSubnetId
-    functionStorageAccountId: functionStorage.outputs.storageAccountId
+    storageAccountId: storage.outputs.storageAccountId
+    runtimeContainerName: 'runtime'
     logAnalyticsWorkspaceId: logging.outputs.workspaceId
     allowedIpRanges: allowedPublicIpRanges
   }
@@ -267,7 +271,8 @@ module logicApp 'modules/logicApp.bicep' = if (deployLogicApps) {
     sku: logicAppSku
     integrationSubnetId: networking.outputs.integrationSubnetId
     logAnalyticsWorkspaceId: logging.outputs.workspaceId
-    storageAccountId: functionStorage.outputs.storageAccountId
+    storageAccountId: storage.outputs.storageAccountId
+    runtimeContainerName: 'runtime'
   }
 }
 
