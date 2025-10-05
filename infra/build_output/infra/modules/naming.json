@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.38.5.1644",
-      "templateHash": "3482763254261089769"
+      "templateHash": "12817568457735735731"
     }
   },
   "parameters": {
@@ -31,7 +31,13 @@
       "synapse": "[format('{0}-syn-{1}', parameters('namePrefix'), parameters('environment'))]",
       "vnet": "[format('{0}-vnet-{1}', parameters('namePrefix'), parameters('environment'))]",
       "cognitiveServices": "[format('{0}-cog-{1}', parameters('namePrefix'), parameters('environment'))]",
-      "azureMaps": "[format('{0}-maps-{1}', parameters('namePrefix'), parameters('environment'))]"
+      "azureMaps": "[format('{0}-maps-{1}', parameters('namePrefix'), parameters('environment'))]",
+      "purview": "[format('{0}-purview-{1}', parameters('namePrefix'), parameters('environment'))]",
+      "machineLearning": "[format('{0}-ml-{1}', parameters('namePrefix'), parameters('environment'))]",
+      "kubernetes": "[format('{0}-aks-{1}', parameters('namePrefix'), parameters('environment'))]",
+      "fabric": "[format('{0}-fabric-{1}', parameters('namePrefix'), parameters('environment'))]",
+      "containerInstances": "[format('{0}-aci-{1}', parameters('namePrefix'), parameters('environment'))]",
+      "comprehensiveApiGateway": "[format('{0}-apigw-{1}', parameters('namePrefix'), parameters('environment'))]"
     }
   },
   "resources": [],

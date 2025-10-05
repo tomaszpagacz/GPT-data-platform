@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.38.5.1644",
-      "templateHash": "7569900795436012602"
+      "templateHash": "10577069554555531097"
     }
   },
   "parameters": {
@@ -127,7 +127,11 @@
             },
             {
               "name": "FUNCTIONS_WORKER_RUNTIME",
-              "value": "dotnet"
+              "value": "dotnet-isolated"
+            },
+            {
+              "name": "DOTNET_VERSION",
+              "value": "8.0"
             },
             {
               "name": "AzureWebJobsStorage",
@@ -198,6 +202,10 @@
     "functionAppResourceId": {
       "type": "string",
       "value": "[resourceId('Microsoft.Web/sites', parameters('functionAppName'))]"
+    },
+    "functionAppIdentityPrincipalId": {
+      "type": "string",
+      "value": "[reference(resourceId('Microsoft.Web/sites', parameters('functionAppName')), '2022-03-01', 'full').identity.principalId]"
     }
   }
 }

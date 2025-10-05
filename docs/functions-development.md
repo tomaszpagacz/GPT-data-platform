@@ -8,7 +8,7 @@ This guide will help you get started with developing Azure Functions for our dat
    - [Visual Studio Code](https://code.visualstudio.com/)
    - [Azure Functions Core Tools](https://learn.microsoft.com/en-us/azure/azure-functions/functions-run-local#install-the-azure-functions-core-tools)
    - [Node.js](https://nodejs.org/) (for JavaScript/TypeScript functions)
-   - [.NET 6.0 SDK](https://dotnet.microsoft.com/download) (for C# functions)
+   - [.NET 8.0 SDK](https://dotnet.microsoft.com/download) (for C# functions with isolated worker runtime)
    - [Azure CLI](https://docs.microsoft.com/en-us/cli/azure/install-azure-cli)
    - [Azure Functions Extension for VS Code](https://marketplace.visualstudio.com/items?itemName=ms-azuretools.vscode-azurefunctions)
 

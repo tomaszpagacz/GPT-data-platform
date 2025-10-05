@@ -119,3 +119,4 @@ resource diagnostics 'Microsoft.Insights/diagnosticSettings@2021-05-01-preview' 
 
 output logicAppName string = logicApp.name
 output logicAppResourceId string = logicApp.id
+output logicAppIdentityPrincipalId string = logicApp.identity.principalId

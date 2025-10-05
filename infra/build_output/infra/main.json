@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.38.5.1644",
-      "templateHash": "2379085265366079217"
+      "templateHash": "4921100211764978393"
     }
   },
   "parameters": {
@@ -117,6 +117,23 @@
       "metadata": {
         "description": "Optional IP ranges permitted to access publicly exposed endpoints (e.g., Function App SCM). Leave empty to block public ingress."
       }
+    },
+    "securityGroups": {
+      "type": "object",
+      "defaultValue": {
+        "platformAdmins": "",
+        "platformOperators": "",
+        "platformDevelopers": "",
+        "platformReaders": "",
+        "mlEngineers": "",
+        "dataAnalysts": "",
+        "dataScientists": "",
+        "dataEngineers": "",
+        "dataGovernanceTeam": ""
+      },
+      "metadata": {
+        "description": "Security Group Object IDs for RBAC assignments. Leave empty to skip group-based assignments."
+      }
     }
   },
   "variables": {
@@ -131,22 +148,17 @@
       "[format('privatelink.{0}', environment().suffixes.sqlServerHostname)]",
       "servicebus.windows.net",
       "privatelink.eventgrid.azure.net",
-      "privatelink.cognitiveservices.azure.com"
-    ],
-    "naming": {
-      "vnet": "[format('{0}-{1}-vnet', parameters('namePrefix'), parameters('environment'))]",
-      "storage": "[toLower(format('{0}{1}dls', parameters('namePrefix'), parameters('environment')))]",
-      "synapse": "[format('{0}-{1}-synapse', parameters('namePrefix'), parameters('environment'))]",
-      "keyVault": "[format('{0}-{1}-kv', parameters('namePrefix'), parameters('environment'))]",
-      "functionPlan": "[format('{0}-{1}-asp', parameters('namePrefix'), parameters('environment'))]",
-      "functionApp": "[format('{0}-{1}-func', parameters('namePrefix'), parameters('environment'))]",
-      "functionStorage": "[toLower(format('{0}{1}funcsa', parameters('namePrefix'), parameters('environment')))]",
-      "logAnalytics": "[format('{0}-{1}-la', parameters('namePrefix'), parameters('environment'))]",
-      "eventGridTopic": "[parameters('ingestionEventTopicName')]",
-      "logicApp": "[format('{0}-{1}-logicapp', parameters('namePrefix'), parameters('environment'))]",
-      "azureMaps": "[format('{0}-{1}-maps', parameters('namePrefix'), parameters('environment'))]",
-      "cognitiveServices": "[format('{0}-{1}-aisvc', parameters('namePrefix'), parameters('environment'))]"
-    }
+      "privatelink.cognitiveservices.azure.com",
+      "privatelink.purview.azure.com",
+      "privatelink.purviewstudio.azure.com",
+      "privatelink.api.azureml.ms",
+      "privatelink.notebooks.azure.net",
+      "privatelink.azuredatabricks.net",
+      "privatelink.aks.azure.com",
+      "privatelink.management.azure.com",
+      "privatelink.azure-api.net",
+      "privatelink.containerinstance.azure.com"
+    ]
   },
   "resources": [
     {
@@ -173,7 +185,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.38.5.1644",
-              "templateHash": "3482763254261089769"
+              "templateHash": "12817568457735735731"
             }
           },
           "parameters": {
@@ -199,7 +211,13 @@
               "synapse": "[format('{0}-syn-{1}', parameters('namePrefix'), parameters('environment'))]",
               "vnet": "[format('{0}-vnet-{1}', parameters('namePrefix'), parameters('environment'))]",
               "cognitiveServices": "[format('{0}-cog-{1}', parameters('namePrefix'), parameters('environment'))]",
-              "azureMaps": "[format('{0}-maps-{1}', parameters('namePrefix'), parameters('environment'))]"
+              "azureMaps": "[format('{0}-maps-{1}', parameters('namePrefix'), parameters('environment'))]",
+              "purview": "[format('{0}-purview-{1}', parameters('namePrefix'), parameters('environment'))]",
+              "machineLearning": "[format('{0}-ml-{1}', parameters('namePrefix'), parameters('environment'))]",
+              "kubernetes": "[format('{0}-aks-{1}', parameters('namePrefix'), parameters('environment'))]",
+              "fabric": "[format('{0}-fabric-{1}', parameters('namePrefix'), parameters('environment'))]",
+              "containerInstances": "[format('{0}-aci-{1}', parameters('namePrefix'), parameters('environment'))]",
+              "comprehensiveApiGateway": "[format('{0}-apigw-{1}', parameters('namePrefix'), parameters('environment'))]"
             }
           },
           "resources": [],
@@ -1427,7 +1445,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.38.5.1644",
-              "templateHash": "7569900795436012602"
+              "templateHash": "10577069554555531097"
             }
           },
           "parameters": {
@@ -1549,7 +1567,11 @@
                     },
                     {
                       "name": "FUNCTIONS_WORKER_RUNTIME",
-                      "value": "dotnet"
+                      "value": "dotnet-isolated"
+                    },
+                    {
+                      "name": "DOTNET_VERSION",
+                      "value": "8.0"
                     },
                     {
                       "name": "AzureWebJobsStorage",
@@ -1620,6 +1642,10 @@
             "functionAppResourceId": {
               "type": "string",
               "value": "[resourceId('Microsoft.Web/sites', parameters('functionAppName'))]"
+            },
+            "functionAppIdentityPrincipalId": {
+              "type": "string",
+              "value": "[reference(resourceId('Microsoft.Web/sites', parameters('functionAppName')), '2022-03-01', 'full').identity.principalId]"
             }
           }
         }
@@ -1670,7 +1696,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.38.5.1644",
-              "templateHash": "1213081950889240713"
+              "templateHash": "9840587348441681999"
             }
           },
           "parameters": {
@@ -1836,6 +1862,10 @@
             "logicAppResourceId": {
               "type": "string",
               "value": "[resourceId('Microsoft.Web/sites', parameters('name'))]"
+            },
+            "logicAppIdentityPrincipalId": {
+              "type": "string",
+              "value": "[reference(resourceId('Microsoft.Web/sites', parameters('name')), '2022-03-01', 'full').identity.principalId]"
             }
           }
         }
@@ -2231,7 +2261,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.38.5.1644",
-              "templateHash": "1391437314802353808"
+              "templateHash": "17213815634835085381"
             }
           },
           "parameters": {
@@ -2249,7 +2279,11 @@
             },
             "tags": {
               "type": "object",
-              "defaultValue": {},
+              "defaultValue": {
+                "costOptimization": "enabled",
+                "autoScaleDown": "true",
+                "autoPause": "true"
+              },
               "metadata": {
                 "description": "Tags applied to Synapse resources."
               }
@@ -2978,6 +3012,2906 @@
         "[resourceId('Microsoft.Resources/deployments', 'privateDns')]",
         "[resourceId('Microsoft.Resources/deployments', 'naming')]"
       ]
+    },
+    {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2025-04-01",
+      "name": "purview",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "name": {
+            "value": "[reference(resourceId('Microsoft.Resources/deployments', 'naming'), '2025-04-01').outputs.naming.value.purview]"
+          },
+          "location": {
+            "value": "[parameters('location')]"
+          },
+          "tags": {
+            "value": "[parameters('tags')]"
+          },
+          "logAnalyticsWorkspaceId": {
+            "value": "[reference(resourceId('Microsoft.Resources/deployments', 'logging'), '2025-04-01').outputs.workspaceId.value]"
+          },
+          "privateEndpointSubnetId": {
+            "value": "[reference(resourceId('Microsoft.Resources/deployments', 'networking'), '2025-04-01').outputs.privateEndpointsSubnetId.value]"
+          },
+          "privateDnsZoneIds": {
+            "value": "[reference(resourceId('Microsoft.Resources/deployments', 'privateDns'), '2025-04-01').outputs.privateDnsZoneIds.value]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.38.5.1644",
+              "templateHash": "10715289676424602909"
+            }
+          },
+          "parameters": {
+            "name": {
+              "type": "string",
+              "metadata": {
+                "description": "Name of the Microsoft Purview account."
+              }
+            },
+            "location": {
+              "type": "string",
+              "metadata": {
+                "description": "Azure region for deployment."
+              }
+            },
+            "tags": {
+              "type": "object",
+              "defaultValue": {},
+              "metadata": {
+                "description": "Tags applied to all resources."
+              }
+            },
+            "logAnalyticsWorkspaceId": {
+              "type": "string",
+              "metadata": {
+                "description": "Log Analytics workspace for diagnostics."
+              }
+            },
+            "privateEndpointSubnetId": {
+              "type": "string",
+              "metadata": {
+                "description": "Subnet ID for private endpoints."
+              }
+            },
+            "privateDnsZoneIds": {
+              "type": "array",
+              "metadata": {
+                "description": "Private DNS zone IDs for Purview endpoints."
+              }
+            },
+            "publicNetworkAccess": {
+              "type": "string",
+              "defaultValue": "Disabled",
+              "metadata": {
+                "description": "Enable public network access."
+              }
+            }
+          },
+          "variables": {
+            "copy": [
+              {
+                "name": "purviewDnsZones",
+                "count": "[length(parameters('privateDnsZoneIds'))]",
+                "input": "[if(endsWith(parameters('privateDnsZoneIds')[copyIndex('purviewDnsZones')], '/privatelink.purview.azure.com'), parameters('privateDnsZoneIds')[copyIndex('purviewDnsZones')], null())]"
+              },
+              {
+                "name": "purviewPortalDnsZones",
+                "count": "[length(parameters('privateDnsZoneIds'))]",
+                "input": "[if(endsWith(parameters('privateDnsZoneIds')[copyIndex('purviewPortalDnsZones')], '/privatelink.purviewstudio.azure.com'), parameters('privateDnsZoneIds')[copyIndex('purviewPortalDnsZones')], null())]"
+              }
+            ],
+            "purviewDnsZonesFiltered": "[filter(variables('purviewDnsZones'), lambda('id', not(equals(lambdaVariables('id'), null()))))]",
+            "purviewPortalDnsZonesFiltered": "[filter(variables('purviewPortalDnsZones'), lambda('id', not(equals(lambdaVariables('id'), null()))))]"
+          },
+          "resources": [
+            {
+              "type": "Microsoft.Purview/accounts",
+              "apiVersion": "2021-12-01",
+              "name": "[parameters('name')]",
+              "location": "[parameters('location')]",
+              "tags": "[parameters('tags')]",
+              "identity": {
+                "type": "SystemAssigned"
+              },
+              "properties": {
+                "publicNetworkAccess": "[parameters('publicNetworkAccess')]",
+                "managedResourceGroupName": "[format('{0}-managed-rg', parameters('name'))]",
+                "cloudConnectors": {}
+              }
+            },
+            {
+              "type": "Microsoft.Network/privateEndpoints",
+              "apiVersion": "2023-04-01",
+              "name": "[format('{0}-pe-account', parameters('name'))]",
+              "location": "[parameters('location')]",
+              "tags": "[parameters('tags')]",
+              "properties": {
+                "subnet": {
+                  "id": "[parameters('privateEndpointSubnetId')]"
+                },
+                "privateLinkServiceConnections": [
+                  {
+                    "name": "[format('{0}-account-connection', parameters('name'))]",
+                    "properties": {
+                      "privateLinkServiceId": "[resourceId('Microsoft.Purview/accounts', parameters('name'))]",
+                      "groupIds": [
+                        "account"
+                      ]
+                    }
+                  }
+                ]
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.Purview/accounts', parameters('name'))]"
+              ]
+            },
+            {
+              "type": "Microsoft.Network/privateEndpoints",
+              "apiVersion": "2023-04-01",
+              "name": "[format('{0}-pe-portal', parameters('name'))]",
+              "location": "[parameters('location')]",
+              "tags": "[parameters('tags')]",
+              "properties": {
+                "subnet": {
+                  "id": "[parameters('privateEndpointSubnetId')]"
+                },
+                "privateLinkServiceConnections": [
+                  {
+                    "name": "[format('{0}-portal-connection', parameters('name'))]",
+                    "properties": {
+                      "privateLinkServiceId": "[resourceId('Microsoft.Purview/accounts', parameters('name'))]",
+                      "groupIds": [
+                        "portal"
+                      ]
+                    }
+                  }
+                ]
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.Purview/accounts', parameters('name'))]"
+              ]
+            },
+            {
+              "condition": "[not(empty(variables('purviewDnsZonesFiltered')))]",
+              "type": "Microsoft.Network/privateEndpoints/privateDnsZoneGroups",
+              "apiVersion": "2023-04-01",
+              "name": "[format('{0}/{1}', format('{0}-pe-account', parameters('name')), 'default')]",
+              "properties": {
+                "copy": [
+                  {
+                    "name": "privateDnsZoneConfigs",
+                    "count": "[length(variables('purviewDnsZonesFiltered'))]",
+                    "input": {
+                      "name": "[last(split(variables('purviewDnsZonesFiltered')[copyIndex('privateDnsZoneConfigs')], '/'))]",
+                      "properties": {
+                        "privateDnsZoneId": "[variables('purviewDnsZonesFiltered')[copyIndex('privateDnsZoneConfigs')]]"
+                      }
+                    }
+                  }
+                ]
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.Network/privateEndpoints', format('{0}-pe-account', parameters('name')))]"
+              ]
+            },
+            {
+              "condition": "[not(empty(variables('purviewPortalDnsZonesFiltered')))]",
+              "type": "Microsoft.Network/privateEndpoints/privateDnsZoneGroups",
+              "apiVersion": "2023-04-01",
+              "name": "[format('{0}/{1}', format('{0}-pe-portal', parameters('name')), 'default')]",
+              "properties": {
+                "copy": [
+                  {
+                    "name": "privateDnsZoneConfigs",
+                    "count": "[length(variables('purviewPortalDnsZonesFiltered'))]",
+                    "input": {
+                      "name": "[last(split(variables('purviewPortalDnsZonesFiltered')[copyIndex('privateDnsZoneConfigs')], '/'))]",
+                      "properties": {
+                        "privateDnsZoneId": "[variables('purviewPortalDnsZonesFiltered')[copyIndex('privateDnsZoneConfigs')]]"
+                      }
+                    }
+                  }
+                ]
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.Network/privateEndpoints', format('{0}-pe-portal', parameters('name')))]"
+              ]
+            },
+            {
+              "type": "Microsoft.Insights/diagnosticSettings",
+              "apiVersion": "2021-05-01-preview",
+              "scope": "[format('Microsoft.Purview/accounts/{0}', parameters('name'))]",
+              "name": "[format('{0}-logs', parameters('name'))]",
+              "properties": {
+                "workspaceId": "[parameters('logAnalyticsWorkspaceId')]",
+                "logs": [
+                  {
+                    "category": "ScanStatusLogEvent",
+                    "enabled": true,
+                    "retentionPolicy": {
+                      "enabled": true,
+                      "days": 30
+                    }
+                  },
+                  {
+                    "category": "PurviewAccountAuditEvents",
+                    "enabled": true,
+                    "retentionPolicy": {
+                      "enabled": true,
+                      "days": 90
+                    }
+                  }
+                ],
+                "metrics": [
+                  {
+                    "category": "AllMetrics",
+                    "enabled": true,
+                    "retentionPolicy": {
+                      "enabled": true,
+                      "days": 30
+                    }
+                  }
+                ]
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.Purview/accounts', parameters('name'))]"
+              ]
+            }
+          ],
+          "outputs": {
+            "purviewAccountId": {
+              "type": "string",
+              "value": "[resourceId('Microsoft.Purview/accounts', parameters('name'))]"
+            },
+            "purviewAccountName": {
+              "type": "string",
+              "value": "[parameters('name')]"
+            },
+            "purviewAccountEndpoint": {
+              "type": "string",
+              "value": "[reference(resourceId('Microsoft.Purview/accounts', parameters('name')), '2021-12-01').endpoints.catalog]"
+            },
+            "purviewPortalEndpoint": {
+              "type": "string",
+              "value": "[reference(resourceId('Microsoft.Purview/accounts', parameters('name')), '2021-12-01').endpoints.guardian]"
+            },
+            "purviewIdentityPrincipalId": {
+              "type": "string",
+              "value": "[reference(resourceId('Microsoft.Purview/accounts', parameters('name')), '2021-12-01', 'full').identity.principalId]"
+            }
+          }
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Resources/deployments', 'logging')]",
+        "[resourceId('Microsoft.Resources/deployments', 'networking')]",
+        "[resourceId('Microsoft.Resources/deployments', 'privateDns')]",
+        "[resourceId('Microsoft.Resources/deployments', 'naming')]"
+      ]
+    },
+    {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2025-04-01",
+      "name": "machineLearning",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "name": {
+            "value": "[reference(resourceId('Microsoft.Resources/deployments', 'naming'), '2025-04-01').outputs.naming.value.machineLearning]"
+          },
+          "location": {
+            "value": "[parameters('location')]"
+          },
+          "tags": {
+            "value": "[parameters('tags')]"
+          },
+          "storageAccountId": {
+            "value": "[reference(resourceId('Microsoft.Resources/deployments', 'storage'), '2025-04-01').outputs.storageAccountId.value]"
+          },
+          "keyVaultId": {
+            "value": "[reference(resourceId('Microsoft.Resources/deployments', 'keyVault'), '2025-04-01').outputs.keyVaultId.value]"
+          },
+          "applicationInsightsId": {
+            "value": ""
+          },
+          "logAnalyticsWorkspaceId": {
+            "value": "[reference(resourceId('Microsoft.Resources/deployments', 'logging'), '2025-04-01').outputs.workspaceId.value]"
+          },
+          "privateEndpointSubnetId": {
+            "value": "[reference(resourceId('Microsoft.Resources/deployments', 'networking'), '2025-04-01').outputs.privateEndpointsSubnetId.value]"
+          },
+          "privateDnsZoneIds": {
+            "value": "[reference(resourceId('Microsoft.Resources/deployments', 'privateDns'), '2025-04-01').outputs.privateDnsZoneIds.value]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.38.5.1644",
+              "templateHash": "5757773485356989699"
+            }
+          },
+          "parameters": {
+            "name": {
+              "type": "string",
+              "metadata": {
+                "description": "Name of the Azure Machine Learning workspace."
+              }
+            },
+            "location": {
+              "type": "string",
+              "metadata": {
+                "description": "Azure region for deployment."
+              }
+            },
+            "tags": {
+              "type": "object",
+              "defaultValue": {},
+              "metadata": {
+                "description": "Tags applied to all resources."
+              }
+            },
+            "storageAccountId": {
+              "type": "string",
+              "metadata": {
+                "description": "Resource ID of the storage account for ML workspace."
+              }
+            },
+            "keyVaultId": {
+              "type": "string",
+              "metadata": {
+                "description": "Resource ID of the Key Vault."
+              }
+            },
+            "applicationInsightsId": {
+              "type": "string",
+              "metadata": {
+                "description": "Resource ID of the Application Insights."
+              }
+            },
+            "containerRegistryId": {
+              "type": "string",
+              "defaultValue": "",
+              "metadata": {
+                "description": "Resource ID of the container registry (optional)."
+              }
+            },
+            "logAnalyticsWorkspaceId": {
+              "type": "string",
+              "metadata": {
+                "description": "Log Analytics workspace for diagnostics."
+              }
+            },
+            "privateEndpointSubnetId": {
+              "type": "string",
+              "metadata": {
+                "description": "Subnet ID for private endpoints."
+              }
+            },
+            "privateDnsZoneIds": {
+              "type": "array",
+              "metadata": {
+                "description": "Private DNS zone IDs for ML workspace endpoints."
+              }
+            },
+            "hbiWorkspace": {
+              "type": "bool",
+              "defaultValue": false,
+              "metadata": {
+                "description": "Enable high business impact workspace."
+              }
+            }
+          },
+          "variables": {
+            "copy": [
+              {
+                "name": "mlDnsZones",
+                "count": "[length(parameters('privateDnsZoneIds'))]",
+                "input": "[if(endsWith(parameters('privateDnsZoneIds')[copyIndex('mlDnsZones')], '/privatelink.api.azureml.ms'), parameters('privateDnsZoneIds')[copyIndex('mlDnsZones')], null())]"
+              },
+              {
+                "name": "mlNotebooksDnsZones",
+                "count": "[length(parameters('privateDnsZoneIds'))]",
+                "input": "[if(endsWith(parameters('privateDnsZoneIds')[copyIndex('mlNotebooksDnsZones')], '/privatelink.notebooks.azure.net'), parameters('privateDnsZoneIds')[copyIndex('mlNotebooksDnsZones')], null())]"
+              }
+            ],
+            "mlDnsZonesFiltered": "[filter(variables('mlDnsZones'), lambda('id', not(equals(lambdaVariables('id'), null()))))]",
+            "mlNotebooksDnsZonesFiltered": "[filter(variables('mlNotebooksDnsZones'), lambda('id', not(equals(lambdaVariables('id'), null()))))]"
+          },
+          "resources": [
+            {
+              "type": "Microsoft.MachineLearningServices/workspaces",
+              "apiVersion": "2023-10-01",
+              "name": "[parameters('name')]",
+              "location": "[parameters('location')]",
+              "tags": "[parameters('tags')]",
+              "identity": {
+                "type": "SystemAssigned"
+              },
+              "properties": {
+                "friendlyName": "[parameters('name')]",
+                "description": "[format('Azure ML workspace for {0}', parameters('name'))]",
+                "storageAccount": "[parameters('storageAccountId')]",
+                "keyVault": "[parameters('keyVaultId')]",
+                "applicationInsights": "[parameters('applicationInsightsId')]",
+                "containerRegistry": "[if(not(empty(parameters('containerRegistryId'))), parameters('containerRegistryId'), null())]",
+                "publicNetworkAccess": "Disabled",
+                "discoveryUrl": "[format('https://{0}.api.azureml.ms/discovery', parameters('location'))]",
+                "encryption": {
+                  "status": "Enabled",
+                  "keyVaultProperties": {
+                    "keyVaultArmId": "[parameters('keyVaultId')]",
+                    "keyIdentifier": ""
+                  }
+                },
+                "hbiWorkspace": "[parameters('hbiWorkspace')]",
+                "v1LegacyMode": false,
+                "managedNetwork": {
+                  "isolationMode": "AllowInternetOutbound",
+                  "outboundRules": {
+                    "allow-azure-services": {
+                      "type": "ServiceTag",
+                      "destination": {
+                        "serviceTag": "AzureActiveDirectory",
+                        "protocol": "TCP",
+                        "portRanges": "443"
+                      }
+                    }
+                  }
+                },
+                "featureStoreSettings": {
+                  "computeRuntime": {
+                    "sparkRuntimeVersion": "3.3"
+                  },
+                  "offlineStoreConnectionName": "offline-store",
+                  "onlineStoreConnectionName": "online-store"
+                }
+              }
+            },
+            {
+              "type": "Microsoft.Network/privateEndpoints",
+              "apiVersion": "2023-04-01",
+              "name": "[format('{0}-pe-api', parameters('name'))]",
+              "location": "[parameters('location')]",
+              "tags": "[parameters('tags')]",
+              "properties": {
+                "subnet": {
+                  "id": "[parameters('privateEndpointSubnetId')]"
+                },
+                "privateLinkServiceConnections": [
+                  {
+                    "name": "[format('{0}-api-connection', parameters('name'))]",
+                    "properties": {
+                      "privateLinkServiceId": "[resourceId('Microsoft.MachineLearningServices/workspaces', parameters('name'))]",
+                      "groupIds": [
+                        "amlworkspace"
+                      ]
+                    }
+                  }
+                ]
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.MachineLearningServices/workspaces', parameters('name'))]"
+              ]
+            },
+            {
+              "type": "Microsoft.Network/privateEndpoints",
+              "apiVersion": "2023-04-01",
+              "name": "[format('{0}-pe-notebooks', parameters('name'))]",
+              "location": "[parameters('location')]",
+              "tags": "[parameters('tags')]",
+              "properties": {
+                "subnet": {
+                  "id": "[parameters('privateEndpointSubnetId')]"
+                },
+                "privateLinkServiceConnections": [
+                  {
+                    "name": "[format('{0}-notebooks-connection', parameters('name'))]",
+                    "properties": {
+                      "privateLinkServiceId": "[resourceId('Microsoft.MachineLearningServices/workspaces', parameters('name'))]",
+                      "groupIds": [
+                        "notebook"
+                      ]
+                    }
+                  }
+                ]
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.MachineLearningServices/workspaces', parameters('name'))]"
+              ]
+            },
+            {
+              "condition": "[not(empty(variables('mlDnsZonesFiltered')))]",
+              "type": "Microsoft.Network/privateEndpoints/privateDnsZoneGroups",
+              "apiVersion": "2023-04-01",
+              "name": "[format('{0}/{1}', format('{0}-pe-api', parameters('name')), 'default')]",
+              "properties": {
+                "copy": [
+                  {
+                    "name": "privateDnsZoneConfigs",
+                    "count": "[length(variables('mlDnsZonesFiltered'))]",
+                    "input": {
+                      "name": "[last(split(variables('mlDnsZonesFiltered')[copyIndex('privateDnsZoneConfigs')], '/'))]",
+                      "properties": {
+                        "privateDnsZoneId": "[variables('mlDnsZonesFiltered')[copyIndex('privateDnsZoneConfigs')]]"
+                      }
+                    }
+                  }
+                ]
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.Network/privateEndpoints', format('{0}-pe-api', parameters('name')))]"
+              ]
+            },
+            {
+              "condition": "[not(empty(variables('mlNotebooksDnsZonesFiltered')))]",
+              "type": "Microsoft.Network/privateEndpoints/privateDnsZoneGroups",
+              "apiVersion": "2023-04-01",
+              "name": "[format('{0}/{1}', format('{0}-pe-notebooks', parameters('name')), 'default')]",
+              "properties": {
+                "copy": [
+                  {
+                    "name": "privateDnsZoneConfigs",
+                    "count": "[length(variables('mlNotebooksDnsZonesFiltered'))]",
+                    "input": {
+                      "name": "[last(split(variables('mlNotebooksDnsZonesFiltered')[copyIndex('privateDnsZoneConfigs')], '/'))]",
+                      "properties": {
+                        "privateDnsZoneId": "[variables('mlNotebooksDnsZonesFiltered')[copyIndex('privateDnsZoneConfigs')]]"
+                      }
+                    }
+                  }
+                ]
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.Network/privateEndpoints', format('{0}-pe-notebooks', parameters('name')))]"
+              ]
+            },
+            {
+              "type": "Microsoft.MachineLearningServices/workspaces/computes",
+              "apiVersion": "2023-10-01",
+              "name": "[format('{0}/{1}', parameters('name'), format('{0}-dev-instance', parameters('name')))]",
+              "location": "[parameters('location')]",
+              "properties": {
+                "computeType": "ComputeInstance",
+                "properties": {
+                  "vmSize": "Standard_DS3_v2",
+                  "subnet": {
+                    "id": "[parameters('privateEndpointSubnetId')]"
+                  },
+                  "applicationSharingPolicy": "Personal",
+                  "sshSettings": {
+                    "sshPublicAccess": "Disabled"
+                  },
+                  "setupScripts": {
+                    "scripts": {
+                      "creationScript": {
+                        "scriptSource": "inline",
+                        "scriptData": "[base64('#!/bin/bash\n# Install additional ML libraries\npip install --upgrade azureml-sdk\npip install mlflow\npip install optuna\npip install shap\npip install interpret\n            ')]"
+                      }
+                    }
+                  }
+                }
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.MachineLearningServices/workspaces', parameters('name'))]"
+              ]
+            },
+            {
+              "type": "Microsoft.MachineLearningServices/workspaces/computes",
+              "apiVersion": "2023-10-01",
+              "name": "[format('{0}/{1}', parameters('name'), format('{0}-training-cluster', parameters('name')))]",
+              "location": "[parameters('location')]",
+              "properties": {
+                "computeType": "AmlCompute",
+                "properties": {
+                  "vmSize": "Standard_DS3_v2",
+                  "vmPriority": "Dedicated",
+                  "scaleSettings": {
+                    "minNodeCount": 0,
+                    "maxNodeCount": 10,
+                    "nodeIdleTimeBeforeScaleDown": "PT120S"
+                  },
+                  "subnet": {
+                    "id": "[parameters('privateEndpointSubnetId')]"
+                  },
+                  "enableNodePublicIp": false,
+                  "isolatedNetwork": false,
+                  "osType": "Linux"
+                }
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.MachineLearningServices/workspaces', parameters('name'))]"
+              ]
+            },
+            {
+              "type": "Microsoft.MachineLearningServices/workspaces/computes",
+              "apiVersion": "2023-10-01",
+              "name": "[format('{0}/{1}', parameters('name'), format('{0}-inference-cluster', parameters('name')))]",
+              "location": "[parameters('location')]",
+              "properties": {
+                "computeType": "AKS",
+                "properties": {
+                  "agentCount": 3,
+                  "agentVmSize": "Standard_D3_v2",
+                  "clusterFqdn": "[format('{0}-inference.{1}.cloudapp.azure.com', parameters('name'), parameters('location'))]",
+                  "orchestratorType": "Kubernetes",
+                  "systemServices": [
+                    {
+                      "systemServiceType": "None"
+                    }
+                  ]
+                }
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.MachineLearningServices/workspaces', parameters('name'))]"
+              ]
+            },
+            {
+              "type": "Microsoft.Insights/diagnosticSettings",
+              "apiVersion": "2021-05-01-preview",
+              "scope": "[format('Microsoft.MachineLearningServices/workspaces/{0}', parameters('name'))]",
+              "name": "[format('{0}-logs', parameters('name'))]",
+              "properties": {
+                "workspaceId": "[parameters('logAnalyticsWorkspaceId')]",
+                "logs": [
+                  {
+                    "category": "AmlComputeClusterEvent",
+                    "enabled": true,
+                    "retentionPolicy": {
+                      "enabled": true,
+                      "days": 30
+                    }
+                  },
+                  {
+                    "category": "AmlComputeClusterNodeEvent",
+                    "enabled": true,
+                    "retentionPolicy": {
+                      "enabled": true,
+                      "days": 30
+                    }
+                  },
+                  {
+                    "category": "AmlComputeJobEvent",
+                    "enabled": true,
+                    "retentionPolicy": {
+                      "enabled": true,
+                      "days": 90
+                    }
+                  },
+                  {
+                    "category": "AmlComputeCpuGpuUtilization",
+                    "enabled": true,
+                    "retentionPolicy": {
+                      "enabled": true,
+                      "days": 30
+                    }
+                  },
+                  {
+                    "category": "AmlRunStatusChangedEvent",
+                    "enabled": true,
+                    "retentionPolicy": {
+                      "enabled": true,
+                      "days": 90
+                    }
+                  },
+                  {
+                    "category": "ModelsChangeEvent",
+                    "enabled": true,
+                    "retentionPolicy": {
+                      "enabled": true,
+                      "days": 90
+                    }
+                  },
+                  {
+                    "category": "ModelsReadEvent",
+                    "enabled": true,
+                    "retentionPolicy": {
+                      "enabled": true,
+                      "days": 30
+                    }
+                  },
+                  {
+                    "category": "ModelsActionEvent",
+                    "enabled": true,
+                    "retentionPolicy": {
+                      "enabled": true,
+                      "days": 90
+                    }
+                  }
+                ],
+                "metrics": [
+                  {
+                    "category": "AllMetrics",
+                    "enabled": true,
+                    "retentionPolicy": {
+                      "enabled": true,
+                      "days": 30
+                    }
+                  }
+                ]
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.MachineLearningServices/workspaces', parameters('name'))]"
+              ]
+            }
+          ],
+          "outputs": {
+            "mlWorkspaceId": {
+              "type": "string",
+              "value": "[resourceId('Microsoft.MachineLearningServices/workspaces', parameters('name'))]"
+            },
+            "mlWorkspaceName": {
+              "type": "string",
+              "value": "[parameters('name')]"
+            },
+            "mlWorkspaceIdentityPrincipalId": {
+              "type": "string",
+              "value": "[reference(resourceId('Microsoft.MachineLearningServices/workspaces', parameters('name')), '2023-10-01', 'full').identity.principalId]"
+            },
+            "computeInstanceName": {
+              "type": "string",
+              "value": "[format('{0}-dev-instance', parameters('name'))]"
+            },
+            "trainingClusterName": {
+              "type": "string",
+              "value": "[format('{0}-training-cluster', parameters('name'))]"
+            },
+            "inferenceClusterName": {
+              "type": "string",
+              "value": "[format('{0}-inference-cluster', parameters('name'))]"
+            }
+          }
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Resources/deployments', 'keyVault')]",
+        "[resourceId('Microsoft.Resources/deployments', 'logging')]",
+        "[resourceId('Microsoft.Resources/deployments', 'networking')]",
+        "[resourceId('Microsoft.Resources/deployments', 'privateDns')]",
+        "[resourceId('Microsoft.Resources/deployments', 'naming')]",
+        "[resourceId('Microsoft.Resources/deployments', 'storage')]"
+      ]
+    },
+    {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2025-04-01",
+      "name": "kubernetes",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "name": {
+            "value": "[reference(resourceId('Microsoft.Resources/deployments', 'naming'), '2025-04-01').outputs.naming.value.kubernetes]"
+          },
+          "location": {
+            "value": "[parameters('location')]"
+          },
+          "tags": {
+            "value": "[parameters('tags')]"
+          },
+          "subnetId": {
+            "value": "[reference(resourceId('Microsoft.Resources/deployments', 'networking'), '2025-04-01').outputs.functionSubnetId.value]"
+          },
+          "logAnalyticsWorkspaceId": {
+            "value": "[reference(resourceId('Microsoft.Resources/deployments', 'logging'), '2025-04-01').outputs.workspaceId.value]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.38.5.1644",
+              "templateHash": "17443407856965045418"
+            }
+          },
+          "parameters": {
+            "name": {
+              "type": "string",
+              "metadata": {
+                "description": "Name of the AKS cluster."
+              }
+            },
+            "location": {
+              "type": "string",
+              "metadata": {
+                "description": "Azure region for deployment."
+              }
+            },
+            "tags": {
+              "type": "object",
+              "defaultValue": {},
+              "metadata": {
+                "description": "Tags applied to all resources."
+              }
+            },
+            "kubernetesVersion": {
+              "type": "string",
+              "defaultValue": "1.28.3",
+              "metadata": {
+                "description": "Kubernetes version."
+              }
+            },
+            "nodeVmSize": {
+              "type": "string",
+              "defaultValue": "Standard_D4s_v3",
+              "metadata": {
+                "description": "VM size for the default node pool."
+              }
+            },
+            "nodeCount": {
+              "type": "int",
+              "defaultValue": 3,
+              "metadata": {
+                "description": "Number of nodes in the default pool."
+              }
+            },
+            "minNodeCount": {
+              "type": "int",
+              "defaultValue": 1,
+              "metadata": {
+                "description": "Minimum number of nodes for auto-scaling."
+              }
+            },
+            "maxNodeCount": {
+              "type": "int",
+              "defaultValue": 10,
+              "metadata": {
+                "description": "Maximum number of nodes for auto-scaling."
+              }
+            },
+            "subnetId": {
+              "type": "string",
+              "metadata": {
+                "description": "Subnet ID for AKS nodes."
+              }
+            },
+            "logAnalyticsWorkspaceId": {
+              "type": "string",
+              "metadata": {
+                "description": "Log Analytics workspace for diagnostics."
+              }
+            },
+            "enableAzureAD": {
+              "type": "bool",
+              "defaultValue": true,
+              "metadata": {
+                "description": "Enable Azure AD integration."
+              }
+            },
+            "enableAzureRBAC": {
+              "type": "bool",
+              "defaultValue": true,
+              "metadata": {
+                "description": "Enable Azure RBAC for Kubernetes authorization."
+              }
+            },
+            "networkPlugin": {
+              "type": "string",
+              "defaultValue": "azure",
+              "allowedValues": [
+                "azure",
+                "kubenet"
+              ],
+              "metadata": {
+                "description": "Network plugin (azure or kubenet)."
+              }
+            },
+            "networkPolicy": {
+              "type": "string",
+              "defaultValue": "azure",
+              "allowedValues": [
+                "azure",
+                "calico"
+              ],
+              "metadata": {
+                "description": "Network policy (azure or calico)."
+              }
+            },
+            "dnsServiceIP": {
+              "type": "string",
+              "defaultValue": "10.0.0.10",
+              "metadata": {
+                "description": "DNS service IP."
+              }
+            },
+            "serviceCidr": {
+              "type": "string",
+              "defaultValue": "10.0.0.0/16",
+              "metadata": {
+                "description": "Service CIDR."
+              }
+            }
+          },
+          "resources": [
+            {
+              "type": "Microsoft.ContainerService/managedClusters",
+              "apiVersion": "2023-10-01",
+              "name": "[parameters('name')]",
+              "location": "[parameters('location')]",
+              "tags": "[parameters('tags')]",
+              "identity": {
+                "type": "SystemAssigned"
+              },
+              "properties": {
+                "kubernetesVersion": "[parameters('kubernetesVersion')]",
+                "dnsPrefix": "[format('{0}-dns', parameters('name'))]",
+                "enableRBAC": true,
+                "agentPoolProfiles": [
+                  {
+                    "name": "system",
+                    "count": "[parameters('nodeCount')]",
+                    "vmSize": "[parameters('nodeVmSize')]",
+                    "osType": "Linux",
+                    "mode": "System",
+                    "enableAutoScaling": true,
+                    "minCount": "[parameters('minNodeCount')]",
+                    "maxCount": "[parameters('maxNodeCount')]",
+                    "vnetSubnetID": "[parameters('subnetId')]",
+                    "maxPods": 30,
+                    "osDiskSizeGB": 128,
+                    "osDiskType": "Managed",
+                    "kubeletDiskType": "OS",
+                    "nodeTaints": [
+                      "CriticalAddonsOnly=true:NoSchedule"
+                    ],
+                    "nodeLabels": {
+                      "node-type": "system"
+                    }
+                  }
+                ],
+                "networkProfile": {
+                  "networkPlugin": "[parameters('networkPlugin')]",
+                  "networkPolicy": "[parameters('networkPolicy')]",
+                  "serviceCidr": "[parameters('serviceCidr')]",
+                  "dnsServiceIP": "[parameters('dnsServiceIP')]",
+                  "loadBalancerSku": "Standard",
+                  "outboundType": "loadBalancer"
+                },
+                "aadProfile": "[if(parameters('enableAzureAD'), createObject('managed', true(), 'enableAzureRBAC', parameters('enableAzureRBAC'), 'tenantID', tenant().tenantId), null())]",
+                "apiServerAccessProfile": {
+                  "enablePrivateCluster": true,
+                  "privateDNSZone": "system",
+                  "enablePrivateClusterPublicFQDN": false
+                },
+                "addonProfiles": {
+                  "omsagent": {
+                    "enabled": true,
+                    "config": {
+                      "logAnalyticsWorkspaceResourceID": "[parameters('logAnalyticsWorkspaceId')]"
+                    }
+                  },
+                  "azureKeyvaultSecretsProvider": {
+                    "enabled": true,
+                    "config": {
+                      "enableSecretRotation": "true",
+                      "rotationPollInterval": "2m"
+                    }
+                  },
+                  "azurepolicy": {
+                    "enabled": true
+                  },
+                  "ingressApplicationGateway": {
+                    "enabled": false
+                  }
+                },
+                "securityProfile": {
+                  "workloadIdentity": {
+                    "enabled": true
+                  },
+                  "imageCleaner": {
+                    "enabled": true,
+                    "intervalHours": 48
+                  }
+                },
+                "autoUpgradeProfile": {
+                  "upgradeChannel": "patch"
+                },
+                "storageProfile": {
+                  "diskCSIDriver": {
+                    "enabled": true
+                  },
+                  "fileCSIDriver": {
+                    "enabled": true
+                  },
+                  "snapshotController": {
+                    "enabled": true
+                  }
+                },
+                "windowsProfile": null,
+                "httpProxyConfig": null,
+                "maintenanceWindow": {
+                  "allowedDays": [
+                    "Saturday",
+                    "Sunday"
+                  ],
+                  "allowedHours": [
+                    2,
+                    3,
+                    4
+                  ]
+                }
+              }
+            },
+            {
+              "type": "Microsoft.ContainerService/managedClusters/agentPools",
+              "apiVersion": "2023-10-01",
+              "name": "[format('{0}/{1}', parameters('name'), 'user')]",
+              "properties": {
+                "count": 2,
+                "vmSize": "Standard_D2s_v3",
+                "osType": "Linux",
+                "mode": "User",
+                "enableAutoScaling": true,
+                "minCount": 0,
+                "maxCount": 5,
+                "vnetSubnetID": "[parameters('subnetId')]",
+                "maxPods": 30,
+                "osDiskSizeGB": 128,
+                "osDiskType": "Managed",
+                "kubeletDiskType": "OS",
+                "nodeLabels": {
+                  "node-type": "user",
+                  "workload": "general"
+                },
+                "nodeTaints": []
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.ContainerService/managedClusters', parameters('name'))]"
+              ]
+            },
+            {
+              "type": "Microsoft.ContainerService/managedClusters/agentPools",
+              "apiVersion": "2023-10-01",
+              "name": "[format('{0}/{1}', parameters('name'), 'gpu')]",
+              "properties": {
+                "count": 0,
+                "vmSize": "Standard_NC6s_v3",
+                "osType": "Linux",
+                "mode": "User",
+                "enableAutoScaling": true,
+                "minCount": 0,
+                "maxCount": 3,
+                "vnetSubnetID": "[parameters('subnetId')]",
+                "maxPods": 30,
+                "osDiskSizeGB": 256,
+                "osDiskType": "Managed",
+                "kubeletDiskType": "OS",
+                "nodeLabels": {
+                  "node-type": "gpu",
+                  "workload": "ml",
+                  "accelerator": "nvidia-tesla-v100"
+                },
+                "nodeTaints": [
+                  "sku=gpu:NoSchedule"
+                ]
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.ContainerService/managedClusters', parameters('name'))]"
+              ]
+            },
+            {
+              "type": "Microsoft.Insights/diagnosticSettings",
+              "apiVersion": "2021-05-01-preview",
+              "scope": "[format('Microsoft.ContainerService/managedClusters/{0}', parameters('name'))]",
+              "name": "[format('{0}-logs', parameters('name'))]",
+              "properties": {
+                "workspaceId": "[parameters('logAnalyticsWorkspaceId')]",
+                "logs": [
+                  {
+                    "category": "kube-apiserver",
+                    "enabled": true,
+                    "retentionPolicy": {
+                      "enabled": true,
+                      "days": 30
+                    }
+                  },
+                  {
+                    "category": "kube-audit",
+                    "enabled": true,
+                    "retentionPolicy": {
+                      "enabled": true,
+                      "days": 90
+                    }
+                  },
+                  {
+                    "category": "kube-controller-manager",
+                    "enabled": true,
+                    "retentionPolicy": {
+                      "enabled": true,
+                      "days": 30
+                    }
+                  },
+                  {
+                    "category": "kube-scheduler",
+                    "enabled": true,
+                    "retentionPolicy": {
+                      "enabled": true,
+                      "days": 30
+                    }
+                  },
+                  {
+                    "category": "cluster-autoscaler",
+                    "enabled": true,
+                    "retentionPolicy": {
+                      "enabled": true,
+                      "days": 30
+                    }
+                  },
+                  {
+                    "category": "guard",
+                    "enabled": true,
+                    "retentionPolicy": {
+                      "enabled": true,
+                      "days": 30
+                    }
+                  }
+                ],
+                "metrics": [
+                  {
+                    "category": "AllMetrics",
+                    "enabled": true,
+                    "retentionPolicy": {
+                      "enabled": true,
+                      "days": 30
+                    }
+                  }
+                ]
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.ContainerService/managedClusters', parameters('name'))]"
+              ]
+            }
+          ],
+          "outputs": {
+            "aksClusterId": {
+              "type": "string",
+              "value": "[resourceId('Microsoft.ContainerService/managedClusters', parameters('name'))]"
+            },
+            "aksClusterName": {
+              "type": "string",
+              "value": "[parameters('name')]"
+            },
+            "aksClusterFqdn": {
+              "type": "string",
+              "value": "[reference(resourceId('Microsoft.ContainerService/managedClusters', parameters('name')), '2023-10-01').fqdn]"
+            },
+            "aksClusterIdentityPrincipalId": {
+              "type": "string",
+              "value": "[reference(resourceId('Microsoft.ContainerService/managedClusters', parameters('name')), '2023-10-01', 'full').identity.principalId]"
+            },
+            "nodeResourceGroup": {
+              "type": "string",
+              "value": "[reference(resourceId('Microsoft.ContainerService/managedClusters', parameters('name')), '2023-10-01').nodeResourceGroup]"
+            }
+          }
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Resources/deployments', 'logging')]",
+        "[resourceId('Microsoft.Resources/deployments', 'networking')]",
+        "[resourceId('Microsoft.Resources/deployments', 'naming')]"
+      ]
+    },
+    {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2025-04-01",
+      "name": "fabric",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "name": {
+            "value": "[reference(resourceId('Microsoft.Resources/deployments', 'naming'), '2025-04-01').outputs.naming.value.fabric]"
+          },
+          "location": {
+            "value": "[parameters('location')]"
+          },
+          "tags": {
+            "value": "[parameters('tags')]"
+          },
+          "administrators": {
+            "value": [
+              "admin@company.com"
+            ]
+          },
+          "logAnalyticsWorkspaceId": {
+            "value": "[reference(resourceId('Microsoft.Resources/deployments', 'logging'), '2025-04-01').outputs.workspaceId.value]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.38.5.1644",
+              "templateHash": "6211687663880796943"
+            }
+          },
+          "parameters": {
+            "name": {
+              "type": "string",
+              "metadata": {
+                "description": "Name of the Microsoft Fabric capacity."
+              }
+            },
+            "location": {
+              "type": "string",
+              "metadata": {
+                "description": "Azure region for deployment."
+              }
+            },
+            "tags": {
+              "type": "object",
+              "defaultValue": {},
+              "metadata": {
+                "description": "Tags applied to all resources."
+              }
+            },
+            "sku": {
+              "type": "string",
+              "defaultValue": "F2",
+              "allowedValues": [
+                "F2",
+                "F4",
+                "F8",
+                "F16",
+                "F32",
+                "F64",
+                "F128",
+                "F256",
+                "F512"
+              ],
+              "metadata": {
+                "description": "SKU for Microsoft Fabric capacity."
+              }
+            },
+            "administrators": {
+              "type": "array",
+              "metadata": {
+                "description": "Administrator email addresses."
+              }
+            },
+            "logAnalyticsWorkspaceId": {
+              "type": "string",
+              "metadata": {
+                "description": "Log Analytics workspace for diagnostics."
+              }
+            },
+            "enableAutoScale": {
+              "type": "bool",
+              "defaultValue": true,
+              "metadata": {
+                "description": "Enable automatic scaling."
+              }
+            },
+            "maxCapacityUnits": {
+              "type": "int",
+              "defaultValue": 4,
+              "metadata": {
+                "description": "Maximum capacity units for auto-scaling."
+              }
+            },
+            "minCapacityUnits": {
+              "type": "int",
+              "defaultValue": 1,
+              "metadata": {
+                "description": "Minimum capacity units for auto-scaling."
+              }
+            }
+          },
+          "resources": [
+            {
+              "type": "Microsoft.Fabric/capacities",
+              "apiVersion": "2023-11-01",
+              "name": "[parameters('name')]",
+              "location": "[parameters('location')]",
+              "tags": "[parameters('tags')]",
+              "sku": {
+                "name": "[parameters('sku')]",
+                "tier": "Fabric"
+              },
+              "properties": {
+                "administration": {
+                  "members": "[parameters('administrators')]"
+                },
+                "state": "Active"
+              }
+            },
+            {
+              "condition": "[parameters('enableAutoScale')]",
+              "type": "Microsoft.Insights/autoscalesettings",
+              "apiVersion": "2022-10-01",
+              "name": "[format('{0}-autoscale', parameters('name'))]",
+              "location": "[parameters('location')]",
+              "tags": "[parameters('tags')]",
+              "properties": {
+                "enabled": "[parameters('enableAutoScale')]",
+                "targetResourceUri": "[resourceId('Microsoft.Fabric/capacities', parameters('name'))]",
+                "profiles": [
+                  {
+                    "name": "Default",
+                    "capacity": {
+                      "minimum": "[string(parameters('minCapacityUnits'))]",
+                      "maximum": "[string(parameters('maxCapacityUnits'))]",
+                      "default": "[string(parameters('minCapacityUnits'))]"
+                    },
+                    "rules": [
+                      {
+                        "metricTrigger": {
+                          "metricName": "CU",
+                          "metricNamespace": "Microsoft.Fabric/capacities",
+                          "metricResourceUri": "[resourceId('Microsoft.Fabric/capacities', parameters('name'))]",
+                          "timeGrain": "PT1M",
+                          "statistic": "Average",
+                          "timeWindow": "PT5M",
+                          "timeAggregation": "Average",
+                          "operator": "GreaterThan",
+                          "threshold": 80
+                        },
+                        "scaleAction": {
+                          "direction": "Increase",
+                          "type": "ChangeCount",
+                          "value": "1",
+                          "cooldown": "PT10M"
+                        }
+                      },
+                      {
+                        "metricTrigger": {
+                          "metricName": "CU",
+                          "metricNamespace": "Microsoft.Fabric/capacities",
+                          "metricResourceUri": "[resourceId('Microsoft.Fabric/capacities', parameters('name'))]",
+                          "timeGrain": "PT1M",
+                          "statistic": "Average",
+                          "timeWindow": "PT15M",
+                          "timeAggregation": "Average",
+                          "operator": "LessThan",
+                          "threshold": 30
+                        },
+                        "scaleAction": {
+                          "direction": "Decrease",
+                          "type": "ChangeCount",
+                          "value": "1",
+                          "cooldown": "PT20M"
+                        }
+                      }
+                    ]
+                  },
+                  {
+                    "name": "BusinessHours",
+                    "capacity": {
+                      "minimum": "[string(add(parameters('minCapacityUnits'), 1))]",
+                      "maximum": "[string(parameters('maxCapacityUnits'))]",
+                      "default": "[string(add(parameters('minCapacityUnits'), 1))]"
+                    },
+                    "rules": [
+                      {
+                        "metricTrigger": {
+                          "metricName": "CU",
+                          "metricNamespace": "Microsoft.Fabric/capacities",
+                          "metricResourceUri": "[resourceId('Microsoft.Fabric/capacities', parameters('name'))]",
+                          "timeGrain": "PT1M",
+                          "statistic": "Average",
+                          "timeWindow": "PT5M",
+                          "timeAggregation": "Average",
+                          "operator": "GreaterThan",
+                          "threshold": 70
+                        },
+                        "scaleAction": {
+                          "direction": "Increase",
+                          "type": "ChangeCount",
+                          "value": "1",
+                          "cooldown": "PT5M"
+                        }
+                      }
+                    ],
+                    "recurrence": {
+                      "frequency": "Week",
+                      "schedule": {
+                        "timeZone": "UTC",
+                        "days": [
+                          "Monday",
+                          "Tuesday",
+                          "Wednesday",
+                          "Thursday",
+                          "Friday"
+                        ],
+                        "hours": [
+                          8
+                        ],
+                        "minutes": [
+                          0
+                        ]
+                      }
+                    }
+                  }
+                ],
+                "notifications": [
+                  {
+                    "operation": "Scale",
+                    "email": {
+                      "sendToSubscriptionAdministrator": true,
+                      "sendToSubscriptionCoAdministrators": true,
+                      "customEmails": "[parameters('administrators')]"
+                    }
+                  }
+                ]
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.Fabric/capacities', parameters('name'))]"
+              ]
+            },
+            {
+              "type": "Microsoft.Insights/diagnosticSettings",
+              "apiVersion": "2021-05-01-preview",
+              "scope": "[format('Microsoft.Fabric/capacities/{0}', parameters('name'))]",
+              "name": "[format('{0}-logs', parameters('name'))]",
+              "properties": {
+                "workspaceId": "[parameters('logAnalyticsWorkspaceId')]",
+                "logs": [
+                  {
+                    "category": "Engine",
+                    "enabled": true,
+                    "retentionPolicy": {
+                      "enabled": true,
+                      "days": 30
+                    }
+                  },
+                  {
+                    "category": "Service",
+                    "enabled": true,
+                    "retentionPolicy": {
+                      "enabled": true,
+                      "days": 30
+                    }
+                  },
+                  {
+                    "category": "Gateway",
+                    "enabled": true,
+                    "retentionPolicy": {
+                      "enabled": true,
+                      "days": 30
+                    }
+                  }
+                ],
+                "metrics": [
+                  {
+                    "category": "AllMetrics",
+                    "enabled": true,
+                    "retentionPolicy": {
+                      "enabled": true,
+                      "days": 30
+                    }
+                  }
+                ]
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.Fabric/capacities', parameters('name'))]"
+              ]
+            },
+            {
+              "type": "Microsoft.Insights/activityLogAlerts",
+              "apiVersion": "2020-10-01",
+              "name": "[format('{0}-activity-alert', parameters('name'))]",
+              "location": "Global",
+              "tags": "[parameters('tags')]",
+              "properties": {
+                "enabled": true,
+                "scopes": [
+                  "[resourceId('Microsoft.Fabric/capacities', parameters('name'))]"
+                ],
+                "condition": {
+                  "allOf": [
+                    {
+                      "field": "category",
+                      "equals": "Administrative"
+                    },
+                    {
+                      "field": "operationName",
+                      "equals": "Microsoft.Fabric/capacities/write"
+                    },
+                    {
+                      "field": "status",
+                      "equals": "Failed"
+                    }
+                  ]
+                },
+                "actions": {
+                  "actionGroups": []
+                },
+                "description": "Alert for Microsoft Fabric capacity operations"
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.Fabric/capacities', parameters('name'))]"
+              ]
+            },
+            {
+              "type": "Microsoft.Insights/metricAlerts",
+              "apiVersion": "2018-03-01",
+              "name": "[format('{0}-capacity-alert', parameters('name'))]",
+              "location": "Global",
+              "tags": "[parameters('tags')]",
+              "properties": {
+                "description": "Alert when Fabric capacity utilization is high",
+                "severity": 2,
+                "enabled": true,
+                "scopes": [
+                  "[resourceId('Microsoft.Fabric/capacities', parameters('name'))]"
+                ],
+                "evaluationFrequency": "PT1M",
+                "windowSize": "PT5M",
+                "criteria": {
+                  "odata.type": "Microsoft.Azure.Monitor.SingleResourceMultipleMetricCriteria",
+                  "allOf": [
+                    {
+                      "threshold": 90,
+                      "name": "HighCapacityUtilization",
+                      "metricNamespace": "Microsoft.Fabric/capacities",
+                      "metricName": "CU",
+                      "operator": "GreaterThan",
+                      "timeAggregation": "Average",
+                      "criterionType": "StaticThresholdCriterion"
+                    }
+                  ]
+                },
+                "actions": []
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.Fabric/capacities', parameters('name'))]"
+              ]
+            }
+          ],
+          "outputs": {
+            "fabricCapacityId": {
+              "type": "string",
+              "value": "[resourceId('Microsoft.Fabric/capacities', parameters('name'))]"
+            },
+            "fabricCapacityName": {
+              "type": "string",
+              "value": "[parameters('name')]"
+            },
+            "fabricCapacityLocation": {
+              "type": "string",
+              "value": "[reference(resourceId('Microsoft.Fabric/capacities', parameters('name')), '2023-11-01', 'full').location]"
+            },
+            "fabricCapacityState": {
+              "type": "string",
+              "value": "[reference(resourceId('Microsoft.Fabric/capacities', parameters('name')), '2023-11-01').state]"
+            }
+          }
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Resources/deployments', 'logging')]",
+        "[resourceId('Microsoft.Resources/deployments', 'naming')]"
+      ]
+    },
+    {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2025-04-01",
+      "name": "containerInstances",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "name": {
+            "value": "[reference(resourceId('Microsoft.Resources/deployments', 'naming'), '2025-04-01').outputs.naming.value.containerInstances]"
+          },
+          "location": {
+            "value": "[parameters('location')]"
+          },
+          "tags": {
+            "value": "[parameters('tags')]"
+          },
+          "subnetId": {
+            "value": "[reference(resourceId('Microsoft.Resources/deployments', 'networking'), '2025-04-01').outputs.integrationSubnetId.value]"
+          },
+          "logAnalyticsWorkspaceId": {
+            "value": "[reference(resourceId('Microsoft.Resources/deployments', 'logging'), '2025-04-01').outputs.workspaceId.value]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.38.5.1644",
+              "templateHash": "3077080601080656025"
+            }
+          },
+          "parameters": {
+            "name": {
+              "type": "string",
+              "metadata": {
+                "description": "Name of the Container Instances group."
+              }
+            },
+            "location": {
+              "type": "string",
+              "metadata": {
+                "description": "Azure region for deployment."
+              }
+            },
+            "tags": {
+              "type": "object",
+              "defaultValue": {},
+              "metadata": {
+                "description": "Tags applied to all resources."
+              }
+            },
+            "containerImage": {
+              "type": "string",
+              "defaultValue": "mcr.microsoft.com/azure-functions/dotnet-isolated:4-dotnet-isolated8.0",
+              "metadata": {
+                "description": "Container image to deploy."
+              }
+            },
+            "cpuCores": {
+              "type": "int",
+              "defaultValue": 1,
+              "metadata": {
+                "description": "Number of CPU cores."
+              }
+            },
+            "memoryInGB": {
+              "type": "int",
+              "defaultValue": 2,
+              "metadata": {
+                "description": "Memory in GB."
+              }
+            },
+            "restartPolicy": {
+              "type": "string",
+              "defaultValue": "OnFailure",
+              "allowedValues": [
+                "Always",
+                "Never",
+                "OnFailure"
+              ],
+              "metadata": {
+                "description": "Restart policy for containers."
+              }
+            },
+            "subnetId": {
+              "type": "string",
+              "metadata": {
+                "description": "Subnet ID for VNet integration."
+              }
+            },
+            "logAnalyticsWorkspaceId": {
+              "type": "string",
+              "metadata": {
+                "description": "Log Analytics workspace for diagnostics."
+              }
+            },
+            "environmentVariables": {
+              "type": "array",
+              "defaultValue": [],
+              "metadata": {
+                "description": "Environment variables for the container."
+              }
+            },
+            "enableManagedIdentity": {
+              "type": "bool",
+              "defaultValue": true,
+              "metadata": {
+                "description": "Enable managed identity."
+              }
+            }
+          },
+          "resources": [
+            {
+              "type": "Microsoft.ContainerInstance/containerGroups",
+              "apiVersion": "2023-05-01",
+              "name": "[parameters('name')]",
+              "location": "[parameters('location')]",
+              "tags": "[parameters('tags')]",
+              "identity": "[if(parameters('enableManagedIdentity'), createObject('type', 'SystemAssigned'), null())]",
+              "properties": {
+                "containers": [
+                  {
+                    "name": "[format('{0}-container', parameters('name'))]",
+                    "properties": {
+                      "image": "[parameters('containerImage')]",
+                      "resources": {
+                        "requests": {
+                          "cpu": "[parameters('cpuCores')]",
+                          "memoryInGB": "[parameters('memoryInGB')]"
+                        }
+                      },
+                      "environmentVariables": "[parameters('environmentVariables')]",
+                      "ports": [
+                        {
+                          "port": 80,
+                          "protocol": "TCP"
+                        },
+                        {
+                          "port": 443,
+                          "protocol": "TCP"
+                        }
+                      ]
+                    }
+                  }
+                ],
+                "restartPolicy": "[parameters('restartPolicy')]",
+                "osType": "Linux",
+                "subnetIds": [
+                  {
+                    "id": "[parameters('subnetId')]"
+                  }
+                ],
+                "diagnostics": {
+                  "logAnalytics": {
+                    "workspaceId": "[reference(parameters('logAnalyticsWorkspaceId'), '2022-10-01').customerId]",
+                    "workspaceKey": "[listKeys(parameters('logAnalyticsWorkspaceId'), '2022-10-01').primarySharedKey]"
+                  }
+                },
+                "priority": "Regular",
+                "sku": "Standard"
+              }
+            },
+            {
+              "type": "Microsoft.ContainerInstance/containerGroups",
+              "apiVersion": "2023-05-01",
+              "name": "[format('{0}-sidecar', parameters('name'))]",
+              "location": "[parameters('location')]",
+              "tags": "[union(parameters('tags'), createObject('purpose', 'sidecar'))]",
+              "identity": "[if(parameters('enableManagedIdentity'), createObject('type', 'SystemAssigned'), null())]",
+              "properties": {
+                "containers": [
+                  {
+                    "name": "app-container",
+                    "properties": {
+                      "image": "[parameters('containerImage')]",
+                      "resources": {
+                        "requests": {
+                          "cpu": "[parameters('cpuCores')]",
+                          "memoryInGB": "[parameters('memoryInGB')]"
+                        }
+                      },
+                      "environmentVariables": "[parameters('environmentVariables')]",
+                      "ports": [
+                        {
+                          "port": 8080,
+                          "protocol": "TCP"
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "name": "logging-sidecar",
+                    "properties": {
+                      "image": "mcr.microsoft.com/azuremonitor/containerinsights/ciprod:ciprod20230816",
+                      "resources": {
+                        "requests": {
+                          "cpu": "[json('0.5')]",
+                          "memoryInGB": 1
+                        }
+                      },
+                      "environmentVariables": [
+                        {
+                          "name": "WORKSPACE_ID",
+                          "value": "[reference(parameters('logAnalyticsWorkspaceId'), '2022-10-01').customerId]"
+                        },
+                        {
+                          "name": "WORKSPACE_KEY",
+                          "secureValue": "[listKeys(parameters('logAnalyticsWorkspaceId'), '2022-10-01').primarySharedKey]"
+                        }
+                      ]
+                    }
+                  }
+                ],
+                "restartPolicy": "Always",
+                "osType": "Linux",
+                "subnetIds": [
+                  {
+                    "id": "[parameters('subnetId')]"
+                  }
+                ],
+                "priority": "Regular",
+                "sku": "Standard"
+              }
+            },
+            {
+              "type": "Microsoft.ContainerInstance/containerGroups",
+              "apiVersion": "2023-05-01",
+              "name": "[format('{0}-batch', parameters('name'))]",
+              "location": "[parameters('location')]",
+              "tags": "[union(parameters('tags'), createObject('purpose', 'batch-processing'))]",
+              "identity": "[if(parameters('enableManagedIdentity'), createObject('type', 'SystemAssigned'), null())]",
+              "properties": {
+                "containers": [
+                  {
+                    "name": "batch-processor",
+                    "properties": {
+                      "image": "mcr.microsoft.com/dotnet/runtime:8.0",
+                      "resources": {
+                        "requests": {
+                          "cpu": 2,
+                          "memoryInGB": 4
+                        }
+                      },
+                      "environmentVariables": [
+                        {
+                          "name": "BATCH_SIZE",
+                          "value": "1000"
+                        },
+                        {
+                          "name": "WORKER_THREADS",
+                          "value": "4"
+                        }
+                      ],
+                      "command": [
+                        "/bin/bash",
+                        "-c",
+                        "echo \"Starting batch processing...\" && sleep 3600"
+                      ]
+                    }
+                  }
+                ],
+                "restartPolicy": "OnFailure",
+                "osType": "Linux",
+                "subnetIds": [
+                  {
+                    "id": "[parameters('subnetId')]"
+                  }
+                ],
+                "priority": "Spot",
+                "sku": "Standard"
+              }
+            },
+            {
+              "type": "Microsoft.Insights/diagnosticSettings",
+              "apiVersion": "2021-05-01-preview",
+              "scope": "[format('Microsoft.ContainerInstance/containerGroups/{0}', parameters('name'))]",
+              "name": "[format('{0}-logs', parameters('name'))]",
+              "properties": {
+                "workspaceId": "[parameters('logAnalyticsWorkspaceId')]",
+                "logs": [
+                  {
+                    "category": "ContainerInstanceLog",
+                    "enabled": true,
+                    "retentionPolicy": {
+                      "enabled": true,
+                      "days": 30
+                    }
+                  }
+                ],
+                "metrics": [
+                  {
+                    "category": "AllMetrics",
+                    "enabled": true,
+                    "retentionPolicy": {
+                      "enabled": true,
+                      "days": 30
+                    }
+                  }
+                ]
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.ContainerInstance/containerGroups', parameters('name'))]"
+              ]
+            }
+          ],
+          "outputs": {
+            "containerGroupId": {
+              "type": "string",
+              "value": "[resourceId('Microsoft.ContainerInstance/containerGroups', parameters('name'))]"
+            },
+            "containerGroupName": {
+              "type": "string",
+              "value": "[parameters('name')]"
+            },
+            "containerGroupFqdn": {
+              "type": "string",
+              "value": "[reference(resourceId('Microsoft.ContainerInstance/containerGroups', parameters('name')), '2023-05-01').ipAddress.fqdn]"
+            },
+            "containerGroupIpAddress": {
+              "type": "string",
+              "value": "[reference(resourceId('Microsoft.ContainerInstance/containerGroups', parameters('name')), '2023-05-01').ipAddress.ip]"
+            },
+            "containerGroupIdentityPrincipalId": {
+              "type": "string",
+              "value": "[if(parameters('enableManagedIdentity'), reference(resourceId('Microsoft.ContainerInstance/containerGroups', parameters('name')), '2023-05-01', 'full').identity.principalId, '')]"
+            },
+            "sidecarContainerGroupId": {
+              "type": "string",
+              "value": "[resourceId('Microsoft.ContainerInstance/containerGroups', format('{0}-sidecar', parameters('name')))]"
+            },
+            "batchContainerGroupId": {
+              "type": "string",
+              "value": "[resourceId('Microsoft.ContainerInstance/containerGroups', format('{0}-batch', parameters('name')))]"
+            }
+          }
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Resources/deployments', 'logging')]",
+        "[resourceId('Microsoft.Resources/deployments', 'networking')]",
+        "[resourceId('Microsoft.Resources/deployments', 'naming')]"
+      ]
+    },
+    {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2025-04-01",
+      "name": "comprehensiveApiGateway",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "name": {
+            "value": "[reference(resourceId('Microsoft.Resources/deployments', 'naming'), '2025-04-01').outputs.naming.value.comprehensiveApiGateway]"
+          },
+          "location": {
+            "value": "[parameters('location')]"
+          },
+          "tags": {
+            "value": "[parameters('tags')]"
+          },
+          "publisherEmail": {
+            "value": "admin@company.com"
+          },
+          "publisherName": {
+            "value": "Data Platform Team"
+          },
+          "subnetId": {
+            "value": "[reference(resourceId('Microsoft.Resources/deployments', 'networking'), '2025-04-01').outputs.integrationSubnetId.value]"
+          },
+          "logAnalyticsWorkspaceId": {
+            "value": "[reference(resourceId('Microsoft.Resources/deployments', 'logging'), '2025-04-01').outputs.workspaceId.value]"
+          },
+          "applicationInsightsId": {
+            "value": ""
+          },
+          "keyVaultId": {
+            "value": "[reference(resourceId('Microsoft.Resources/deployments', 'keyVault'), '2025-04-01').outputs.keyVaultId.value]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.38.5.1644",
+              "templateHash": "10671555632896386513"
+            }
+          },
+          "parameters": {
+            "name": {
+              "type": "string",
+              "metadata": {
+                "description": "Name of the comprehensive API gateway."
+              }
+            },
+            "location": {
+              "type": "string",
+              "metadata": {
+                "description": "Azure region for deployment."
+              }
+            },
+            "tags": {
+              "type": "object",
+              "defaultValue": {},
+              "metadata": {
+                "description": "Tags applied to all resources."
+              }
+            },
+            "sku": {
+              "type": "string",
+              "defaultValue": "Developer",
+              "allowedValues": [
+                "Developer",
+                "Standard",
+                "Premium"
+              ],
+              "metadata": {
+                "description": "SKU for API Management."
+              }
+            },
+            "publisherEmail": {
+              "type": "string",
+              "metadata": {
+                "description": "Publisher email for API Management."
+              }
+            },
+            "publisherName": {
+              "type": "string",
+              "metadata": {
+                "description": "Publisher name for API Management."
+              }
+            },
+            "subnetId": {
+              "type": "string",
+              "metadata": {
+                "description": "Subnet ID for API Management."
+              }
+            },
+            "logAnalyticsWorkspaceId": {
+              "type": "string",
+              "metadata": {
+                "description": "Log Analytics workspace for diagnostics."
+              }
+            },
+            "applicationInsightsId": {
+              "type": "string",
+              "metadata": {
+                "description": "Application Insights for API monitoring."
+              }
+            },
+            "keyVaultId": {
+              "type": "string",
+              "metadata": {
+                "description": "Key Vault for secrets management."
+              }
+            },
+            "backendServices": {
+              "type": "array",
+              "defaultValue": [],
+              "metadata": {
+                "description": "Backend services configuration."
+              }
+            }
+          },
+          "resources": [
+            {
+              "type": "Microsoft.ApiManagement/service",
+              "apiVersion": "2023-05-01-preview",
+              "name": "[parameters('name')]",
+              "location": "[parameters('location')]",
+              "tags": "[parameters('tags')]",
+              "sku": {
+                "name": "[parameters('sku')]",
+                "capacity": 1
+              },
+              "identity": {
+                "type": "SystemAssigned"
+              },
+              "properties": {
+                "publisherEmail": "[parameters('publisherEmail')]",
+                "publisherName": "[parameters('publisherName')]",
+                "virtualNetworkType": "Internal",
+                "virtualNetworkConfiguration": {
+                  "subnetResourceId": "[parameters('subnetId')]"
+                },
+                "publicNetworkAccess": "Disabled",
+                "developerPortalStatus": "Enabled",
+                "gatewayUrl": "[format('https://{0}.azure-api.net', parameters('name'))]",
+                "customProperties": {
+                  "Microsoft.WindowsAzure.ApiManagement.Gateway.Security.Protocols.Tls10": "False",
+                  "Microsoft.WindowsAzure.ApiManagement.Gateway.Security.Protocols.Tls11": "False",
+                  "Microsoft.WindowsAzure.ApiManagement.Gateway.Security.Protocols.Ssl30": "False",
+                  "Microsoft.WindowsAzure.ApiManagement.Gateway.Security.Backend.Protocols.Tls10": "False",
+                  "Microsoft.WindowsAzure.ApiManagement.Gateway.Security.Backend.Protocols.Tls11": "False",
+                  "Microsoft.WindowsAzure.ApiManagement.Gateway.Security.Backend.Protocols.Ssl30": "False",
+                  "Microsoft.WindowsAzure.ApiManagement.Gateway.Protocols.Server.Http2": "True"
+                },
+                "apiVersionConstraint": {
+                  "minApiVersion": "2021-08-01"
+                }
+              }
+            },
+            {
+              "type": "Microsoft.ApiManagement/service/loggers",
+              "apiVersion": "2023-05-01-preview",
+              "name": "[format('{0}/{1}', parameters('name'), 'appinsights-logger')]",
+              "properties": {
+                "loggerType": "applicationInsights",
+                "description": "Application Insights logger for API Management",
+                "credentials": {
+                  "instrumentationKey": "[reference(parameters('applicationInsightsId'), '2020-02-02').InstrumentationKey]"
+                }
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.ApiManagement/service', parameters('name'))]"
+              ]
+            },
+            {
+              "type": "Microsoft.ApiManagement/service/policies",
+              "apiVersion": "2023-05-01-preview",
+              "name": "[format('{0}/{1}', parameters('name'), 'policy')]",
+              "properties": {
+                "value": "    <policies>\n      <inbound>\n        <cors allow-credentials=\"true\">\n          <allowed-origins>\n            <origin>*</origin>\n          </allowed-origins>\n          <allowed-methods>\n            <method>GET</method>\n            <method>POST</method>\n            <method>PUT</method>\n            <method>DELETE</method>\n            <method>OPTIONS</method>\n          </allowed-methods>\n          <allowed-headers>\n            <header>*</header>\n          </allowed-headers>\n        </cors>\n        <rate-limit-by-key calls=\"1000\" renewal-period=\"3600\" counter-key=\"@(context.Request.IpAddress)\" />\n        <quota-by-key calls=\"10000\" renewal-period=\"86400\" counter-key=\"@(context.Request.IpAddress)\" />\n        <authentication-managed-identity resource=\"https://graph.microsoft.com\" />\n        <set-header name=\"X-Powered-By\" exists-action=\"delete\" />\n        <set-header name=\"X-AspNet-Version\" exists-action=\"delete\" />\n      </inbound>\n      <backend>\n        <forward-request />\n      </backend>\n      <outbound>\n        <set-header name=\"X-Request-Id\" exists-action=\"override\">\n          <value>@(context.RequestId)</value>\n        </set-header>\n      </outbound>\n      <on-error>\n        <set-status code=\"500\" reason=\"Internal Server Error\" />\n        <set-body>@{\n          return new JObject(\n            new JProperty(\"error\", new JObject(\n              new JProperty(\"code\", context.LastError.Source),\n              new JProperty(\"message\", context.LastError.Message),\n              new JProperty(\"requestId\", context.RequestId)\n            ))\n          ).ToString();\n        }</set-body>\n      </on-error>\n    </policies>\n    "
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.ApiManagement/service', parameters('name'))]"
+              ]
+            },
+            {
+              "type": "Microsoft.ApiManagement/service/apis",
+              "apiVersion": "2023-05-01-preview",
+              "name": "[format('{0}/{1}', parameters('name'), 'graphql-api')]",
+              "properties": {
+                "displayName": "GraphQL API",
+                "description": "Modern GraphQL API for data platform",
+                "path": "graphql",
+                "protocols": [
+                  "https"
+                ],
+                "type": "graphql",
+                "format": "graphql-link",
+                "value": "https://api.example.com/graphql",
+                "subscriptionRequired": true,
+                "authenticationSettings": {
+                  "oAuth2AuthenticationSettings": [],
+                  "openidAuthenticationSettings": []
+                }
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.ApiManagement/service', parameters('name'))]"
+              ]
+            },
+            {
+              "type": "Microsoft.ApiManagement/service/apis",
+              "apiVersion": "2023-05-01-preview",
+              "name": "[format('{0}/{1}', parameters('name'), 'data-platform-api')]",
+              "properties": {
+                "displayName": "Data Platform REST API",
+                "description": "RESTful API for data platform operations",
+                "path": "api/v1",
+                "protocols": [
+                  "https"
+                ],
+                "type": "http",
+                "subscriptionRequired": true,
+                "authenticationSettings": {
+                  "oAuth2AuthenticationSettings": [],
+                  "openidAuthenticationSettings": []
+                }
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.ApiManagement/service', parameters('name'))]"
+              ]
+            },
+            {
+              "type": "Microsoft.ApiManagement/service/apis/operations",
+              "apiVersion": "2023-05-01-preview",
+              "name": "[format('{0}/{1}/{2}', parameters('name'), 'data-platform-api', 'get-data')]",
+              "properties": {
+                "displayName": "Get Data",
+                "method": "GET",
+                "urlTemplate": "/data/{id}",
+                "description": "Retrieve data by ID",
+                "templateParameters": [
+                  {
+                    "name": "id",
+                    "description": "Data identifier",
+                    "type": "string",
+                    "required": true
+                  }
+                ],
+                "request": {
+                  "queryParameters": [
+                    {
+                      "name": "format",
+                      "description": "Response format",
+                      "type": "string",
+                      "defaultValue": "json",
+                      "values": [
+                        "json",
+                        "xml"
+                      ]
+                    }
+                  ]
+                },
+                "responses": [
+                  {
+                    "statusCode": 200,
+                    "description": "Success",
+                    "representations": [
+                      {
+                        "contentType": "application/json"
+                      }
+                    ]
+                  },
+                  {
+                    "statusCode": 404,
+                    "description": "Not Found"
+                  }
+                ]
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.ApiManagement/service/apis', parameters('name'), 'data-platform-api')]"
+              ]
+            },
+            {
+              "type": "Microsoft.ApiManagement/service/backends",
+              "apiVersion": "2023-05-01-preview",
+              "name": "[format('{0}/{1}', parameters('name'), 'data-backend')]",
+              "properties": {
+                "description": "Data platform backend services",
+                "url": "https://data-backend.internal",
+                "protocol": "http",
+                "circuitBreaker": {
+                  "rules": [
+                    {
+                      "failureCondition": {
+                        "count": 5,
+                        "interval": "PT1M",
+                        "statusCodeRanges": [
+                          {
+                            "min": 500,
+                            "max": 599
+                          }
+                        ]
+                      },
+                      "tripDuration": "PT1M"
+                    }
+                  ]
+                },
+                "pool": {
+                  "size": 10
+                }
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.ApiManagement/service', parameters('name'))]"
+              ]
+            },
+            {
+              "type": "Microsoft.ApiManagement/service/products",
+              "apiVersion": "2023-05-01-preview",
+              "name": "[format('{0}/{1}', parameters('name'), 'data-platform-product')]",
+              "properties": {
+                "displayName": "Data Platform APIs",
+                "description": "Comprehensive data platform API product",
+                "subscriptionRequired": true,
+                "approvalRequired": true,
+                "subscriptionsLimit": 100,
+                "state": "published"
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.ApiManagement/service', parameters('name'))]"
+              ]
+            },
+            {
+              "type": "Microsoft.ApiManagement/service/products/apis",
+              "apiVersion": "2023-05-01-preview",
+              "name": "[format('{0}/{1}/{2}', parameters('name'), 'data-platform-product', 'data-platform-api')]",
+              "dependsOn": [
+                "[resourceId('Microsoft.ApiManagement/service/products', parameters('name'), 'data-platform-product')]",
+                "[resourceId('Microsoft.ApiManagement/service/apis', parameters('name'), 'data-platform-api')]"
+              ]
+            },
+            {
+              "type": "Microsoft.ApiManagement/service/products/apis",
+              "apiVersion": "2023-05-01-preview",
+              "name": "[format('{0}/{1}/{2}', parameters('name'), 'data-platform-product', 'graphql-api')]",
+              "dependsOn": [
+                "[resourceId('Microsoft.ApiManagement/service/products', parameters('name'), 'data-platform-product')]",
+                "[resourceId('Microsoft.ApiManagement/service/apis', parameters('name'), 'graphql-api')]"
+              ]
+            },
+            {
+              "type": "Microsoft.ApiManagement/service/namedValues",
+              "apiVersion": "2023-05-01-preview",
+              "name": "[format('{0}/{1}', parameters('name'), 'backend-api-key')]",
+              "properties": {
+                "displayName": "Backend API Key",
+                "secret": true,
+                "keyVault": {
+                  "secretIdentifier": "[format('{0}secrets/backend-api-key', reference(parameters('keyVaultId'), '2023-07-01').vaultUri)]"
+                }
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.ApiManagement/service', parameters('name'))]"
+              ]
+            },
+            {
+              "type": "Microsoft.ApiManagement/service/subscriptions",
+              "apiVersion": "2023-05-01-preview",
+              "name": "[format('{0}/{1}', parameters('name'), 'internal-services')]",
+              "properties": {
+                "scope": "[format('/products/{0}', 'data-platform-product')]",
+                "displayName": "Internal Services Subscription",
+                "state": "active",
+                "allowTracing": true
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.ApiManagement/service', parameters('name'))]",
+                "[resourceId('Microsoft.ApiManagement/service/products', parameters('name'), 'data-platform-product')]"
+              ]
+            },
+            {
+              "type": "Microsoft.Insights/diagnosticSettings",
+              "apiVersion": "2021-05-01-preview",
+              "scope": "[format('Microsoft.ApiManagement/service/{0}', parameters('name'))]",
+              "name": "[format('{0}-logs', parameters('name'))]",
+              "properties": {
+                "workspaceId": "[parameters('logAnalyticsWorkspaceId')]",
+                "logs": [
+                  {
+                    "category": "GatewayLogs",
+                    "enabled": true,
+                    "retentionPolicy": {
+                      "enabled": true,
+                      "days": 30
+                    }
+                  },
+                  {
+                    "category": "WebSocketConnectionLogs",
+                    "enabled": true,
+                    "retentionPolicy": {
+                      "enabled": true,
+                      "days": 30
+                    }
+                  }
+                ],
+                "metrics": [
+                  {
+                    "category": "Gateway Requests",
+                    "enabled": true,
+                    "retentionPolicy": {
+                      "enabled": true,
+                      "days": 30
+                    }
+                  },
+                  {
+                    "category": "Capacity",
+                    "enabled": true,
+                    "retentionPolicy": {
+                      "enabled": true,
+                      "days": 30
+                    }
+                  }
+                ]
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.ApiManagement/service', parameters('name'))]"
+              ]
+            }
+          ],
+          "outputs": {
+            "apiManagementId": {
+              "type": "string",
+              "value": "[resourceId('Microsoft.ApiManagement/service', parameters('name'))]"
+            },
+            "apiManagementName": {
+              "type": "string",
+              "value": "[parameters('name')]"
+            },
+            "apiManagementIdentityPrincipalId": {
+              "type": "string",
+              "value": "[reference(resourceId('Microsoft.ApiManagement/service', parameters('name')), '2023-05-01-preview', 'full').identity.principalId]"
+            },
+            "gatewayUrl": {
+              "type": "string",
+              "value": "[format('https://{0}', reference(resourceId('Microsoft.ApiManagement/service', parameters('name')), '2023-05-01-preview').gatewayUrl)]"
+            },
+            "developerPortalUrl": {
+              "type": "string",
+              "value": "[format('https://{0}', reference(resourceId('Microsoft.ApiManagement/service', parameters('name')), '2023-05-01-preview').developerPortalUrl)]"
+            },
+            "restApiId": {
+              "type": "string",
+              "value": "[resourceId('Microsoft.ApiManagement/service/apis', parameters('name'), 'data-platform-api')]"
+            },
+            "graphqlApiId": {
+              "type": "string",
+              "value": "[resourceId('Microsoft.ApiManagement/service/apis', parameters('name'), 'graphql-api')]"
+            },
+            "productId": {
+              "type": "string",
+              "value": "[resourceId('Microsoft.ApiManagement/service/products', parameters('name'), 'data-platform-product')]"
+            }
+          }
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Resources/deployments', 'keyVault')]",
+        "[resourceId('Microsoft.Resources/deployments', 'logging')]",
+        "[resourceId('Microsoft.Resources/deployments', 'networking')]",
+        "[resourceId('Microsoft.Resources/deployments', 'naming')]"
+      ]
+    },
+    {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2025-04-01",
+      "name": "rbacAssignments",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "storageAccountId": {
+            "value": "[reference(resourceId('Microsoft.Resources/deployments', 'storage'), '2025-04-01').outputs.storageAccountId.value]"
+          },
+          "keyVaultId": {
+            "value": "[reference(resourceId('Microsoft.Resources/deployments', 'keyVault'), '2025-04-01').outputs.keyVaultId.value]"
+          },
+          "synapseWorkspaceId": {
+            "value": "[reference(resourceId('Microsoft.Resources/deployments', 'synapse'), '2025-04-01').outputs.synapseWorkspaceId.value]"
+          },
+          "aksClusterId": {
+            "value": "[reference(resourceId('Microsoft.Resources/deployments', 'kubernetes'), '2025-04-01').outputs.aksClusterId.value]"
+          },
+          "mlWorkspaceId": {
+            "value": "[reference(resourceId('Microsoft.Resources/deployments', 'machineLearning'), '2025-04-01').outputs.mlWorkspaceId.value]"
+          },
+          "purviewAccountId": {
+            "value": "[reference(resourceId('Microsoft.Resources/deployments', 'purview'), '2025-04-01').outputs.purviewAccountId.value]"
+          },
+          "fabricCapacityId": {
+            "value": "[reference(resourceId('Microsoft.Resources/deployments', 'fabric'), '2025-04-01').outputs.fabricCapacityId.value]"
+          },
+          "managedIdentities": {
+            "value": {
+              "functions": "[reference(resourceId('Microsoft.Resources/deployments', 'appHosting'), '2025-04-01').outputs.functionAppIdentityPrincipalId.value]",
+              "logicApps": "[reference(resourceId('Microsoft.Resources/deployments', 'logicApp'), '2025-04-01').outputs.logicAppIdentityPrincipalId.value]",
+              "aks": "[reference(resourceId('Microsoft.Resources/deployments', 'kubernetes'), '2025-04-01').outputs.aksClusterIdentityPrincipalId.value]",
+              "ml": "[reference(resourceId('Microsoft.Resources/deployments', 'machineLearning'), '2025-04-01').outputs.mlWorkspaceIdentityPrincipalId.value]",
+              "purview": "[reference(resourceId('Microsoft.Resources/deployments', 'purview'), '2025-04-01').outputs.purviewIdentityPrincipalId.value]",
+              "fabric": "",
+              "containers": "[reference(resourceId('Microsoft.Resources/deployments', 'containerInstances'), '2025-04-01').outputs.containerGroupIdentityPrincipalId.value]"
+            }
+          },
+          "securityGroups": {
+            "value": "[parameters('securityGroups')]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.38.5.1644",
+              "templateHash": "9672912859972833485"
+            }
+          },
+          "parameters": {
+            "storageAccountId": {
+              "type": "string",
+              "metadata": {
+                "description": "Storage Account resource ID for RBAC assignments"
+              }
+            },
+            "keyVaultId": {
+              "type": "string",
+              "metadata": {
+                "description": "Key Vault resource ID for RBAC assignments"
+              }
+            },
+            "synapseWorkspaceId": {
+              "type": "string",
+              "metadata": {
+                "description": "Synapse Workspace resource ID for RBAC assignments"
+              }
+            },
+            "aksClusterId": {
+              "type": "string",
+              "metadata": {
+                "description": "AKS Cluster resource ID for RBAC assignments"
+              }
+            },
+            "mlWorkspaceId": {
+              "type": "string",
+              "metadata": {
+                "description": "Machine Learning Workspace resource ID for RBAC assignments"
+              }
+            },
+            "purviewAccountId": {
+              "type": "string",
+              "metadata": {
+                "description": "Purview Account resource ID for RBAC assignments"
+              }
+            },
+            "fabricCapacityId": {
+              "type": "string",
+              "metadata": {
+                "description": "Fabric Capacity resource ID for RBAC assignments"
+              }
+            },
+            "managedIdentities": {
+              "type": "object",
+              "metadata": {
+                "description": "Managed Identity Principal IDs"
+              }
+            },
+            "securityGroups": {
+              "type": "object",
+              "metadata": {
+                "description": "Security Group Object IDs"
+              }
+            }
+          },
+          "variables": {
+            "roles": {
+              "storageBlobDataOwner": "b7e6dc6d-f1e8-4753-8033-0f276bb0955b",
+              "storageBlobDataContributor": "ba92f5b4-2d11-453d-a403-e96b0029c9fe",
+              "storageBlobDataReader": "e9dba6fb-3d52-4bd0-9de6-3d48f1a77c50",
+              "keyVaultSecretsOfficer": "b86a8fe4-44ce-4948-aee5-eccb2c155cd7",
+              "keyVaultSecretsUser": "4633458b-17de-408a-b874-0445c86b69e6",
+              "keyVaultCryptoOfficer": "14b46e9e-c2b7-41b4-b07b-48a6ebf60603",
+              "azureKubernetesServiceContributorRole": "ed7f3fbd-7b88-4dd4-9017-9adb7ce333f8",
+              "azureKubernetesServiceClusterAdminRole": "0ab0b1a8-8aac-4efd-b8c2-3ee1fb270be8",
+              "azureMLDataScientist": "f6c7c914-8db3-469d-8ca1-694a8f32e121",
+              "azureMLComputeOperator": "e503ece1-11d0-4e8e-8e2c-e5c5e8b8ced1",
+              "purviewDataCurator": "8a3c2885-9b38-4fd2-9d99-91d02d8c0800",
+              "purviewDataReader": "05d8164f-58ad-4a58-8034-b3e2dedddbf5",
+              "fabricAdministrator": "1d9b5dd5-7f00-479c-a9a0-b2ea2ca8bfe2",
+              "fabricCapacityAdmin": "4c7c8a82-6af6-4b8b-90c3-e7b5c9e3d8e9",
+              "synapseAdministrator": "6e4bf58d-b8f4-4cc5-8ff6-b44e0b568dcc",
+              "synapseContributor": "7af0c69a-a548-47d6-aea3-d00e69bd83aa",
+              "synapseComputeOperator": "b9e6b3ad-d08a-4a29-aea7-78e2dd4e1b90"
+            }
+          },
+          "resources": [
+            {
+              "condition": "[not(empty(parameters('securityGroups').platformOperators))]",
+              "type": "Microsoft.Authorization/roleAssignments",
+              "apiVersion": "2022-04-01",
+              "scope": "[format('Microsoft.Storage/storageAccounts/{0}', last(split(parameters('storageAccountId'), '/')))]",
+              "name": "[guid(parameters('storageAccountId'), parameters('securityGroups').platformOperators, 'StorageBlobDataOwner')]",
+              "properties": {
+                "roleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', variables('roles').storageBlobDataOwner)]",
+                "principalId": "[parameters('securityGroups').platformOperators]",
+                "principalType": "Group"
+              }
+            },
+            {
+              "condition": "[not(empty(parameters('securityGroups').dataEngineers))]",
+              "type": "Microsoft.Authorization/roleAssignments",
+              "apiVersion": "2022-04-01",
+              "scope": "[format('Microsoft.Storage/storageAccounts/{0}', last(split(parameters('storageAccountId'), '/')))]",
+              "name": "[guid(parameters('storageAccountId'), parameters('securityGroups').dataEngineers, 'StorageBlobDataContributor')]",
+              "properties": {
+                "roleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', variables('roles').storageBlobDataContributor)]",
+                "principalId": "[parameters('securityGroups').dataEngineers]",
+                "principalType": "Group"
+              }
+            },
+            {
+              "condition": "[not(empty(parameters('managedIdentities').functions))]",
+              "type": "Microsoft.Authorization/roleAssignments",
+              "apiVersion": "2022-04-01",
+              "scope": "[format('Microsoft.Storage/storageAccounts/{0}', last(split(parameters('storageAccountId'), '/')))]",
+              "name": "[guid(parameters('storageAccountId'), parameters('managedIdentities').functions, 'StorageBlobDataContributor')]",
+              "properties": {
+                "roleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', variables('roles').storageBlobDataContributor)]",
+                "principalId": "[parameters('managedIdentities').functions]",
+                "principalType": "ServicePrincipal"
+              }
+            },
+            {
+              "condition": "[not(empty(parameters('managedIdentities').logicApps))]",
+              "type": "Microsoft.Authorization/roleAssignments",
+              "apiVersion": "2022-04-01",
+              "scope": "[format('Microsoft.Storage/storageAccounts/{0}', last(split(parameters('storageAccountId'), '/')))]",
+              "name": "[guid(parameters('storageAccountId'), parameters('managedIdentities').logicApps, 'StorageBlobDataContributor')]",
+              "properties": {
+                "roleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', variables('roles').storageBlobDataContributor)]",
+                "principalId": "[parameters('managedIdentities').logicApps]",
+                "principalType": "ServicePrincipal"
+              }
+            },
+            {
+              "condition": "[not(empty(parameters('managedIdentities').aks))]",
+              "type": "Microsoft.Authorization/roleAssignments",
+              "apiVersion": "2022-04-01",
+              "scope": "[format('Microsoft.Storage/storageAccounts/{0}', last(split(parameters('storageAccountId'), '/')))]",
+              "name": "[guid(parameters('storageAccountId'), parameters('managedIdentities').aks, 'StorageBlobDataContributor')]",
+              "properties": {
+                "roleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', variables('roles').storageBlobDataContributor)]",
+                "principalId": "[parameters('managedIdentities').aks]",
+                "principalType": "ServicePrincipal"
+              }
+            },
+            {
+              "condition": "[not(empty(parameters('managedIdentities').purview))]",
+              "type": "Microsoft.Authorization/roleAssignments",
+              "apiVersion": "2022-04-01",
+              "scope": "[format('Microsoft.Storage/storageAccounts/{0}', last(split(parameters('storageAccountId'), '/')))]",
+              "name": "[guid(parameters('storageAccountId'), parameters('managedIdentities').purview, 'StorageBlobDataReader')]",
+              "properties": {
+                "roleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', variables('roles').storageBlobDataReader)]",
+                "principalId": "[parameters('managedIdentities').purview]",
+                "principalType": "ServicePrincipal"
+              }
+            },
+            {
+              "condition": "[not(empty(parameters('securityGroups').platformOperators))]",
+              "type": "Microsoft.Authorization/roleAssignments",
+              "apiVersion": "2022-04-01",
+              "scope": "[format('Microsoft.KeyVault/vaults/{0}', last(split(parameters('keyVaultId'), '/')))]",
+              "name": "[guid(parameters('keyVaultId'), parameters('securityGroups').platformOperators, 'KeyVaultSecretsOfficer')]",
+              "properties": {
+                "roleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', variables('roles').keyVaultSecretsOfficer)]",
+                "principalId": "[parameters('securityGroups').platformOperators]",
+                "principalType": "Group"
+              }
+            },
+            {
+              "condition": "[not(empty(parameters('managedIdentities').functions))]",
+              "type": "Microsoft.Authorization/roleAssignments",
+              "apiVersion": "2022-04-01",
+              "scope": "[format('Microsoft.KeyVault/vaults/{0}', last(split(parameters('keyVaultId'), '/')))]",
+              "name": "[guid(parameters('keyVaultId'), parameters('managedIdentities').functions, 'KeyVaultSecretsUser')]",
+              "properties": {
+                "roleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', variables('roles').keyVaultSecretsUser)]",
+                "principalId": "[parameters('managedIdentities').functions]",
+                "principalType": "ServicePrincipal"
+              }
+            },
+            {
+              "condition": "[not(empty(parameters('managedIdentities').logicApps))]",
+              "type": "Microsoft.Authorization/roleAssignments",
+              "apiVersion": "2022-04-01",
+              "scope": "[format('Microsoft.KeyVault/vaults/{0}', last(split(parameters('keyVaultId'), '/')))]",
+              "name": "[guid(parameters('keyVaultId'), parameters('managedIdentities').logicApps, 'KeyVaultSecretsUser')]",
+              "properties": {
+                "roleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', variables('roles').keyVaultSecretsUser)]",
+                "principalId": "[parameters('managedIdentities').logicApps]",
+                "principalType": "ServicePrincipal"
+              }
+            },
+            {
+              "condition": "[not(empty(parameters('managedIdentities').ml))]",
+              "type": "Microsoft.Authorization/roleAssignments",
+              "apiVersion": "2022-04-01",
+              "scope": "[format('Microsoft.KeyVault/vaults/{0}', last(split(parameters('keyVaultId'), '/')))]",
+              "name": "[guid(parameters('keyVaultId'), parameters('managedIdentities').ml, 'KeyVaultCryptoOfficer')]",
+              "properties": {
+                "roleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', variables('roles').keyVaultCryptoOfficer)]",
+                "principalId": "[parameters('managedIdentities').ml]",
+                "principalType": "ServicePrincipal"
+              }
+            },
+            {
+              "condition": "[not(empty(parameters('managedIdentities').aks))]",
+              "type": "Microsoft.Authorization/roleAssignments",
+              "apiVersion": "2022-04-01",
+              "scope": "[format('Microsoft.KeyVault/vaults/{0}', last(split(parameters('keyVaultId'), '/')))]",
+              "name": "[guid(parameters('keyVaultId'), parameters('managedIdentities').aks, 'KeyVaultSecretsUser')]",
+              "properties": {
+                "roleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', variables('roles').keyVaultSecretsUser)]",
+                "principalId": "[parameters('managedIdentities').aks]",
+                "principalType": "ServicePrincipal"
+              }
+            },
+            {
+              "condition": "[not(empty(parameters('managedIdentities').purview))]",
+              "type": "Microsoft.Authorization/roleAssignments",
+              "apiVersion": "2022-04-01",
+              "scope": "[format('Microsoft.KeyVault/vaults/{0}', last(split(parameters('keyVaultId'), '/')))]",
+              "name": "[guid(parameters('keyVaultId'), parameters('managedIdentities').purview, 'KeyVaultSecretsUser')]",
+              "properties": {
+                "roleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', variables('roles').keyVaultSecretsUser)]",
+                "principalId": "[parameters('managedIdentities').purview]",
+                "principalType": "ServicePrincipal"
+              }
+            },
+            {
+              "condition": "[not(empty(parameters('securityGroups').platformOperators))]",
+              "type": "Microsoft.Authorization/roleAssignments",
+              "apiVersion": "2022-04-01",
+              "scope": "[format('Microsoft.ContainerService/managedClusters/{0}', last(split(parameters('aksClusterId'), '/')))]",
+              "name": "[guid(parameters('aksClusterId'), parameters('securityGroups').platformOperators, 'AzureKubernetesServiceClusterAdminRole')]",
+              "properties": {
+                "roleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', variables('roles').azureKubernetesServiceClusterAdminRole)]",
+                "principalId": "[parameters('securityGroups').platformOperators]",
+                "principalType": "Group"
+              }
+            },
+            {
+              "condition": "[not(empty(parameters('securityGroups').dataEngineers))]",
+              "type": "Microsoft.Authorization/roleAssignments",
+              "apiVersion": "2022-04-01",
+              "scope": "[format('Microsoft.ContainerService/managedClusters/{0}', last(split(parameters('aksClusterId'), '/')))]",
+              "name": "[guid(parameters('aksClusterId'), parameters('securityGroups').dataEngineers, 'AzureKubernetesServiceContributorRole')]",
+              "properties": {
+                "roleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', variables('roles').azureKubernetesServiceContributorRole)]",
+                "principalId": "[parameters('securityGroups').dataEngineers]",
+                "principalType": "Group"
+              }
+            },
+            {
+              "condition": "[not(empty(parameters('securityGroups').platformOperators))]",
+              "type": "Microsoft.Authorization/roleAssignments",
+              "apiVersion": "2022-04-01",
+              "scope": "[format('Microsoft.MachineLearningServices/workspaces/{0}', last(split(parameters('mlWorkspaceId'), '/')))]",
+              "name": "[guid(parameters('mlWorkspaceId'), parameters('securityGroups').platformOperators, 'AzureMLDataScientist')]",
+              "properties": {
+                "roleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', variables('roles').azureMLDataScientist)]",
+                "principalId": "[parameters('securityGroups').platformOperators]",
+                "principalType": "Group"
+              }
+            },
+            {
+              "condition": "[not(empty(parameters('securityGroups').dataEngineers))]",
+              "type": "Microsoft.Authorization/roleAssignments",
+              "apiVersion": "2022-04-01",
+              "scope": "[format('Microsoft.MachineLearningServices/workspaces/{0}', last(split(parameters('mlWorkspaceId'), '/')))]",
+              "name": "[guid(parameters('mlWorkspaceId'), parameters('securityGroups').dataEngineers, 'AzureMLComputeOperator')]",
+              "properties": {
+                "roleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', variables('roles').azureMLComputeOperator)]",
+                "principalId": "[parameters('securityGroups').dataEngineers]",
+                "principalType": "Group"
+              }
+            },
+            {
+              "condition": "[not(empty(parameters('securityGroups').platformOperators))]",
+              "type": "Microsoft.Authorization/roleAssignments",
+              "apiVersion": "2022-04-01",
+              "scope": "[format('Microsoft.Purview/accounts/{0}', last(split(parameters('purviewAccountId'), '/')))]",
+              "name": "[guid(parameters('purviewAccountId'), parameters('securityGroups').platformOperators, 'PurviewDataCurator')]",
+              "properties": {
+                "roleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', variables('roles').purviewDataCurator)]",
+                "principalId": "[parameters('securityGroups').platformOperators]",
+                "principalType": "Group"
+              }
+            },
+            {
+              "condition": "[not(empty(parameters('securityGroups').dataEngineers))]",
+              "type": "Microsoft.Authorization/roleAssignments",
+              "apiVersion": "2022-04-01",
+              "scope": "[format('Microsoft.Purview/accounts/{0}', last(split(parameters('purviewAccountId'), '/')))]",
+              "name": "[guid(parameters('purviewAccountId'), parameters('securityGroups').dataEngineers, 'PurviewDataReader')]",
+              "properties": {
+                "roleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', variables('roles').purviewDataReader)]",
+                "principalId": "[parameters('securityGroups').dataEngineers]",
+                "principalType": "Group"
+              }
+            },
+            {
+              "condition": "[not(empty(parameters('securityGroups').platformOperators))]",
+              "type": "Microsoft.Authorization/roleAssignments",
+              "apiVersion": "2022-04-01",
+              "scope": "[format('Microsoft.Fabric/capacities/{0}', last(split(parameters('fabricCapacityId'), '/')))]",
+              "name": "[guid(parameters('fabricCapacityId'), parameters('securityGroups').platformOperators, 'FabricAdministrator')]",
+              "properties": {
+                "roleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', variables('roles').fabricAdministrator)]",
+                "principalId": "[parameters('securityGroups').platformOperators]",
+                "principalType": "Group"
+              }
+            },
+            {
+              "condition": "[not(empty(parameters('securityGroups').dataEngineers))]",
+              "type": "Microsoft.Authorization/roleAssignments",
+              "apiVersion": "2022-04-01",
+              "scope": "[format('Microsoft.Fabric/capacities/{0}', last(split(parameters('fabricCapacityId'), '/')))]",
+              "name": "[guid(parameters('fabricCapacityId'), parameters('securityGroups').dataEngineers, 'FabricCapacityAdmin')]",
+              "properties": {
+                "roleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', variables('roles').fabricCapacityAdmin)]",
+                "principalId": "[parameters('securityGroups').dataEngineers]",
+                "principalType": "Group"
+              }
+            },
+            {
+              "condition": "[not(empty(parameters('securityGroups').platformOperators))]",
+              "type": "Microsoft.Authorization/roleAssignments",
+              "apiVersion": "2022-04-01",
+              "scope": "[format('Microsoft.Synapse/workspaces/{0}', last(split(parameters('synapseWorkspaceId'), '/')))]",
+              "name": "[guid(parameters('synapseWorkspaceId'), parameters('securityGroups').platformOperators, 'SynapseAdministrator')]",
+              "properties": {
+                "roleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', variables('roles').synapseAdministrator)]",
+                "principalId": "[parameters('securityGroups').platformOperators]",
+                "principalType": "Group"
+              }
+            },
+            {
+              "condition": "[not(empty(parameters('securityGroups').dataEngineers))]",
+              "type": "Microsoft.Authorization/roleAssignments",
+              "apiVersion": "2022-04-01",
+              "scope": "[format('Microsoft.Synapse/workspaces/{0}', last(split(parameters('synapseWorkspaceId'), '/')))]",
+              "name": "[guid(parameters('synapseWorkspaceId'), parameters('securityGroups').dataEngineers, 'SynapseContributor')]",
+              "properties": {
+                "roleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', variables('roles').synapseContributor)]",
+                "principalId": "[parameters('securityGroups').dataEngineers]",
+                "principalType": "Group"
+              }
+            },
+            {
+              "condition": "[not(empty(parameters('managedIdentities').functions))]",
+              "type": "Microsoft.Authorization/roleAssignments",
+              "apiVersion": "2022-04-01",
+              "scope": "[format('Microsoft.Synapse/workspaces/{0}', last(split(parameters('synapseWorkspaceId'), '/')))]",
+              "name": "[guid(parameters('synapseWorkspaceId'), parameters('managedIdentities').functions, 'SynapseComputeOperator')]",
+              "properties": {
+                "roleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', variables('roles').synapseComputeOperator)]",
+                "principalId": "[parameters('managedIdentities').functions]",
+                "principalType": "ServicePrincipal"
+              }
+            },
+            {
+              "condition": "[not(empty(parameters('managedIdentities').ml))]",
+              "type": "Microsoft.Authorization/roleAssignments",
+              "apiVersion": "2022-04-01",
+              "scope": "[format('Microsoft.Synapse/workspaces/{0}', last(split(parameters('synapseWorkspaceId'), '/')))]",
+              "name": "[guid(parameters('synapseWorkspaceId'), parameters('managedIdentities').ml, 'SynapseContributor')]",
+              "properties": {
+                "roleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', variables('roles').synapseContributor)]",
+                "principalId": "[parameters('managedIdentities').ml]",
+                "principalType": "ServicePrincipal"
+              }
+            }
+          ],
+          "outputs": {
+            "rbacAssignmentsSummary": {
+              "type": "object",
+              "value": {
+                "storageAccount": {
+                  "platformOperators": "[guid(parameters('storageAccountId'), parameters('securityGroups').platformOperators, 'StorageBlobDataOwner')]",
+                  "functions": "[guid(parameters('storageAccountId'), parameters('managedIdentities').functions, 'StorageBlobDataContributor')]",
+                  "logicApps": "[guid(parameters('storageAccountId'), parameters('managedIdentities').logicApps, 'StorageBlobDataContributor')]",
+                  "aks": "[guid(parameters('storageAccountId'), parameters('managedIdentities').aks, 'StorageBlobDataContributor')]",
+                  "purview": "[guid(parameters('storageAccountId'), parameters('managedIdentities').purview, 'StorageBlobDataReader')]"
+                },
+                "keyVault": {
+                  "platformOperators": "[guid(parameters('keyVaultId'), parameters('securityGroups').platformOperators, 'KeyVaultSecretsOfficer')]",
+                  "functions": "[guid(parameters('keyVaultId'), parameters('managedIdentities').functions, 'KeyVaultSecretsUser')]",
+                  "logicApps": "[guid(parameters('keyVaultId'), parameters('managedIdentities').logicApps, 'KeyVaultSecretsUser')]",
+                  "ml": "[guid(parameters('keyVaultId'), parameters('managedIdentities').ml, 'KeyVaultCryptoOfficer')]",
+                  "aks": "[guid(parameters('keyVaultId'), parameters('managedIdentities').aks, 'KeyVaultSecretsUser')]",
+                  "purview": "[guid(parameters('keyVaultId'), parameters('managedIdentities').purview, 'KeyVaultSecretsUser')]"
+                },
+                "aksCluster": {
+                  "platformOperators": "[guid(parameters('aksClusterId'), parameters('securityGroups').platformOperators, 'AzureKubernetesServiceClusterAdminRole')]",
+                  "dataEngineers": "[guid(parameters('aksClusterId'), parameters('securityGroups').dataEngineers, 'AzureKubernetesServiceContributorRole')]"
+                },
+                "mlWorkspace": {
+                  "platformOperators": "[guid(parameters('mlWorkspaceId'), parameters('securityGroups').platformOperators, 'AzureMLDataScientist')]",
+                  "dataEngineers": "[guid(parameters('mlWorkspaceId'), parameters('securityGroups').dataEngineers, 'AzureMLComputeOperator')]"
+                },
+                "purviewAccount": {
+                  "platformOperators": "[guid(parameters('purviewAccountId'), parameters('securityGroups').platformOperators, 'PurviewDataCurator')]",
+                  "dataEngineers": "[guid(parameters('purviewAccountId'), parameters('securityGroups').dataEngineers, 'PurviewDataReader')]"
+                },
+                "fabricCapacity": {
+                  "platformOperators": "[guid(parameters('fabricCapacityId'), parameters('securityGroups').platformOperators, 'FabricAdministrator')]",
+                  "dataEngineers": "[guid(parameters('fabricCapacityId'), parameters('securityGroups').dataEngineers, 'FabricCapacityAdmin')]"
+                },
+                "synapseWorkspace": {
+                  "platformOperators": "[guid(parameters('synapseWorkspaceId'), parameters('securityGroups').platformOperators, 'SynapseAdministrator')]",
+                  "dataEngineers": "[guid(parameters('synapseWorkspaceId'), parameters('securityGroups').dataEngineers, 'SynapseContributor')]",
+                  "functions": "[guid(parameters('synapseWorkspaceId'), parameters('managedIdentities').functions, 'SynapseComputeOperator')]",
+                  "ml": "[guid(parameters('synapseWorkspaceId'), parameters('managedIdentities').ml, 'SynapseContributor')]"
+                }
+              }
+            }
+          }
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Resources/deployments', 'appHosting')]",
+        "[resourceId('Microsoft.Resources/deployments', 'containerInstances')]",
+        "[resourceId('Microsoft.Resources/deployments', 'fabric')]",
+        "[resourceId('Microsoft.Resources/deployments', 'keyVault')]",
+        "[resourceId('Microsoft.Resources/deployments', 'kubernetes')]",
+        "[resourceId('Microsoft.Resources/deployments', 'logicApp')]",
+        "[resourceId('Microsoft.Resources/deployments', 'machineLearning')]",
+        "[resourceId('Microsoft.Resources/deployments', 'purview')]",
+        "[resourceId('Microsoft.Resources/deployments', 'storage')]",
+        "[resourceId('Microsoft.Resources/deployments', 'synapse')]"
+      ]
     }
   ],
   "outputs": {
@@ -3012,6 +5946,58 @@
     "cognitiveAccountEndpoint": {
       "type": "string",
       "value": "[reference(resourceId('Microsoft.Resources/deployments', 'cognitiveServices'), '2025-04-01').outputs.cognitiveAccountEndpoint.value]"
+    },
+    "purviewAccountId": {
+      "type": "string",
+      "value": "[reference(resourceId('Microsoft.Resources/deployments', 'purview'), '2025-04-01').outputs.purviewAccountId.value]"
+    },
+    "purviewAccountName": {
+      "type": "string",
+      "value": "[reference(resourceId('Microsoft.Resources/deployments', 'purview'), '2025-04-01').outputs.purviewAccountName.value]"
+    },
+    "purviewAccountEndpoint": {
+      "type": "string",
+      "value": "[reference(resourceId('Microsoft.Resources/deployments', 'purview'), '2025-04-01').outputs.purviewAccountEndpoint.value]"
+    },
+    "mlWorkspaceId": {
+      "type": "string",
+      "value": "[reference(resourceId('Microsoft.Resources/deployments', 'machineLearning'), '2025-04-01').outputs.mlWorkspaceId.value]"
+    },
+    "mlWorkspaceName": {
+      "type": "string",
+      "value": "[reference(resourceId('Microsoft.Resources/deployments', 'machineLearning'), '2025-04-01').outputs.mlWorkspaceName.value]"
+    },
+    "aksClusterId": {
+      "type": "string",
+      "value": "[reference(resourceId('Microsoft.Resources/deployments', 'kubernetes'), '2025-04-01').outputs.aksClusterId.value]"
+    },
+    "aksClusterName": {
+      "type": "string",
+      "value": "[reference(resourceId('Microsoft.Resources/deployments', 'kubernetes'), '2025-04-01').outputs.aksClusterName.value]"
+    },
+    "fabricCapacityId": {
+      "type": "string",
+      "value": "[reference(resourceId('Microsoft.Resources/deployments', 'fabric'), '2025-04-01').outputs.fabricCapacityId.value]"
+    },
+    "fabricCapacityName": {
+      "type": "string",
+      "value": "[reference(resourceId('Microsoft.Resources/deployments', 'fabric'), '2025-04-01').outputs.fabricCapacityName.value]"
+    },
+    "containerInstancesId": {
+      "type": "string",
+      "value": "[reference(resourceId('Microsoft.Resources/deployments', 'containerInstances'), '2025-04-01').outputs.containerGroupId.value]"
+    },
+    "apiGatewayId": {
+      "type": "string",
+      "value": "[reference(resourceId('Microsoft.Resources/deployments', 'comprehensiveApiGateway'), '2025-04-01').outputs.apiManagementId.value]"
+    },
+    "apiGatewayUrl": {
+      "type": "string",
+      "value": "[reference(resourceId('Microsoft.Resources/deployments', 'comprehensiveApiGateway'), '2025-04-01').outputs.gatewayUrl.value]"
+    },
+    "rbacAssignmentStatus": {
+      "type": "object",
+      "value": "[reference(resourceId('Microsoft.Resources/deployments', 'rbacAssignments'), '2025-04-01').outputs.rbacAssignmentsSummary.value]"
     }
   }
 }

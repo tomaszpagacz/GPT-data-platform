@@ -1,0 +1,315 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "_generator": {
+      "name": "bicep",
+      "version": "0.38.5.1644",
+      "templateHash": "3077080601080656025"
+    }
+  },
+  "parameters": {
+    "name": {
+      "type": "string",
+      "metadata": {
+        "description": "Name of the Container Instances group."
+      }
+    },
+    "location": {
+      "type": "string",
+      "metadata": {
+        "description": "Azure region for deployment."
+      }
+    },
+    "tags": {
+      "type": "object",
+      "defaultValue": {},
+      "metadata": {
+        "description": "Tags applied to all resources."
+      }
+    },
+    "containerImage": {
+      "type": "string",
+      "defaultValue": "mcr.microsoft.com/azure-functions/dotnet-isolated:4-dotnet-isolated8.0",
+      "metadata": {
+        "description": "Container image to deploy."
+      }
+    },
+    "cpuCores": {
+      "type": "int",
+      "defaultValue": 1,
+      "metadata": {
+        "description": "Number of CPU cores."
+      }
+    },
+    "memoryInGB": {
+      "type": "int",
+      "defaultValue": 2,
+      "metadata": {
+        "description": "Memory in GB."
+      }
+    },
+    "restartPolicy": {
+      "type": "string",
+      "defaultValue": "OnFailure",
+      "allowedValues": [
+        "Always",
+        "Never",
+        "OnFailure"
+      ],
+      "metadata": {
+        "description": "Restart policy for containers."
+      }
+    },
+    "subnetId": {
+      "type": "string",
+      "metadata": {
+        "description": "Subnet ID for VNet integration."
+      }
+    },
+    "logAnalyticsWorkspaceId": {
+      "type": "string",
+      "metadata": {
+        "description": "Log Analytics workspace for diagnostics."
+      }
+    },
+    "environmentVariables": {
+      "type": "array",
+      "defaultValue": [],
+      "metadata": {
+        "description": "Environment variables for the container."
+      }
+    },
+    "enableManagedIdentity": {
+      "type": "bool",
+      "defaultValue": true,
+      "metadata": {
+        "description": "Enable managed identity."
+      }
+    }
+  },
+  "resources": [
+    {
+      "type": "Microsoft.ContainerInstance/containerGroups",
+      "apiVersion": "2023-05-01",
+      "name": "[parameters('name')]",
+      "location": "[parameters('location')]",
+      "tags": "[parameters('tags')]",
+      "identity": "[if(parameters('enableManagedIdentity'), createObject('type', 'SystemAssigned'), null())]",
+      "properties": {
+        "containers": [
+          {
+            "name": "[format('{0}-container', parameters('name'))]",
+            "properties": {
+              "image": "[parameters('containerImage')]",
+              "resources": {
+                "requests": {
+                  "cpu": "[parameters('cpuCores')]",
+                  "memoryInGB": "[parameters('memoryInGB')]"
+                }
+              },
+              "environmentVariables": "[parameters('environmentVariables')]",
+              "ports": [
+                {
+                  "port": 80,
+                  "protocol": "TCP"
+                },
+                {
+                  "port": 443,
+                  "protocol": "TCP"
+                }
+              ]
+            }
+          }
+        ],
+        "restartPolicy": "[parameters('restartPolicy')]",
+        "osType": "Linux",
+        "subnetIds": [
+          {
+            "id": "[parameters('subnetId')]"
+          }
+        ],
+        "diagnostics": {
+          "logAnalytics": {
+            "workspaceId": "[reference(parameters('logAnalyticsWorkspaceId'), '2022-10-01').customerId]",
+            "workspaceKey": "[listKeys(parameters('logAnalyticsWorkspaceId'), '2022-10-01').primarySharedKey]"
+          }
+        },
+        "priority": "Regular",
+        "sku": "Standard"
+      }
+    },
+    {
+      "type": "Microsoft.ContainerInstance/containerGroups",
+      "apiVersion": "2023-05-01",
+      "name": "[format('{0}-sidecar', parameters('name'))]",
+      "location": "[parameters('location')]",
+      "tags": "[union(parameters('tags'), createObject('purpose', 'sidecar'))]",
+      "identity": "[if(parameters('enableManagedIdentity'), createObject('type', 'SystemAssigned'), null())]",
+      "properties": {
+        "containers": [
+          {
+            "name": "app-container",
+            "properties": {
+              "image": "[parameters('containerImage')]",
+              "resources": {
+                "requests": {
+                  "cpu": "[parameters('cpuCores')]",
+                  "memoryInGB": "[parameters('memoryInGB')]"
+                }
+              },
+              "environmentVariables": "[parameters('environmentVariables')]",
+              "ports": [
+                {
+                  "port": 8080,
+                  "protocol": "TCP"
+                }
+              ]
+            }
+          },
+          {
+            "name": "logging-sidecar",
+            "properties": {
+              "image": "mcr.microsoft.com/azuremonitor/containerinsights/ciprod:ciprod20230816",
+              "resources": {
+                "requests": {
+                  "cpu": "[json('0.5')]",
+                  "memoryInGB": 1
+                }
+              },
+              "environmentVariables": [
+                {
+                  "name": "WORKSPACE_ID",
+                  "value": "[reference(parameters('logAnalyticsWorkspaceId'), '2022-10-01').customerId]"
+                },
+                {
+                  "name": "WORKSPACE_KEY",
+                  "secureValue": "[listKeys(parameters('logAnalyticsWorkspaceId'), '2022-10-01').primarySharedKey]"
+                }
+              ]
+            }
+          }
+        ],
+        "restartPolicy": "Always",
+        "osType": "Linux",
+        "subnetIds": [
+          {
+            "id": "[parameters('subnetId')]"
+          }
+        ],
+        "priority": "Regular",
+        "sku": "Standard"
+      }
+    },
+    {
+      "type": "Microsoft.ContainerInstance/containerGroups",
+      "apiVersion": "2023-05-01",
+      "name": "[format('{0}-batch', parameters('name'))]",
+      "location": "[parameters('location')]",
+      "tags": "[union(parameters('tags'), createObject('purpose', 'batch-processing'))]",
+      "identity": "[if(parameters('enableManagedIdentity'), createObject('type', 'SystemAssigned'), null())]",
+      "properties": {
+        "containers": [
+          {
+            "name": "batch-processor",
+            "properties": {
+              "image": "mcr.microsoft.com/dotnet/runtime:8.0",
+              "resources": {
+                "requests": {
+                  "cpu": 2,
+                  "memoryInGB": 4
+                }
+              },
+              "environmentVariables": [
+                {
+                  "name": "BATCH_SIZE",
+                  "value": "1000"
+                },
+                {
+                  "name": "WORKER_THREADS",
+                  "value": "4"
+                }
+              ],
+              "command": [
+                "/bin/bash",
+                "-c",
+                "echo \"Starting batch processing...\" && sleep 3600"
+              ]
+            }
+          }
+        ],
+        "restartPolicy": "OnFailure",
+        "osType": "Linux",
+        "subnetIds": [
+          {
+            "id": "[parameters('subnetId')]"
+          }
+        ],
+        "priority": "Spot",
+        "sku": "Standard"
+      }
+    },
+    {
+      "type": "Microsoft.Insights/diagnosticSettings",
+      "apiVersion": "2021-05-01-preview",
+      "scope": "[format('Microsoft.ContainerInstance/containerGroups/{0}', parameters('name'))]",
+      "name": "[format('{0}-logs', parameters('name'))]",
+      "properties": {
+        "workspaceId": "[parameters('logAnalyticsWorkspaceId')]",
+        "logs": [
+          {
+            "category": "ContainerInstanceLog",
+            "enabled": true,
+            "retentionPolicy": {
+              "enabled": true,
+              "days": 30
+            }
+          }
+        ],
+        "metrics": [
+          {
+            "category": "AllMetrics",
+            "enabled": true,
+            "retentionPolicy": {
+              "enabled": true,
+              "days": 30
+            }
+          }
+        ]
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.ContainerInstance/containerGroups', parameters('name'))]"
+      ]
+    }
+  ],
+  "outputs": {
+    "containerGroupId": {
+      "type": "string",
+      "value": "[resourceId('Microsoft.ContainerInstance/containerGroups', parameters('name'))]"
+    },
+    "containerGroupName": {
+      "type": "string",
+      "value": "[parameters('name')]"
+    },
+    "containerGroupFqdn": {
+      "type": "string",
+      "value": "[reference(resourceId('Microsoft.ContainerInstance/containerGroups', parameters('name')), '2023-05-01').ipAddress.fqdn]"
+    },
+    "containerGroupIpAddress": {
+      "type": "string",
+      "value": "[reference(resourceId('Microsoft.ContainerInstance/containerGroups', parameters('name')), '2023-05-01').ipAddress.ip]"
+    },
+    "containerGroupIdentityPrincipalId": {
+      "type": "string",
+      "value": "[if(parameters('enableManagedIdentity'), reference(resourceId('Microsoft.ContainerInstance/containerGroups', parameters('name')), '2023-05-01', 'full').identity.principalId, '')]"
+    },
+    "sidecarContainerGroupId": {
+      "type": "string",
+      "value": "[resourceId('Microsoft.ContainerInstance/containerGroups', format('{0}-sidecar', parameters('name')))]"
+    },
+    "batchContainerGroupId": {
+      "type": "string",
+      "value": "[resourceId('Microsoft.ContainerInstance/containerGroups', format('{0}-batch', parameters('name')))]"
+    }
+  }
+}

@@ -65,6 +65,55 @@ param ingestionEventTopicName string = '${namePrefix}${environment}egtopic'
 @description('Optional IP ranges permitted to access publicly exposed endpoints (e.g., Function App SCM). Leave empty to block public ingress.')
 param allowedPublicIpRanges array = []
 
+@description('Security Group Object IDs for RBAC assignments. Leave empty to skip group-based assignments.')
+param securityGroups object = {
+  platformAdmins: ''
+  platformOperators: ''
+  platformDevelopers: ''
+  platformReaders: ''
+  mlEngineers: ''
+  dataAnalysts: ''
+  dataScientists: ''
+  dataEngineers: ''
+  dataGovernanceTeam: ''
+}
+
+// ======================================
+// COST OPTIMIZATION DEPLOYMENT FLAGS
+// ======================================
+// These parameters control which expensive resources get deployed
+// Set to false to skip deployment of costly 24/7 charging resources
+
+@description('Deploy Microsoft Fabric capacity. Charges continuously based on capacity units (F2=$525/month minimum).')
+param deployFabric bool = true
+
+@description('Deploy Azure Kubernetes Service. Charges for node VMs 24/7 (~$420/month minimum for 3 nodes).')
+param deployAKS bool = true
+
+@description('Deploy Azure Machine Learning workspace with compute. ML compute instances charge continuously.')
+param deployMachineLearning bool = true
+
+@description('Deploy Microsoft Purview for data governance. Charges for capacity units continuously (~$400/month minimum).')
+param deployPurview bool = true
+
+@description('Deploy Synapse dedicated SQL pools. Dedicated pools charge continuously unlike serverless (~$1200/month for DW100c).')
+param deploySynapseDedicatedSQL bool = false
+
+@description('Deploy Self-Hosted Integration Runtime VM. VM charges 24/7 when running (~$140/month for Standard_D2s_v3).')
+param deploySHIR bool = false
+
+@description('Deploy Azure Container Instances. ACI charges for allocated CPU/memory continuously.')
+param deployContainerInstances bool = true
+
+@description('Deploy Logic Apps Standard plan. Standard plan charges for allocated capacity (~$200/month base).')
+param deployLogicApps bool = true
+
+@description('Deploy Cognitive Services. Some tiers have minimum monthly charges.')
+param deployCognitiveServices bool = true
+
+@description('Deploy Azure Maps. Standard pricing tier has monthly minimums.')
+param deployAzureMaps bool = true
+
 var privateDnsZoneSuffixes = [
   'blob.${az.environment().suffixes.storage}'
   'dfs.${az.environment().suffixes.storage}'
@@ -77,23 +126,17 @@ var privateDnsZoneSuffixes = [
   'servicebus.windows.net'
   'privatelink.eventgrid.azure.net'
   'privatelink.cognitiveservices.azure.com'
+  // Modern platform services DNS zones
+  'privatelink.purview.azure.com'
+  'privatelink.purviewstudio.azure.com'
+  'privatelink.api.azureml.ms'
+  'privatelink.notebooks.azure.net'
+  'privatelink.azuredatabricks.net'
+  'privatelink.aks.azure.com'
+  'privatelink.management.azure.com'
+  'privatelink.azure-api.net'
+  'privatelink.containerinstance.azure.com'
 ]
-
-var naming = {
-  vnet: '${namePrefix}-${environment}-vnet'
-  storage: toLower('${namePrefix}${environment}dls')
-  synapse: '${namePrefix}-${environment}-synapse'
-  keyVault: '${namePrefix}-${environment}-kv'
-  functionPlan: '${namePrefix}-${environment}-asp'
-  functionApp: '${namePrefix}-${environment}-func'
-  functionStorage: toLower('${namePrefix}${environment}funcsa')
-  logAnalytics: '${namePrefix}-${environment}-la'
-  eventGridTopic: ingestionEventTopicName
-  logicApp: '${namePrefix}-${environment}-logicapp'
-  azureMaps: '${namePrefix}-${environment}-maps'
-  cognitiveServices: '${namePrefix}-${environment}-aisvc'
-
-}
 
 module logging 'modules/monitoring.bicep' = {
   name: 'logging'
@@ -174,7 +217,7 @@ module appHosting 'modules/appHosting.bicep' = {
   }
 }
 
-module logicApp 'modules/logicApp.bicep' = {
+module logicApp 'modules/logicApp.bicep' = if (deployLogicApps) {
   name: 'logicApp'
   params: {
     name: resourceNaming.outputs.naming.logicApp
@@ -220,7 +263,7 @@ module synapse 'modules/synapse.bicep' = {
   }
 }
 
-module azureMaps 'modules/azureMaps.bicep' = {
+module azureMaps 'modules/azureMaps.bicep' = if (deployAzureMaps) {
   name: 'azureMaps'
   params: {
     name: resourceNaming.outputs.naming.azureMaps
@@ -230,7 +273,7 @@ module azureMaps 'modules/azureMaps.bicep' = {
   }
 }
 
-module cognitiveServices 'modules/cognitiveServices.bicep' = {
+module cognitiveServices 'modules/cognitiveServices.bicep' = if (deployCognitiveServices) {
   name: 'cognitiveServices'
   params: {
     name: resourceNaming.outputs.naming.cognitiveServices
@@ -242,11 +285,128 @@ module cognitiveServices 'modules/cognitiveServices.bicep' = {
   }
 }
 
+// Modern Platform Services
+module purview 'modules/purview.bicep' = if (deployPurview) {
+  name: 'purview'
+  params: {
+    name: resourceNaming.outputs.naming.purview
+    location: location
+    tags: tags
+    logAnalyticsWorkspaceId: logging.outputs.workspaceId
+    privateEndpointSubnetId: networking.outputs.privateEndpointsSubnetId
+    privateDnsZoneIds: privateDns.outputs.privateDnsZoneIds
+  }
+}
+
+module machineLearning 'modules/machineLearning.bicep' = if (deployMachineLearning) {
+  name: 'machineLearning'
+  params: {
+    name: resourceNaming.outputs.naming.machineLearning
+    location: location
+    tags: tags
+    storageAccountId: storage.outputs.storageAccountId
+    keyVaultId: keyVault.outputs.keyVaultId
+    applicationInsightsId: ''  // Will need to create App Insights
+    logAnalyticsWorkspaceId: logging.outputs.workspaceId
+    privateEndpointSubnetId: networking.outputs.privateEndpointsSubnetId
+    privateDnsZoneIds: privateDns.outputs.privateDnsZoneIds
+  }
+}
+
+module kubernetes 'modules/kubernetes.bicep' = if (deployAKS) {
+  name: 'kubernetes'
+  params: {
+    name: resourceNaming.outputs.naming.kubernetes
+    location: location
+    tags: tags
+    subnetId: networking.outputs.functionSubnetId  // Reuse existing subnet
+    logAnalyticsWorkspaceId: logging.outputs.workspaceId
+  }
+}
+
+module fabric 'modules/fabric.bicep' = if (deployFabric) {
+  name: 'fabric'
+  params: {
+    name: resourceNaming.outputs.naming.fabric
+    location: location
+    tags: tags
+    administrators: ['admin@company.com']  // Update with actual admin emails
+    logAnalyticsWorkspaceId: logging.outputs.workspaceId
+  }
+}
+
+module containerInstances 'modules/containerInstances.bicep' = if (deployContainerInstances) {
+  name: 'containerInstances'
+  params: {
+    name: resourceNaming.outputs.naming.containerInstances
+    location: location
+    tags: tags
+    subnetId: networking.outputs.integrationSubnetId
+    logAnalyticsWorkspaceId: logging.outputs.workspaceId
+  }
+}
+
+module comprehensiveApiGateway 'modules/comprehensiveApiGateway.bicep' = {
+  name: 'comprehensiveApiGateway'
+  params: {
+    name: resourceNaming.outputs.naming.comprehensiveApiGateway
+    location: location
+    tags: tags
+    publisherEmail: 'admin@company.com'  // Update with actual email
+    publisherName: 'Data Platform Team'
+    subnetId: networking.outputs.integrationSubnetId
+    logAnalyticsWorkspaceId: logging.outputs.workspaceId
+    applicationInsightsId: ''  // Will need to create App Insights
+    keyVaultId: keyVault.outputs.keyVaultId
+  }
+}
+
+// RBAC Assignments for all platform resources
+module rbacAssignments 'modules/rbacAssignments.bicep' = {
+  name: 'rbacAssignments'
+  params: {
+    storageAccountId: storage.outputs.storageAccountId
+    keyVaultId: keyVault.outputs.keyVaultId
+    synapseWorkspaceId: synapse.outputs.synapseWorkspaceId
+    aksClusterId: deployAKS ? kubernetes.outputs.aksClusterId : ''
+    mlWorkspaceId: deployMachineLearning ? machineLearning.outputs.mlWorkspaceId : ''
+    purviewAccountId: deployPurview ? purview.outputs.purviewAccountId : ''
+    fabricCapacityId: deployFabric ? fabric.outputs.fabricCapacityId : ''
+    managedIdentities: {
+      functions: appHosting.outputs.functionAppIdentityPrincipalId
+      logicApps: deployLogicApps ? logicApp.outputs.logicAppIdentityPrincipalId : ''
+      aks: deployAKS ? kubernetes.outputs.aksClusterIdentityPrincipalId : ''
+      ml: deployMachineLearning ? machineLearning.outputs.mlWorkspaceIdentityPrincipalId : ''
+      purview: deployPurview ? purview.outputs.purviewIdentityPrincipalId : ''
+      fabric: '' // Fabric uses dedicated capacity, no managed identity needed for RBAC
+      containers: deployContainerInstances ? containerInstances.outputs.containerGroupIdentityPrincipalId : ''
+    }
+    securityGroups: securityGroups
+  }
+}
+
 output storageAccountId string = storage.outputs.storageAccountId
 output synapseWorkspaceName string = synapse.outputs.synapseWorkspaceName
 output functionAppName string = appHosting.outputs.functionAppName
-output logicAppName string = logicApp.outputs.logicAppName
+output logicAppName string = deployLogicApps ? logicApp.outputs.logicAppName : ''
 output eventGridTopicEndpoint string = eventing.outputs.eventGridTopicEndpoint
-output azureMapsAccountId string = azureMaps.outputs.mapsAccountId
-output cognitiveAccountId string = cognitiveServices.outputs.cognitiveAccountId
-output cognitiveAccountEndpoint string = cognitiveServices.outputs.cognitiveAccountEndpoint
+output azureMapsAccountId string = deployAzureMaps ? azureMaps.outputs.mapsAccountId : ''
+output cognitiveAccountId string = deployCognitiveServices ? cognitiveServices.outputs.cognitiveAccountId : ''
+output cognitiveAccountEndpoint string = deployCognitiveServices ? cognitiveServices.outputs.cognitiveAccountEndpoint : ''
+
+// Modern Platform Services Outputs (Conditional)
+output purviewAccountId string = deployPurview ? purview.outputs.purviewAccountId : ''
+output purviewAccountName string = deployPurview ? purview.outputs.purviewAccountName : ''
+output purviewAccountEndpoint string = deployPurview ? purview.outputs.purviewAccountEndpoint : ''
+output mlWorkspaceId string = deployMachineLearning ? machineLearning.outputs.mlWorkspaceId : ''
+output mlWorkspaceName string = deployMachineLearning ? machineLearning.outputs.mlWorkspaceName : ''
+output aksClusterId string = deployAKS ? kubernetes.outputs.aksClusterId : ''
+output aksClusterName string = deployAKS ? kubernetes.outputs.aksClusterName : ''
+output fabricCapacityId string = deployFabric ? fabric.outputs.fabricCapacityId : ''
+output fabricCapacityName string = deployFabric ? fabric.outputs.fabricCapacityName : ''
+output containerInstancesId string = deployContainerInstances ? containerInstances.outputs.containerGroupId : ''
+output apiGatewayId string = comprehensiveApiGateway.outputs.apiManagementId
+output apiGatewayUrl string = comprehensiveApiGateway.outputs.gatewayUrl
+
+// RBAC Assignment Status
+output rbacAssignmentStatus object = rbacAssignments.outputs.rbacAssignmentsSummary

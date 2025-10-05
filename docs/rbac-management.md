@@ -2,6 +2,12 @@
 
 This guide outlines the RBAC (Role-Based Access Control) and Managed Identities implementation for the Data Platform project.
 
+> **Note**: For comprehensive RBAC deployment instructions, see the [RBAC Implementation Guide](rbac-implementation-guide.md).
+
+## Automated RBAC Implementation
+
+The platform includes an automated RBAC assignment module (`infra/modules/rbacAssignments.bicep`) that configures all necessary permissions for managed identities and security groups. This ensures consistent security across all platform components.
+
 ## Security Groups Structure
 
 ### Administrator Groups
@@ -48,6 +54,40 @@ Used for core platform services:
      - Functions Contributor
      - Key Vault Secrets User
 
+3. **AKS Cluster**
+   - Name Pattern: `id-user-{env}-aks`
+   - Permissions:
+     - Azure Kubernetes Service Cluster User
+     - Key Vault Secrets User
+     - Storage Blob Data Contributor
+
+4. **Machine Learning Workspace**
+   - Name Pattern: `id-user-{env}-ml`
+   - Permissions:
+     - AzureML Data Scientist
+     - Key Vault Secrets User
+     - Storage Blob Data Contributor
+
+5. **Microsoft Purview**
+   - Name Pattern: `id-user-{env}-purview`
+   - Permissions:
+     - Purview Data Reader
+     - Storage Blob Data Reader
+     - Synapse Contributor
+
+6. **Microsoft Fabric**
+   - Name Pattern: `id-user-{env}-fabric`
+   - Permissions:
+     - Fabric Capacity Contributor
+     - Storage Blob Data Reader
+     - Synapse SQL User
+
+7. **Container Instances**
+   - Name Pattern: `id-user-{env}-containers`
+   - Permissions:
+     - Key Vault Secrets User
+     - Storage Blob Data Reader
+
 ## Role Assignments
 
 ### Core Platform Roles
@@ -61,10 +101,46 @@ Resource Group             Reader                         Platform-Readers
 Key Vault                  Key Vault Administrator        Platform-Operators
 Key Vault                  Key Vault Secrets User         Functions MI
 Key Vault                  Key Vault Secrets User         Logic Apps MI
+Key Vault                  Key Vault Secrets User         AKS MI
+Key Vault                  Key Vault Secrets User         ML MI
 Storage Account            Storage Blob Data Owner        Platform-Operators
+Storage Account            Storage Blob Data Contributor  AKS MI
+Storage Account            Storage Blob Data Contributor  ML MI
+Storage Account            Storage Blob Data Reader       Purview MI
+Storage Account            Storage Blob Data Reader       Fabric MI
+Storage Account            Storage Blob Data Reader       Container MI
 Cognitive Services         Cognitive Services User        Functions MI
 Azure Maps                 Azure Maps Data Reader         Functions MI
+AKS Cluster                Azure Kubernetes Service Admin Platform-Operators
+AKS Cluster                Azure Kubernetes Service User  Developers
+ML Workspace               AzureML Data Scientist         ML Engineers
+Purview Account            Purview Data Curator           Data Stewards
+Purview Account            Purview Data Reader            All Users
+Fabric Capacity            Fabric Capacity Admin          Platform-Operators
+Fabric Capacity            Fabric Capacity Contributor    Data Analysts
 ```
+
+### Modern Platform Specific Roles
+
+#### Azure Kubernetes Service
+- **Azure Kubernetes Service Cluster Admin**: Full cluster management
+- **Azure Kubernetes Service Cluster User**: Deploy and manage workloads
+- **Azure Kubernetes Service RBAC Reader**: Read-only access to cluster resources
+
+#### Azure Machine Learning
+- **AzureML Data Scientist**: Create experiments, train models
+- **AzureML Compute Operator**: Manage compute instances and clusters
+- **AzureML Model Operator**: Deploy and manage models
+
+#### Microsoft Purview
+- **Purview Data Curator**: Full data catalog management
+- **Purview Data Reader**: Read access to data catalog
+- **Purview Data Source Administrator**: Register and scan data sources
+
+#### Microsoft Fabric
+- **Fabric Capacity Admin**: Manage Fabric capacity settings
+- **Fabric Capacity Contributor**: Create workspaces and items
+- **Fabric Capacity Reader**: View capacity metrics and usage
 
 ## Environment-Specific Rules
 

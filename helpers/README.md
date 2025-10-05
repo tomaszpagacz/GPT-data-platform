@@ -1,33 +1,157 @@
 # Helpers Directory
 
-This directory contains various helper scripts and test data for the GPT-data-platform project. These resources are designed to make development, testing, and deployment easier across different environments.
+This directory contains unified helper scripts and test data for the GPT-data-platform project. These resources are designed to make development, testing, and deployment easier across different environments.
 
 ## Directory Structure
 
 ```
 helpers/
-├── setup-scripts/      # Scripts for environment setup and testing
-│   ├── setup-dev-environment.sh     # Sets up development environment
-│   ├── test-distance-function.sh    # Tests the distance calculation function
-│   └── check-workspace-details.sh   # Verifies workspace environment setup
+├── setup-scripts/      # Consolidated scripts for environment setup and testing
+│   ├── unified-setup.sh              # Master environment setup script (replaces multiple setup scripts)
+│   ├── unified-test-functions.sh     # Comprehensive Functions & Logic Apps testing
+│   ├── check-workspace-details.sh    # Verifies workspace environment setup
+│   └── [legacy scripts]              # Original scripts (for reference, can be removed)
 └── test-data/         # Test data files for various functions
     └── distance-test-cases.json     # Test cases for distance calculation
 ```
 
-## Setup Scripts
+## Unified Scripts
 
-### setup-dev-environment.sh
+### unified-setup.sh
 
-This script sets up a development environment with all necessary tools and dependencies:
+**Replaces**: `setup-dev-environment.sh`, `install-dependencies.sh`, `setup-local-environment.sh`
 
-- .NET SDK 6.0
-- Azure Functions Core Tools
-- Bicep CLI
-- Azure CLI
+This master script provides comprehensive environment setup with multiple options:
+
+- **Full Setup**: Complete environment with all tools (.NET 8, Azure CLI, Functions Core Tools, Bicep, VS Code extensions)
+- **Development Only**: Minimal setup for development without Azure CLI
+- **Environment Check**: Validate current environment without installing anything
+- **Selective Updates**: Update specific components (e.g., .NET version)
 
 Usage:
 ```bash
 cd helpers/setup-scripts
+
+# Complete setup for new environment
+./unified-setup.sh --full
+
+# Development-only setup (no Azure CLI)
+./unified-setup.sh --dev-only
+
+# Check current environment
+./unified-setup.sh --check
+
+# Update .NET to version 8.0
+./unified-setup.sh --update-dotnet
+
+# Show all options
+./unified-setup.sh --help
+```
+
+**Key Features**:
+- .NET 8.0 SDK installation and validation
+- Azure Functions Core Tools v4
+- Azure CLI and Bicep CLI
+- Node.js 18+ and npm
+- VS Code extension management
+- Project dependency validation
+- Color-coded output and progress indication
+
+### unified-test-functions.sh
+
+**Replaces**: `test-functions-local.sh`, `test-functions-local-v2.sh`
+
+Comprehensive local testing for Azure Functions and Logic Apps:
+
+Usage:
+```bash
+# Run with default settings
+./unified-test-functions.sh
+
+# Verbose output with detailed logging
+./unified-test-functions.sh --verbose
+
+# Test only the distance function
+./unified-test-functions.sh --test-distance
+
+# Use specific ports
+./unified-test-functions.sh --functions-port 8080 --logic-apps-port 8081
+
+# Check dependencies only
+./unified-test-functions.sh --check-deps
+
+# Show all options
+./unified-test-functions.sh --help
+```
+
+**Key Features**:
+- Automatic port detection and management
+- Comprehensive dependency checking
+- Distance function testing with test cases
+- Multiple function app support
+- Graceful cleanup on exit
+- Logic Apps preparation (extensible)
+- Real-time health monitoring
+
+### check-workspace-details.sh
+
+Validates the workspace environment and reports on:
+- Platform health status including Microsoft Fabric
+- .NET 8 runtime validation
+- Azure service connectivity
+- Function app configuration
+- Modern platform component verification
+
+## Migration from Legacy Scripts
+
+The following legacy scripts are **replaced** by the unified versions:
+
+| Legacy Script | Replaced By | Notes |
+|---------------|-------------|--------|
+| `setup-dev-environment.sh` | `unified-setup.sh --dev-only` | Basic development setup |
+| `install-dependencies.sh` | `unified-setup.sh --full` | Complete dependency installation |
+| `setup-local-environment.sh` | `unified-setup.sh --check` + setup | Environment validation and setup |
+| `test-functions-local.sh` | `unified-test-functions.sh` | Enhanced with better port management |
+| `test-functions-local-v2.sh` | `unified-test-functions.sh` | Includes all v2 improvements |
+
+## Test Data
+
+### distance-test-cases.json
+
+Test cases for validating the distance calculation function with various geographic scenarios:
+- Short distances (same city)
+- Medium distances (between cities)
+- Long distances (international)
+- Edge cases (antimeridian, polar regions)
+
+## Quick Start
+
+For new developers setting up the environment:
+
+```bash
+# 1. Full environment setup
+./helpers/setup-scripts/unified-setup.sh --full
+
+# 2. Verify installation
+./helpers/setup-scripts/unified-setup.sh --check
+
+# 3. Test Functions locally
+./helpers/setup-scripts/unified-test-functions.sh --verbose
+
+# 4. Check platform health
+./helpers/setup-scripts/check-workspace-details.sh
+```
+
+## Troubleshooting
+
+Common issues and solutions:
+
+1. **Port conflicts**: Use `--functions-port` and `--logic-apps-port` options
+2. **.NET version issues**: Run `./unified-setup.sh --update-dotnet`
+3. **Missing dependencies**: Run `./unified-setup.sh --check` to identify gaps
+4. **Permission errors**: Some installations may require `sudo` privileges
+
+For additional help, run any script with `--help` option.
 chmod +x setup-dev-environment.sh
 ./setup-dev-environment.sh
 ```

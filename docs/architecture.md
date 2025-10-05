@@ -28,11 +28,21 @@ graph TB
             SQL[Serverless SQL]
             DW[Dedicated SQL]
         end
+        
+        subgraph Container Workloads
+            AKS[Azure Kubernetes Service]
+            ACI[Container Instances]
+            AKS --> |Orchestrated Jobs| DL
+            ACI --> |Lightweight Tasks| DL
+        end
     end
 
-    subgraph Enrichment Layer
+    subgraph AI/ML Layer
         CS[Cognitive Services] --> |ML Enrichment| SYN
         AM[Azure Maps] --> |Spatial Data| SYN
+        AML[Azure Machine Learning] --> |ML Models| SYN
+        AML --> |Training Data| DL
+        AML --> |Model Serving| AKS
     end
 
     subgraph Storage Layer
@@ -41,34 +51,65 @@ graph TB
         DL --> |Consumption| CONS[Consumption Zone]
     end
 
+    subgraph Governance & Cataloging
+        PUR[Microsoft Purview] --> |Data Discovery| DL
+        PUR --> |Lineage Tracking| SYN
+        PUR --> |Classification| SA
+        META[Metadata Store] --> PUR
+    end
+
     subgraph Security & Monitoring
         KV[Key Vault] --> |Secrets| SYN
         KV --> |Secrets| AF
+        KV --> |Secrets| AKS
+        KV --> |Secrets| AML
         MI[Managed Identity] --> |Auth| KV
         LA[Log Analytics] --> |Logs| MON[Azure Monitor]
         AI[App Insights] --> |Telemetry| MON
+        MON --> |Monitor| AKS
+        MON --> |Monitor| AML
     end
 
-    subgraph API Management
-        APIM[API Management] --> |APIs| AF
-        APIM --> |APIs| SYN
+    subgraph API Management & Gateway
+        CAPIG[Comprehensive API Gateway] --> |GraphQL/REST| AF
+        CAPIG --> |ML APIs| AML
+        CAPIG --> |Data APIs| SYN
+        CAPIG --> |Container APIs| AKS
+        APIM[Legacy API Management] -.-> CAPIG
+    end
+
+    subgraph Data Consumption
+        DW --> |Serve| FAB[Microsoft Fabric]
+        FAB --> |OneLake| DL
+        FAB --> |Real-time Analytics| EH2
+        FAB --> |Data Warehouse| DW
+        CAPIG --> |API Access| FAB
+        PUR --> |Lineage| FAB
     end
 
     classDef azureService fill:#0072C6,stroke:#fff,stroke-width:2px,color:#fff
     classDef storage fill:#008272,stroke:#fff,stroke-width:2px,color:#fff
     classDef security fill:#B4009E,stroke:#fff,stroke-width:2px,color:#fff
     classDef processing fill:#004B50,stroke:#fff,stroke-width:2px,color:#fff
+    classDef aiml fill:#FF6B35,stroke:#fff,stroke-width:2px,color:#fff
+    classDef governance fill:#7B68EE,stroke:#fff,stroke-width:2px,color:#fff
+    classDef fabric fill:#E74C3C,stroke:#fff,stroke-width:2px,color:#fff
+    classDef apiGateway fill:#17A2B8,stroke:#fff,stroke-width:2px,color:#fff
     
-    class AF,EH1,EH2,EG,SYN,CS,AM,APIM azureService
+    class AF,EH1,EH2,EG,CS,AM,ACI azureService
     class SA,DL,RAW,CUR,CONS storage
     class KV,MI security
-    class SP,SQL,DW processing
+    class SYN,SP,SQL,DW,AKS processing
+    class AML aiml
+    class PUR,META governance
+    class FAB fabric
+    class CAPIG,APIM apiGateway
 ```
 
 ## Component Descriptions
 
 ### Integration Components
-- **Azure Functions**: Event-driven compute for custom integrations
+- **Azure Functions**: Event-driven compute for custom integrations (.NET 8 isolated worker)
 - **Event Grid**: Event routing and distribution
 - **Event Hub**: Real-time data ingestion and stream processing
 - **Self-hosted IR**: On-premises data integration runtime
@@ -78,12 +119,46 @@ graph TB
   - Spark Pools: Distributed data processing
   - Serverless SQL: Ad-hoc analytics
   - Dedicated SQL: Performance-critical workloads
+- **Azure Kubernetes Service (AKS)**: Container orchestration platform with auto-scaling
+- **Azure Container Instances**: Lightweight containerized compute for batch jobs
+
+### AI/ML Components
+- **Azure Machine Learning**: Complete ML platform with:
+  - Compute instances and clusters
+  - Model training and deployment
+  - MLOps pipelines and monitoring
+- **Cognitive Services**: Pre-built AI services for text, vision, and speech
+- **Azure Maps**: Geospatial services and location intelligence
+
+### Data Governance & Cataloging
+- **Microsoft Purview**: Data governance platform providing:
+  - Data discovery and cataloging
+  - Data lineage tracking
+  - Classification and sensitivity labeling
+  - Data quality monitoring
+- **Metadata Store**: Centralized metadata repository
 
 ### Storage Components
 - **Data Lake Zones**:
   - Raw: Original, unmodified data
   - Curated: Cleaned and transformed data
   - Consumption: Business-ready datasets
+- **Storage Account**: Azure Blob Storage with hierarchical namespace
+
+### Data Consumption Layer
+- **Microsoft Fabric**: Unified analytics platform with:
+  - OneLake data integration
+  - Real-time analytics capabilities
+  - Data warehousing and lakehouses
+  - Power BI integration for reporting
+
+### API Management & Gateway
+- **Comprehensive API Gateway**: Modern API management with:
+  - GraphQL and REST API support
+  - OAuth 2.0 and API key authentication
+  - Rate limiting and throttling
+  - Request/response transformation
+- **Legacy API Management**: Basic APIM services (being migrated)
 
 ### Security Components
 - **Key Vault**: Centralized secret management
@@ -108,6 +183,8 @@ graph TB
         NSG[NSG Rules] --> |Filter| VNet[Virtual Network]
         PE[Private Endpoints] --> |Secure Access| Resources
         VNet --> |Isolation| Resources
+        AKSNP[AKS Network Policies] --> |Pod Security| AKS
+        CISG[Container Security Groups] --> |Container Isolation| ACI
     end
 
     subgraph Resources
@@ -115,18 +192,31 @@ graph TB
         SA[Storage Account]
         SYN[Synapse]
         EH[Event Hub]
+        AKS[AKS Cluster]
+        AML[ML Workspace]
+        PUR[Purview]
+        FAB[Fabric Capacity]
+        ACI[Container Instances]
     end
 
     subgraph Access Control
         RBAC[RBAC Roles] --> |Permissions| Resources
         Policies[Azure Policies] --> |Governance| Resources
+        AKSRBAC[AKS RBAC] --> |Cluster Access| AKS
+        MLRBAC[ML RBAC] --> |Workspace Access| AML
+        PURRBAC[Purview RBAC] --> |Data Catalog Access| PUR
+        FABRBAC[Fabric RBAC] --> |Capacity Access| FAB
     end
 
     subgraph Monitoring
         LA[Log Analytics]
         AM[Azure Monitor]
+        DEFENDER[Defender for Cloud]
         Resources --> |Logs| LA
         Resources --> |Metrics| AM
+        Resources --> |Security| DEFENDER
+        AKS --> |Container Insights| LA
+        AML --> |ML Metrics| AM
     end
 
     classDef security fill:#B4009E,stroke:#fff,stroke-width:2px,color:#fff
@@ -287,7 +377,7 @@ graph TB
     end
 
     subgraph Data Consumption
-        DW --> |Serve| PWR[Power BI]
+        DW --> |Serve| FAB[Microsoft Fabric]
         DW --> |API| APIM[API Management]
         META --> |Lineage| PUR[Purview]
     end

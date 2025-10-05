@@ -1,10 +1,92 @@
 # Cost Optimization Configuration
-# This file controls resource optimization behavior across different environments
+# This file controls both deployment-time resource selection and runtime optimization behavior
 # Adjust these parameters based on your development and testing needs
 
 # Global switch for cost optimization
 # Set to false to disable all optimizations at once
 costOptimizationEnabled: true
+
+# ===========================================
+# DEPLOYMENT-TIME COST OPTIMIZATION FLAGS
+# ===========================================
+# These control which expensive resources get deployed in the first place
+# Use these to avoid deploying costly 24/7 charging resources during development
+
+deploymentFlags:
+  # Microsoft Fabric (F2 = $525/month minimum)
+  deployFabric:
+    dev: false      # Skip Fabric in dev - use local Power BI for testing
+    sit: false      # Skip in system integration testing
+    uat: true       # Deploy for user acceptance testing
+    prod: true      # Deploy in production
+  
+  # Azure Kubernetes Service (~$420/month for 3 nodes)
+  deployAKS:
+    dev: false      # Use Container Instances instead for dev
+    sit: true       # Need for integration testing
+    uat: true       # Deploy for user testing
+    prod: true      # Deploy in production
+  
+  # Azure Machine Learning (~$200+ for compute instances)
+  deployMachineLearning:
+    dev: true       # Keep for ML development
+    sit: false      # Skip for system testing
+    uat: true       # Deploy for user testing
+    prod: true      # Deploy in production
+  
+  # Microsoft Purview (~$400/month minimum)
+  deployPurview:
+    dev: false      # Skip data governance in dev
+    sit: false      # Skip for system testing
+    uat: true       # Deploy for user testing
+    prod: true      # Deploy in production
+  
+  # Synapse Dedicated SQL Pools (~$1200/month for DW100c)
+  deploySynapseDedicatedSQL:
+    dev: false      # Use serverless SQL only
+    sit: false      # Use serverless SQL only
+    uat: false      # Use serverless SQL only
+    prod: false     # Consider if really needed
+  
+  # Self-Hosted Integration Runtime VM (~$140/month)
+  deploySHIR:
+    dev: false      # Skip on-premises integration in dev
+    sit: false      # Skip for system testing
+    uat: true       # Deploy for user testing
+    prod: true      # Deploy in production
+  
+  # Azure Container Instances (pay-per-use, but can add up)
+  deployContainerInstances:
+    dev: true       # Use instead of AKS for dev
+    sit: true       # Keep for testing
+    uat: true       # Deploy for user testing
+    prod: true      # Deploy in production
+  
+  # Logic Apps Standard (~$200/month base)
+  deployLogicApps:
+    dev: true       # Keep for development
+    sit: true       # Keep for testing
+    uat: true       # Deploy for user testing
+    prod: true      # Deploy in production
+  
+  # Cognitive Services (varies by tier)
+  deployCognitiveServices:
+    dev: true       # Keep for AI development
+    sit: true       # Keep for testing
+    uat: true       # Deploy for user testing
+    prod: true      # Deploy in production
+  
+  # Azure Maps (varies by tier)
+  deployAzureMaps:
+    dev: true       # Keep for location services development
+    sit: true       # Keep for testing
+    uat: true       # Deploy for user testing
+    prod: true      # Deploy in production
+
+# ===========================================
+# RUNTIME COST OPTIMIZATION FLAGS
+# ===========================================
+# These control runtime behavior of deployed resources
 
 # Environment-specific configurations
 # These settings override the default configurations for specific environments

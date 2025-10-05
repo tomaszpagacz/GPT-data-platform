@@ -1,0 +1,362 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "_generator": {
+      "name": "bicep",
+      "version": "0.38.5.1644",
+      "templateHash": "6211687663880796943"
+    }
+  },
+  "parameters": {
+    "name": {
+      "type": "string",
+      "metadata": {
+        "description": "Name of the Microsoft Fabric capacity."
+      }
+    },
+    "location": {
+      "type": "string",
+      "metadata": {
+        "description": "Azure region for deployment."
+      }
+    },
+    "tags": {
+      "type": "object",
+      "defaultValue": {},
+      "metadata": {
+        "description": "Tags applied to all resources."
+      }
+    },
+    "sku": {
+      "type": "string",
+      "defaultValue": "F2",
+      "allowedValues": [
+        "F2",
+        "F4",
+        "F8",
+        "F16",
+        "F32",
+        "F64",
+        "F128",
+        "F256",
+        "F512"
+      ],
+      "metadata": {
+        "description": "SKU for Microsoft Fabric capacity."
+      }
+    },
+    "administrators": {
+      "type": "array",
+      "metadata": {
+        "description": "Administrator email addresses."
+      }
+    },
+    "logAnalyticsWorkspaceId": {
+      "type": "string",
+      "metadata": {
+        "description": "Log Analytics workspace for diagnostics."
+      }
+    },
+    "enableAutoScale": {
+      "type": "bool",
+      "defaultValue": true,
+      "metadata": {
+        "description": "Enable automatic scaling."
+      }
+    },
+    "maxCapacityUnits": {
+      "type": "int",
+      "defaultValue": 4,
+      "metadata": {
+        "description": "Maximum capacity units for auto-scaling."
+      }
+    },
+    "minCapacityUnits": {
+      "type": "int",
+      "defaultValue": 1,
+      "metadata": {
+        "description": "Minimum capacity units for auto-scaling."
+      }
+    }
+  },
+  "resources": [
+    {
+      "type": "Microsoft.Fabric/capacities",
+      "apiVersion": "2023-11-01",
+      "name": "[parameters('name')]",
+      "location": "[parameters('location')]",
+      "tags": "[parameters('tags')]",
+      "sku": {
+        "name": "[parameters('sku')]",
+        "tier": "Fabric"
+      },
+      "properties": {
+        "administration": {
+          "members": "[parameters('administrators')]"
+        },
+        "state": "Active"
+      }
+    },
+    {
+      "condition": "[parameters('enableAutoScale')]",
+      "type": "Microsoft.Insights/autoscalesettings",
+      "apiVersion": "2022-10-01",
+      "name": "[format('{0}-autoscale', parameters('name'))]",
+      "location": "[parameters('location')]",
+      "tags": "[parameters('tags')]",
+      "properties": {
+        "enabled": "[parameters('enableAutoScale')]",
+        "targetResourceUri": "[resourceId('Microsoft.Fabric/capacities', parameters('name'))]",
+        "profiles": [
+          {
+            "name": "Default",
+            "capacity": {
+              "minimum": "[string(parameters('minCapacityUnits'))]",
+              "maximum": "[string(parameters('maxCapacityUnits'))]",
+              "default": "[string(parameters('minCapacityUnits'))]"
+            },
+            "rules": [
+              {
+                "metricTrigger": {
+                  "metricName": "CU",
+                  "metricNamespace": "Microsoft.Fabric/capacities",
+                  "metricResourceUri": "[resourceId('Microsoft.Fabric/capacities', parameters('name'))]",
+                  "timeGrain": "PT1M",
+                  "statistic": "Average",
+                  "timeWindow": "PT5M",
+                  "timeAggregation": "Average",
+                  "operator": "GreaterThan",
+                  "threshold": 80
+                },
+                "scaleAction": {
+                  "direction": "Increase",
+                  "type": "ChangeCount",
+                  "value": "1",
+                  "cooldown": "PT10M"
+                }
+              },
+              {
+                "metricTrigger": {
+                  "metricName": "CU",
+                  "metricNamespace": "Microsoft.Fabric/capacities",
+                  "metricResourceUri": "[resourceId('Microsoft.Fabric/capacities', parameters('name'))]",
+                  "timeGrain": "PT1M",
+                  "statistic": "Average",
+                  "timeWindow": "PT15M",
+                  "timeAggregation": "Average",
+                  "operator": "LessThan",
+                  "threshold": 30
+                },
+                "scaleAction": {
+                  "direction": "Decrease",
+                  "type": "ChangeCount",
+                  "value": "1",
+                  "cooldown": "PT20M"
+                }
+              }
+            ]
+          },
+          {
+            "name": "BusinessHours",
+            "capacity": {
+              "minimum": "[string(add(parameters('minCapacityUnits'), 1))]",
+              "maximum": "[string(parameters('maxCapacityUnits'))]",
+              "default": "[string(add(parameters('minCapacityUnits'), 1))]"
+            },
+            "rules": [
+              {
+                "metricTrigger": {
+                  "metricName": "CU",
+                  "metricNamespace": "Microsoft.Fabric/capacities",
+                  "metricResourceUri": "[resourceId('Microsoft.Fabric/capacities', parameters('name'))]",
+                  "timeGrain": "PT1M",
+                  "statistic": "Average",
+                  "timeWindow": "PT5M",
+                  "timeAggregation": "Average",
+                  "operator": "GreaterThan",
+                  "threshold": 70
+                },
+                "scaleAction": {
+                  "direction": "Increase",
+                  "type": "ChangeCount",
+                  "value": "1",
+                  "cooldown": "PT5M"
+                }
+              }
+            ],
+            "recurrence": {
+              "frequency": "Week",
+              "schedule": {
+                "timeZone": "UTC",
+                "days": [
+                  "Monday",
+                  "Tuesday",
+                  "Wednesday",
+                  "Thursday",
+                  "Friday"
+                ],
+                "hours": [
+                  8
+                ],
+                "minutes": [
+                  0
+                ]
+              }
+            }
+          }
+        ],
+        "notifications": [
+          {
+            "operation": "Scale",
+            "email": {
+              "sendToSubscriptionAdministrator": true,
+              "sendToSubscriptionCoAdministrators": true,
+              "customEmails": "[parameters('administrators')]"
+            }
+          }
+        ]
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Fabric/capacities', parameters('name'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Insights/diagnosticSettings",
+      "apiVersion": "2021-05-01-preview",
+      "scope": "[format('Microsoft.Fabric/capacities/{0}', parameters('name'))]",
+      "name": "[format('{0}-logs', parameters('name'))]",
+      "properties": {
+        "workspaceId": "[parameters('logAnalyticsWorkspaceId')]",
+        "logs": [
+          {
+            "category": "Engine",
+            "enabled": true,
+            "retentionPolicy": {
+              "enabled": true,
+              "days": 30
+            }
+          },
+          {
+            "category": "Service",
+            "enabled": true,
+            "retentionPolicy": {
+              "enabled": true,
+              "days": 30
+            }
+          },
+          {
+            "category": "Gateway",
+            "enabled": true,
+            "retentionPolicy": {
+              "enabled": true,
+              "days": 30
+            }
+          }
+        ],
+        "metrics": [
+          {
+            "category": "AllMetrics",
+            "enabled": true,
+            "retentionPolicy": {
+              "enabled": true,
+              "days": 30
+            }
+          }
+        ]
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Fabric/capacities', parameters('name'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Insights/activityLogAlerts",
+      "apiVersion": "2020-10-01",
+      "name": "[format('{0}-activity-alert', parameters('name'))]",
+      "location": "Global",
+      "tags": "[parameters('tags')]",
+      "properties": {
+        "enabled": true,
+        "scopes": [
+          "[resourceId('Microsoft.Fabric/capacities', parameters('name'))]"
+        ],
+        "condition": {
+          "allOf": [
+            {
+              "field": "category",
+              "equals": "Administrative"
+            },
+            {
+              "field": "operationName",
+              "equals": "Microsoft.Fabric/capacities/write"
+            },
+            {
+              "field": "status",
+              "equals": "Failed"
+            }
+          ]
+        },
+        "actions": {
+          "actionGroups": []
+        },
+        "description": "Alert for Microsoft Fabric capacity operations"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Fabric/capacities', parameters('name'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Insights/metricAlerts",
+      "apiVersion": "2018-03-01",
+      "name": "[format('{0}-capacity-alert', parameters('name'))]",
+      "location": "Global",
+      "tags": "[parameters('tags')]",
+      "properties": {
+        "description": "Alert when Fabric capacity utilization is high",
+        "severity": 2,
+        "enabled": true,
+        "scopes": [
+          "[resourceId('Microsoft.Fabric/capacities', parameters('name'))]"
+        ],
+        "evaluationFrequency": "PT1M",
+        "windowSize": "PT5M",
+        "criteria": {
+          "odata.type": "Microsoft.Azure.Monitor.SingleResourceMultipleMetricCriteria",
+          "allOf": [
+            {
+              "threshold": 90,
+              "name": "HighCapacityUtilization",
+              "metricNamespace": "Microsoft.Fabric/capacities",
+              "metricName": "CU",
+              "operator": "GreaterThan",
+              "timeAggregation": "Average",
+              "criterionType": "StaticThresholdCriterion"
+            }
+          ]
+        },
+        "actions": []
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Fabric/capacities', parameters('name'))]"
+      ]
+    }
+  ],
+  "outputs": {
+    "fabricCapacityId": {
+      "type": "string",
+      "value": "[resourceId('Microsoft.Fabric/capacities', parameters('name'))]"
+    },
+    "fabricCapacityName": {
+      "type": "string",
+      "value": "[parameters('name')]"
+    },
+    "fabricCapacityLocation": {
+      "type": "string",
+      "value": "[reference(resourceId('Microsoft.Fabric/capacities', parameters('name')), '2023-11-01', 'full').location]"
+    },
+    "fabricCapacityState": {
+      "type": "string",
+      "value": "[reference(resourceId('Microsoft.Fabric/capacities', parameters('name')), '2023-11-01').state]"
+    }
+  }
+}

@@ -10,36 +10,18 @@ var funcStorageNameLength = length('${namePrefix}${environment}funcsa')
 var keyVaultNameLength = length('${namePrefix}-${environment}-kv')
 
 // Storage accounts must be between 3 and 24 characters
-var storageNameValid = and(
-  storageNameLength <= 24,
-  storageNameLength >= 3
-)
-var funcStorageNameValid = and(
-  funcStorageNameLength <= 24,
-  funcStorageNameLength >= 3
-)
+var storageNameValid = (storageNameLength <= 24) && (storageNameLength >= 3)
+var funcStorageNameValid = (funcStorageNameLength <= 24) && (funcStorageNameLength >= 3)
 
 // Key Vault names must be between 3 and 24 characters
-var keyVaultNameValid = and(
-  keyVaultNameLength <= 24,
-  keyVaultNameLength >= 3
-)
+var keyVaultNameValid = (keyVaultNameLength <= 24) && (keyVaultNameLength >= 3)
 
-// Validate name patterns
-var validNamePattern = '^[a-zA-Z0-9-]*$'
-var namePatternValid = match(namePrefix, validNamePattern)
-var envPatternValid = match(environment, validNamePattern)
+// Validate name patterns using regex-like approach
+var namePatternValid = length(replace(replace(namePrefix, '-', ''), '+', '')) == length(namePrefix)
+var envPatternValid = length(replace(replace(environment, '-', ''), '+', '')) == length(environment)
 
-// Output validation results
-output validationPassed bool = and(
-  storageNameValid,
-  funcStorageNameValid,
-  keyVaultNameValid,
-  namePatternValid,
-  envPatternValid
-)
-
-output validationErrors array = [for item in [
+// Validation results array
+var validationChecks = [
   {
     check: 'Storage Account Name Length'
     valid: storageNameValid
@@ -70,6 +52,9 @@ output validationErrors array = [for item in [
     value: environment
     message: 'Environment name must contain only alphanumeric characters and hyphens'
   }
-]: if (!item.valid) { 
-  item
-}]
+]
+
+// Output validation results
+output validationPassed bool = (storageNameValid && funcStorageNameValid && keyVaultNameValid && namePatternValid && envPatternValid)
+
+output validationErrors array = filter(validationChecks, item => !item.valid)

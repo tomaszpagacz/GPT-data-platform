@@ -1,5 +1,19 @@
 # API Management Deployment Guide
 
+> **Note**: This guide covers the legacy API Management service. For new deployments, consider using the **Comprehensive API Gateway** which includes modern features like GraphQL support, enhanced security patterns, and better integration with containerized workloads. See the [Modern Platform Implementation Guide](modern-platform-implementation-guide.md) for details.
+
+## Modern API Gateway vs Legacy APIM
+
+The platform now includes a **Comprehensive API Gateway** that provides:
+- GraphQL and REST API support
+- OAuth 2.0 and modern authentication patterns  
+- Enhanced rate limiting and throttling
+- Request/response transformation
+- Integration with AKS and Azure ML services
+- Container API support
+
+For new implementations, use the comprehensive gateway instead of the legacy APIM service documented below.
+
 ## Prerequisites
 
 ### Required Azure Permissions

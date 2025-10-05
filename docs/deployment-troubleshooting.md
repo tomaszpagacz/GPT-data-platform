@@ -154,6 +154,100 @@
 3. Resource-specific logs
 4. Network Watcher for connectivity issues
 
+## Modern Platform Component Issues
+
+### Azure Kubernetes Service (AKS)
+
+**Common Issues:**
+- Node pool creation failures
+- RBAC configuration problems
+- Network plugin issues
+
+**Solutions:**
+```bash
+# Check cluster status
+az aks show --resource-group <rg> --name <cluster-name>
+
+# Get cluster credentials
+az aks get-credentials --resource-group <rg> --name <cluster-name>
+
+# Check node status
+kubectl get nodes
+
+# Verify RBAC
+kubectl auth can-i --list
+```
+
+### Azure Machine Learning
+
+**Common Issues:**
+- Compute instance startup failures
+- Workspace connectivity issues
+- Model deployment problems
+
+**Solutions:**
+```bash
+# Check workspace status
+az ml workspace show --name <workspace-name> --resource-group <rg>
+
+# List compute instances
+az ml compute list --workspace-name <workspace-name> --resource-group <rg>
+
+# Check endpoint status
+az ml online-endpoint list --workspace-name <workspace-name> --resource-group <rg>
+```
+
+### Microsoft Purview
+
+**Common Issues:**
+- Data source scanning failures
+- Private endpoint connectivity
+- Classification rule problems
+
+**Solutions:**
+```bash
+# Check Purview account status
+az purview account show --name <account-name> --resource-group <rg>
+
+# Verify connectivity
+az network private-endpoint list --resource-group <rg>
+```
+
+### Microsoft Fabric
+
+**Common Issues:**
+- Capacity allocation problems
+- OneLake access issues
+- Workspace creation failures
+
+**Solutions:**
+```bash
+# Check Fabric capacity
+az fabric capacity show --name <capacity-name> --resource-group <rg>
+
+# Monitor capacity metrics
+az monitor metrics list --resource <capacity-id>
+```
+
+### Container Instances
+
+**Common Issues:**
+- Container startup failures
+- Image pull problems
+- Resource allocation issues
+
+**Solutions:**
+```bash
+# Check container group status
+az container show --resource-group <rg> --name <container-group>
+
+# View container logs
+az container logs --resource-group <rg> --name <container-group>
+
+# Check events
+az container exec --resource-group <rg> --name <container-group> --exec-command "sh"
+```
+
 ## Best Practices
 
 ### Pre-Deployment

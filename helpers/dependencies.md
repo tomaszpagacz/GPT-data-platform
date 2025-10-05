@@ -13,7 +13,9 @@
 ### Test Project Dependencies (LocationIntelligence.Tests.csproj)
 
 #### Recent Package Upgrades
+- Upgraded to .NET 8.0 for improved performance and modern runtime features
 - Upgraded `xunit.runner.visualstudio` from default version to 2.5.7 to fix test discovery and execution issues
+- Updated packages to support .NET 8 isolated worker runtime
 
 ```xml
 <PackageReference Include="Microsoft.AspNetCore.Http" Version="2.2.2" />
@@ -35,7 +37,8 @@
 ## Development Tools
 
 ### .NET SDK
-- Version: 6.0
+- Version: 8.0 (upgraded from 6.0 for modern platform support)
+- Runtime: .NET 8 isolated worker for Azure Functions
 
 ### Azure Functions Core Tools
 Required for local development and testing of Azure Functions
@@ -65,6 +68,47 @@ Required for local development and testing of Azure Functions
 - coverlet.collector for code coverage
 
 ## Environment Setup Scripts
+
+### Unified Helper Scripts
+The project now uses consolidated helper scripts for better maintainability:
+
+- **unified-setup.sh**: Master environment setup script supporting .NET 8, Azure Functions Core Tools v4, Bicep CLI, Azure CLI, and VS Code extensions
+- **unified-test-functions.sh**: Comprehensive local testing for Azure Functions with automatic port management and test case execution
+- **check-workspace-details.sh**: Validates modern platform components including Microsoft Fabric
+
+### Legacy Scripts (Deprecated)
+The following scripts have been consolidated into the unified versions:
+- setup-dev-environment.sh → use `unified-setup.sh --dev-only`
+- install-dependencies.sh → use `unified-setup.sh --full`
+- setup-local-environment.sh → use `unified-setup.sh --check`
+- test-functions-local.sh → use `unified-test-functions.sh`
+- test-functions-local-v2.sh → use `unified-test-functions.sh`
+
+## Modern Platform Components
+
+### Microsoft Fabric
+- Unified analytics platform replacing Power BI Premium/Embedded
+- OneLake data integration
+- Real-time analytics and data warehousing
+
+### Azure Machine Learning
+- ML workspace with compute instances and clusters
+- Model training and deployment pipelines
+- MLOps integration
+
+### Azure Kubernetes Service (AKS)
+- Container orchestration platform
+- Multi-node pools with auto-scaling
+- Integrated with Azure Container Registry
+
+### Microsoft Purview
+- Data governance and cataloging
+- Data lineage and classification
+- Integration with all data sources
+
+## Installation Commands
+
+Quick setup for new environments:
 All setup scripts are located in `/helpers/setup-scripts/`:
 - `setup-dev-environment.sh`: Main development environment setup
 - `check-workspace-details.sh`: Workspace validation

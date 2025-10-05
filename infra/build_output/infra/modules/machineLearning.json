@@ -1,0 +1,441 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "_generator": {
+      "name": "bicep",
+      "version": "0.38.5.1644",
+      "templateHash": "5757773485356989699"
+    }
+  },
+  "parameters": {
+    "name": {
+      "type": "string",
+      "metadata": {
+        "description": "Name of the Azure Machine Learning workspace."
+      }
+    },
+    "location": {
+      "type": "string",
+      "metadata": {
+        "description": "Azure region for deployment."
+      }
+    },
+    "tags": {
+      "type": "object",
+      "defaultValue": {},
+      "metadata": {
+        "description": "Tags applied to all resources."
+      }
+    },
+    "storageAccountId": {
+      "type": "string",
+      "metadata": {
+        "description": "Resource ID of the storage account for ML workspace."
+      }
+    },
+    "keyVaultId": {
+      "type": "string",
+      "metadata": {
+        "description": "Resource ID of the Key Vault."
+      }
+    },
+    "applicationInsightsId": {
+      "type": "string",
+      "metadata": {
+        "description": "Resource ID of the Application Insights."
+      }
+    },
+    "containerRegistryId": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "Resource ID of the container registry (optional)."
+      }
+    },
+    "logAnalyticsWorkspaceId": {
+      "type": "string",
+      "metadata": {
+        "description": "Log Analytics workspace for diagnostics."
+      }
+    },
+    "privateEndpointSubnetId": {
+      "type": "string",
+      "metadata": {
+        "description": "Subnet ID for private endpoints."
+      }
+    },
+    "privateDnsZoneIds": {
+      "type": "array",
+      "metadata": {
+        "description": "Private DNS zone IDs for ML workspace endpoints."
+      }
+    },
+    "hbiWorkspace": {
+      "type": "bool",
+      "defaultValue": false,
+      "metadata": {
+        "description": "Enable high business impact workspace."
+      }
+    }
+  },
+  "variables": {
+    "copy": [
+      {
+        "name": "mlDnsZones",
+        "count": "[length(parameters('privateDnsZoneIds'))]",
+        "input": "[if(endsWith(parameters('privateDnsZoneIds')[copyIndex('mlDnsZones')], '/privatelink.api.azureml.ms'), parameters('privateDnsZoneIds')[copyIndex('mlDnsZones')], null())]"
+      },
+      {
+        "name": "mlNotebooksDnsZones",
+        "count": "[length(parameters('privateDnsZoneIds'))]",
+        "input": "[if(endsWith(parameters('privateDnsZoneIds')[copyIndex('mlNotebooksDnsZones')], '/privatelink.notebooks.azure.net'), parameters('privateDnsZoneIds')[copyIndex('mlNotebooksDnsZones')], null())]"
+      }
+    ],
+    "mlDnsZonesFiltered": "[filter(variables('mlDnsZones'), lambda('id', not(equals(lambdaVariables('id'), null()))))]",
+    "mlNotebooksDnsZonesFiltered": "[filter(variables('mlNotebooksDnsZones'), lambda('id', not(equals(lambdaVariables('id'), null()))))]"
+  },
+  "resources": [
+    {
+      "type": "Microsoft.MachineLearningServices/workspaces",
+      "apiVersion": "2023-10-01",
+      "name": "[parameters('name')]",
+      "location": "[parameters('location')]",
+      "tags": "[parameters('tags')]",
+      "identity": {
+        "type": "SystemAssigned"
+      },
+      "properties": {
+        "friendlyName": "[parameters('name')]",
+        "description": "[format('Azure ML workspace for {0}', parameters('name'))]",
+        "storageAccount": "[parameters('storageAccountId')]",
+        "keyVault": "[parameters('keyVaultId')]",
+        "applicationInsights": "[parameters('applicationInsightsId')]",
+        "containerRegistry": "[if(not(empty(parameters('containerRegistryId'))), parameters('containerRegistryId'), null())]",
+        "publicNetworkAccess": "Disabled",
+        "discoveryUrl": "[format('https://{0}.api.azureml.ms/discovery', parameters('location'))]",
+        "encryption": {
+          "status": "Enabled",
+          "keyVaultProperties": {
+            "keyVaultArmId": "[parameters('keyVaultId')]",
+            "keyIdentifier": ""
+          }
+        },
+        "hbiWorkspace": "[parameters('hbiWorkspace')]",
+        "v1LegacyMode": false,
+        "managedNetwork": {
+          "isolationMode": "AllowInternetOutbound",
+          "outboundRules": {
+            "allow-azure-services": {
+              "type": "ServiceTag",
+              "destination": {
+                "serviceTag": "AzureActiveDirectory",
+                "protocol": "TCP",
+                "portRanges": "443"
+              }
+            }
+          }
+        },
+        "featureStoreSettings": {
+          "computeRuntime": {
+            "sparkRuntimeVersion": "3.3"
+          },
+          "offlineStoreConnectionName": "offline-store",
+          "onlineStoreConnectionName": "online-store"
+        }
+      }
+    },
+    {
+      "type": "Microsoft.Network/privateEndpoints",
+      "apiVersion": "2023-04-01",
+      "name": "[format('{0}-pe-api', parameters('name'))]",
+      "location": "[parameters('location')]",
+      "tags": "[parameters('tags')]",
+      "properties": {
+        "subnet": {
+          "id": "[parameters('privateEndpointSubnetId')]"
+        },
+        "privateLinkServiceConnections": [
+          {
+            "name": "[format('{0}-api-connection', parameters('name'))]",
+            "properties": {
+              "privateLinkServiceId": "[resourceId('Microsoft.MachineLearningServices/workspaces', parameters('name'))]",
+              "groupIds": [
+                "amlworkspace"
+              ]
+            }
+          }
+        ]
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.MachineLearningServices/workspaces', parameters('name'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Network/privateEndpoints",
+      "apiVersion": "2023-04-01",
+      "name": "[format('{0}-pe-notebooks', parameters('name'))]",
+      "location": "[parameters('location')]",
+      "tags": "[parameters('tags')]",
+      "properties": {
+        "subnet": {
+          "id": "[parameters('privateEndpointSubnetId')]"
+        },
+        "privateLinkServiceConnections": [
+          {
+            "name": "[format('{0}-notebooks-connection', parameters('name'))]",
+            "properties": {
+              "privateLinkServiceId": "[resourceId('Microsoft.MachineLearningServices/workspaces', parameters('name'))]",
+              "groupIds": [
+                "notebook"
+              ]
+            }
+          }
+        ]
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.MachineLearningServices/workspaces', parameters('name'))]"
+      ]
+    },
+    {
+      "condition": "[not(empty(variables('mlDnsZonesFiltered')))]",
+      "type": "Microsoft.Network/privateEndpoints/privateDnsZoneGroups",
+      "apiVersion": "2023-04-01",
+      "name": "[format('{0}/{1}', format('{0}-pe-api', parameters('name')), 'default')]",
+      "properties": {
+        "copy": [
+          {
+            "name": "privateDnsZoneConfigs",
+            "count": "[length(variables('mlDnsZonesFiltered'))]",
+            "input": {
+              "name": "[last(split(variables('mlDnsZonesFiltered')[copyIndex('privateDnsZoneConfigs')], '/'))]",
+              "properties": {
+                "privateDnsZoneId": "[variables('mlDnsZonesFiltered')[copyIndex('privateDnsZoneConfigs')]]"
+              }
+            }
+          }
+        ]
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/privateEndpoints', format('{0}-pe-api', parameters('name')))]"
+      ]
+    },
+    {
+      "condition": "[not(empty(variables('mlNotebooksDnsZonesFiltered')))]",
+      "type": "Microsoft.Network/privateEndpoints/privateDnsZoneGroups",
+      "apiVersion": "2023-04-01",
+      "name": "[format('{0}/{1}', format('{0}-pe-notebooks', parameters('name')), 'default')]",
+      "properties": {
+        "copy": [
+          {
+            "name": "privateDnsZoneConfigs",
+            "count": "[length(variables('mlNotebooksDnsZonesFiltered'))]",
+            "input": {
+              "name": "[last(split(variables('mlNotebooksDnsZonesFiltered')[copyIndex('privateDnsZoneConfigs')], '/'))]",
+              "properties": {
+                "privateDnsZoneId": "[variables('mlNotebooksDnsZonesFiltered')[copyIndex('privateDnsZoneConfigs')]]"
+              }
+            }
+          }
+        ]
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/privateEndpoints', format('{0}-pe-notebooks', parameters('name')))]"
+      ]
+    },
+    {
+      "type": "Microsoft.MachineLearningServices/workspaces/computes",
+      "apiVersion": "2023-10-01",
+      "name": "[format('{0}/{1}', parameters('name'), format('{0}-dev-instance', parameters('name')))]",
+      "location": "[parameters('location')]",
+      "properties": {
+        "computeType": "ComputeInstance",
+        "properties": {
+          "vmSize": "Standard_DS3_v2",
+          "subnet": {
+            "id": "[parameters('privateEndpointSubnetId')]"
+          },
+          "applicationSharingPolicy": "Personal",
+          "sshSettings": {
+            "sshPublicAccess": "Disabled"
+          },
+          "setupScripts": {
+            "scripts": {
+              "creationScript": {
+                "scriptSource": "inline",
+                "scriptData": "[base64('#!/bin/bash\n# Install additional ML libraries\npip install --upgrade azureml-sdk\npip install mlflow\npip install optuna\npip install shap\npip install interpret\n            ')]"
+              }
+            }
+          }
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.MachineLearningServices/workspaces', parameters('name'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.MachineLearningServices/workspaces/computes",
+      "apiVersion": "2023-10-01",
+      "name": "[format('{0}/{1}', parameters('name'), format('{0}-training-cluster', parameters('name')))]",
+      "location": "[parameters('location')]",
+      "properties": {
+        "computeType": "AmlCompute",
+        "properties": {
+          "vmSize": "Standard_DS3_v2",
+          "vmPriority": "Dedicated",
+          "scaleSettings": {
+            "minNodeCount": 0,
+            "maxNodeCount": 10,
+            "nodeIdleTimeBeforeScaleDown": "PT120S"
+          },
+          "subnet": {
+            "id": "[parameters('privateEndpointSubnetId')]"
+          },
+          "enableNodePublicIp": false,
+          "isolatedNetwork": false,
+          "osType": "Linux"
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.MachineLearningServices/workspaces', parameters('name'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.MachineLearningServices/workspaces/computes",
+      "apiVersion": "2023-10-01",
+      "name": "[format('{0}/{1}', parameters('name'), format('{0}-inference-cluster', parameters('name')))]",
+      "location": "[parameters('location')]",
+      "properties": {
+        "computeType": "AKS",
+        "properties": {
+          "agentCount": 3,
+          "agentVmSize": "Standard_D3_v2",
+          "clusterFqdn": "[format('{0}-inference.{1}.cloudapp.azure.com', parameters('name'), parameters('location'))]",
+          "orchestratorType": "Kubernetes",
+          "systemServices": [
+            {
+              "systemServiceType": "None"
+            }
+          ]
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.MachineLearningServices/workspaces', parameters('name'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Insights/diagnosticSettings",
+      "apiVersion": "2021-05-01-preview",
+      "scope": "[format('Microsoft.MachineLearningServices/workspaces/{0}', parameters('name'))]",
+      "name": "[format('{0}-logs', parameters('name'))]",
+      "properties": {
+        "workspaceId": "[parameters('logAnalyticsWorkspaceId')]",
+        "logs": [
+          {
+            "category": "AmlComputeClusterEvent",
+            "enabled": true,
+            "retentionPolicy": {
+              "enabled": true,
+              "days": 30
+            }
+          },
+          {
+            "category": "AmlComputeClusterNodeEvent",
+            "enabled": true,
+            "retentionPolicy": {
+              "enabled": true,
+              "days": 30
+            }
+          },
+          {
+            "category": "AmlComputeJobEvent",
+            "enabled": true,
+            "retentionPolicy": {
+              "enabled": true,
+              "days": 90
+            }
+          },
+          {
+            "category": "AmlComputeCpuGpuUtilization",
+            "enabled": true,
+            "retentionPolicy": {
+              "enabled": true,
+              "days": 30
+            }
+          },
+          {
+            "category": "AmlRunStatusChangedEvent",
+            "enabled": true,
+            "retentionPolicy": {
+              "enabled": true,
+              "days": 90
+            }
+          },
+          {
+            "category": "ModelsChangeEvent",
+            "enabled": true,
+            "retentionPolicy": {
+              "enabled": true,
+              "days": 90
+            }
+          },
+          {
+            "category": "ModelsReadEvent",
+            "enabled": true,
+            "retentionPolicy": {
+              "enabled": true,
+              "days": 30
+            }
+          },
+          {
+            "category": "ModelsActionEvent",
+            "enabled": true,
+            "retentionPolicy": {
+              "enabled": true,
+              "days": 90
+            }
+          }
+        ],
+        "metrics": [
+          {
+            "category": "AllMetrics",
+            "enabled": true,
+            "retentionPolicy": {
+              "enabled": true,
+              "days": 30
+            }
+          }
+        ]
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.MachineLearningServices/workspaces', parameters('name'))]"
+      ]
+    }
+  ],
+  "outputs": {
+    "mlWorkspaceId": {
+      "type": "string",
+      "value": "[resourceId('Microsoft.MachineLearningServices/workspaces', parameters('name'))]"
+    },
+    "mlWorkspaceName": {
+      "type": "string",
+      "value": "[parameters('name')]"
+    },
+    "mlWorkspaceIdentityPrincipalId": {
+      "type": "string",
+      "value": "[reference(resourceId('Microsoft.MachineLearningServices/workspaces', parameters('name')), '2023-10-01', 'full').identity.principalId]"
+    },
+    "computeInstanceName": {
+      "type": "string",
+      "value": "[format('{0}-dev-instance', parameters('name'))]"
+    },
+    "trainingClusterName": {
+      "type": "string",
+      "value": "[format('{0}-training-cluster', parameters('name'))]"
+    },
+    "inferenceClusterName": {
+      "type": "string",
+      "value": "[format('{0}-inference-cluster', parameters('name'))]"
+    }
+  }
+}

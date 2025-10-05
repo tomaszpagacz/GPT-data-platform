@@ -1,0 +1,391 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "_generator": {
+      "name": "bicep",
+      "version": "0.38.5.1644",
+      "templateHash": "17443407856965045418"
+    }
+  },
+  "parameters": {
+    "name": {
+      "type": "string",
+      "metadata": {
+        "description": "Name of the AKS cluster."
+      }
+    },
+    "location": {
+      "type": "string",
+      "metadata": {
+        "description": "Azure region for deployment."
+      }
+    },
+    "tags": {
+      "type": "object",
+      "defaultValue": {},
+      "metadata": {
+        "description": "Tags applied to all resources."
+      }
+    },
+    "kubernetesVersion": {
+      "type": "string",
+      "defaultValue": "1.28.3",
+      "metadata": {
+        "description": "Kubernetes version."
+      }
+    },
+    "nodeVmSize": {
+      "type": "string",
+      "defaultValue": "Standard_D4s_v3",
+      "metadata": {
+        "description": "VM size for the default node pool."
+      }
+    },
+    "nodeCount": {
+      "type": "int",
+      "defaultValue": 3,
+      "metadata": {
+        "description": "Number of nodes in the default pool."
+      }
+    },
+    "minNodeCount": {
+      "type": "int",
+      "defaultValue": 1,
+      "metadata": {
+        "description": "Minimum number of nodes for auto-scaling."
+      }
+    },
+    "maxNodeCount": {
+      "type": "int",
+      "defaultValue": 10,
+      "metadata": {
+        "description": "Maximum number of nodes for auto-scaling."
+      }
+    },
+    "subnetId": {
+      "type": "string",
+      "metadata": {
+        "description": "Subnet ID for AKS nodes."
+      }
+    },
+    "logAnalyticsWorkspaceId": {
+      "type": "string",
+      "metadata": {
+        "description": "Log Analytics workspace for diagnostics."
+      }
+    },
+    "enableAzureAD": {
+      "type": "bool",
+      "defaultValue": true,
+      "metadata": {
+        "description": "Enable Azure AD integration."
+      }
+    },
+    "enableAzureRBAC": {
+      "type": "bool",
+      "defaultValue": true,
+      "metadata": {
+        "description": "Enable Azure RBAC for Kubernetes authorization."
+      }
+    },
+    "networkPlugin": {
+      "type": "string",
+      "defaultValue": "azure",
+      "allowedValues": [
+        "azure",
+        "kubenet"
+      ],
+      "metadata": {
+        "description": "Network plugin (azure or kubenet)."
+      }
+    },
+    "networkPolicy": {
+      "type": "string",
+      "defaultValue": "azure",
+      "allowedValues": [
+        "azure",
+        "calico"
+      ],
+      "metadata": {
+        "description": "Network policy (azure or calico)."
+      }
+    },
+    "dnsServiceIP": {
+      "type": "string",
+      "defaultValue": "10.0.0.10",
+      "metadata": {
+        "description": "DNS service IP."
+      }
+    },
+    "serviceCidr": {
+      "type": "string",
+      "defaultValue": "10.0.0.0/16",
+      "metadata": {
+        "description": "Service CIDR."
+      }
+    }
+  },
+  "resources": [
+    {
+      "type": "Microsoft.ContainerService/managedClusters",
+      "apiVersion": "2023-10-01",
+      "name": "[parameters('name')]",
+      "location": "[parameters('location')]",
+      "tags": "[parameters('tags')]",
+      "identity": {
+        "type": "SystemAssigned"
+      },
+      "properties": {
+        "kubernetesVersion": "[parameters('kubernetesVersion')]",
+        "dnsPrefix": "[format('{0}-dns', parameters('name'))]",
+        "enableRBAC": true,
+        "agentPoolProfiles": [
+          {
+            "name": "system",
+            "count": "[parameters('nodeCount')]",
+            "vmSize": "[parameters('nodeVmSize')]",
+            "osType": "Linux",
+            "mode": "System",
+            "enableAutoScaling": true,
+            "minCount": "[parameters('minNodeCount')]",
+            "maxCount": "[parameters('maxNodeCount')]",
+            "vnetSubnetID": "[parameters('subnetId')]",
+            "maxPods": 30,
+            "osDiskSizeGB": 128,
+            "osDiskType": "Managed",
+            "kubeletDiskType": "OS",
+            "nodeTaints": [
+              "CriticalAddonsOnly=true:NoSchedule"
+            ],
+            "nodeLabels": {
+              "node-type": "system"
+            }
+          }
+        ],
+        "networkProfile": {
+          "networkPlugin": "[parameters('networkPlugin')]",
+          "networkPolicy": "[parameters('networkPolicy')]",
+          "serviceCidr": "[parameters('serviceCidr')]",
+          "dnsServiceIP": "[parameters('dnsServiceIP')]",
+          "loadBalancerSku": "Standard",
+          "outboundType": "loadBalancer"
+        },
+        "aadProfile": "[if(parameters('enableAzureAD'), createObject('managed', true(), 'enableAzureRBAC', parameters('enableAzureRBAC'), 'tenantID', tenant().tenantId), null())]",
+        "apiServerAccessProfile": {
+          "enablePrivateCluster": true,
+          "privateDNSZone": "system",
+          "enablePrivateClusterPublicFQDN": false
+        },
+        "addonProfiles": {
+          "omsagent": {
+            "enabled": true,
+            "config": {
+              "logAnalyticsWorkspaceResourceID": "[parameters('logAnalyticsWorkspaceId')]"
+            }
+          },
+          "azureKeyvaultSecretsProvider": {
+            "enabled": true,
+            "config": {
+              "enableSecretRotation": "true",
+              "rotationPollInterval": "2m"
+            }
+          },
+          "azurepolicy": {
+            "enabled": true
+          },
+          "ingressApplicationGateway": {
+            "enabled": false
+          }
+        },
+        "securityProfile": {
+          "workloadIdentity": {
+            "enabled": true
+          },
+          "imageCleaner": {
+            "enabled": true,
+            "intervalHours": 48
+          }
+        },
+        "autoUpgradeProfile": {
+          "upgradeChannel": "patch"
+        },
+        "storageProfile": {
+          "diskCSIDriver": {
+            "enabled": true
+          },
+          "fileCSIDriver": {
+            "enabled": true
+          },
+          "snapshotController": {
+            "enabled": true
+          }
+        },
+        "windowsProfile": null,
+        "httpProxyConfig": null,
+        "maintenanceWindow": {
+          "allowedDays": [
+            "Saturday",
+            "Sunday"
+          ],
+          "allowedHours": [
+            2,
+            3,
+            4
+          ]
+        }
+      }
+    },
+    {
+      "type": "Microsoft.ContainerService/managedClusters/agentPools",
+      "apiVersion": "2023-10-01",
+      "name": "[format('{0}/{1}', parameters('name'), 'user')]",
+      "properties": {
+        "count": 2,
+        "vmSize": "Standard_D2s_v3",
+        "osType": "Linux",
+        "mode": "User",
+        "enableAutoScaling": true,
+        "minCount": 0,
+        "maxCount": 5,
+        "vnetSubnetID": "[parameters('subnetId')]",
+        "maxPods": 30,
+        "osDiskSizeGB": 128,
+        "osDiskType": "Managed",
+        "kubeletDiskType": "OS",
+        "nodeLabels": {
+          "node-type": "user",
+          "workload": "general"
+        },
+        "nodeTaints": []
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.ContainerService/managedClusters', parameters('name'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.ContainerService/managedClusters/agentPools",
+      "apiVersion": "2023-10-01",
+      "name": "[format('{0}/{1}', parameters('name'), 'gpu')]",
+      "properties": {
+        "count": 0,
+        "vmSize": "Standard_NC6s_v3",
+        "osType": "Linux",
+        "mode": "User",
+        "enableAutoScaling": true,
+        "minCount": 0,
+        "maxCount": 3,
+        "vnetSubnetID": "[parameters('subnetId')]",
+        "maxPods": 30,
+        "osDiskSizeGB": 256,
+        "osDiskType": "Managed",
+        "kubeletDiskType": "OS",
+        "nodeLabels": {
+          "node-type": "gpu",
+          "workload": "ml",
+          "accelerator": "nvidia-tesla-v100"
+        },
+        "nodeTaints": [
+          "sku=gpu:NoSchedule"
+        ]
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.ContainerService/managedClusters', parameters('name'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Insights/diagnosticSettings",
+      "apiVersion": "2021-05-01-preview",
+      "scope": "[format('Microsoft.ContainerService/managedClusters/{0}', parameters('name'))]",
+      "name": "[format('{0}-logs', parameters('name'))]",
+      "properties": {
+        "workspaceId": "[parameters('logAnalyticsWorkspaceId')]",
+        "logs": [
+          {
+            "category": "kube-apiserver",
+            "enabled": true,
+            "retentionPolicy": {
+              "enabled": true,
+              "days": 30
+            }
+          },
+          {
+            "category": "kube-audit",
+            "enabled": true,
+            "retentionPolicy": {
+              "enabled": true,
+              "days": 90
+            }
+          },
+          {
+            "category": "kube-controller-manager",
+            "enabled": true,
+            "retentionPolicy": {
+              "enabled": true,
+              "days": 30
+            }
+          },
+          {
+            "category": "kube-scheduler",
+            "enabled": true,
+            "retentionPolicy": {
+              "enabled": true,
+              "days": 30
+            }
+          },
+          {
+            "category": "cluster-autoscaler",
+            "enabled": true,
+            "retentionPolicy": {
+              "enabled": true,
+              "days": 30
+            }
+          },
+          {
+            "category": "guard",
+            "enabled": true,
+            "retentionPolicy": {
+              "enabled": true,
+              "days": 30
+            }
+          }
+        ],
+        "metrics": [
+          {
+            "category": "AllMetrics",
+            "enabled": true,
+            "retentionPolicy": {
+              "enabled": true,
+              "days": 30
+            }
+          }
+        ]
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.ContainerService/managedClusters', parameters('name'))]"
+      ]
+    }
+  ],
+  "outputs": {
+    "aksClusterId": {
+      "type": "string",
+      "value": "[resourceId('Microsoft.ContainerService/managedClusters', parameters('name'))]"
+    },
+    "aksClusterName": {
+      "type": "string",
+      "value": "[parameters('name')]"
+    },
+    "aksClusterFqdn": {
+      "type": "string",
+      "value": "[reference(resourceId('Microsoft.ContainerService/managedClusters', parameters('name')), '2023-10-01').fqdn]"
+    },
+    "aksClusterIdentityPrincipalId": {
+      "type": "string",
+      "value": "[reference(resourceId('Microsoft.ContainerService/managedClusters', parameters('name')), '2023-10-01', 'full').identity.principalId]"
+    },
+    "nodeResourceGroup": {
+      "type": "string",
+      "value": "[reference(resourceId('Microsoft.ContainerService/managedClusters', parameters('name')), '2023-10-01').nodeResourceGroup]"
+    }
+  }
+}

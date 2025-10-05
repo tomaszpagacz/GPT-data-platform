@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.38.5.1644",
-      "templateHash": "1391437314802353808"
+      "templateHash": "17213815634835085381"
     }
   },
   "parameters": {
@@ -23,7 +23,11 @@
     },
     "tags": {
       "type": "object",
-      "defaultValue": {},
+      "defaultValue": {
+        "costOptimization": "enabled",
+        "autoScaleDown": "true",
+        "autoPause": "true"
+      },
       "metadata": {
         "description": "Tags applied to Synapse resources."
       }

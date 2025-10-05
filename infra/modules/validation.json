@@ -1,0 +1,75 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2018-05-01/subscriptionDeploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "_generator": {
+      "name": "bicep",
+      "version": "0.38.5.1644",
+      "templateHash": "2446770483011773076"
+    }
+  },
+  "parameters": {
+    "namePrefix": {
+      "type": "string",
+      "metadata": {
+        "description": "Validates input parameters for the infrastructure deployment"
+      }
+    },
+    "environment": {
+      "type": "string"
+    }
+  },
+  "variables": {
+    "storageNameLength": "[length(format('{0}{1}dls', parameters('namePrefix'), parameters('environment')))]",
+    "funcStorageNameLength": "[length(format('{0}{1}funcsa', parameters('namePrefix'), parameters('environment')))]",
+    "keyVaultNameLength": "[length(format('{0}-{1}-kv', parameters('namePrefix'), parameters('environment')))]",
+    "storageNameValid": "[and(lessOrEquals(variables('storageNameLength'), 24), greaterOrEquals(variables('storageNameLength'), 3))]",
+    "funcStorageNameValid": "[and(lessOrEquals(variables('funcStorageNameLength'), 24), greaterOrEquals(variables('funcStorageNameLength'), 3))]",
+    "keyVaultNameValid": "[and(lessOrEquals(variables('keyVaultNameLength'), 24), greaterOrEquals(variables('keyVaultNameLength'), 3))]",
+    "namePatternValid": "[equals(length(replace(replace(parameters('namePrefix'), '-', ''), '+', '')), length(parameters('namePrefix')))]",
+    "envPatternValid": "[equals(length(replace(replace(parameters('environment'), '-', ''), '+', '')), length(parameters('environment')))]",
+    "validationChecks": [
+      {
+        "check": "Storage Account Name Length",
+        "valid": "[variables('storageNameValid')]",
+        "value": "[variables('storageNameLength')]",
+        "message": "Storage account name must be between 3 and 24 characters"
+      },
+      {
+        "check": "Function Storage Name Length",
+        "valid": "[variables('funcStorageNameValid')]",
+        "value": "[variables('funcStorageNameLength')]",
+        "message": "Function storage account name must be between 3 and 24 characters"
+      },
+      {
+        "check": "Key Vault Name Length",
+        "valid": "[variables('keyVaultNameValid')]",
+        "value": "[variables('keyVaultNameLength')]",
+        "message": "Key Vault name must be between 3 and 24 characters"
+      },
+      {
+        "check": "Name Prefix Pattern",
+        "valid": "[variables('namePatternValid')]",
+        "value": "[parameters('namePrefix')]",
+        "message": "Name prefix must contain only alphanumeric characters and hyphens"
+      },
+      {
+        "check": "Environment Name Pattern",
+        "valid": "[variables('envPatternValid')]",
+        "value": "[parameters('environment')]",
+        "message": "Environment name must contain only alphanumeric characters and hyphens"
+      }
+    ]
+  },
+  "resources": [],
+  "outputs": {
+    "validationPassed": {
+      "type": "bool",
+      "value": "[and(and(and(and(variables('storageNameValid'), variables('funcStorageNameValid')), variables('keyVaultNameValid')), variables('namePatternValid')), variables('envPatternValid'))]"
+    },
+    "validationErrors": {
+      "type": "array",
+      "value": "[filter(variables('validationChecks'), lambda('item', not(lambdaVariables('item').valid)))]"
+    }
+  }
+}

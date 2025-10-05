@@ -1,0 +1,428 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "_generator": {
+      "name": "bicep",
+      "version": "0.38.5.1644",
+      "templateHash": "10671555632896386513"
+    }
+  },
+  "parameters": {
+    "name": {
+      "type": "string",
+      "metadata": {
+        "description": "Name of the comprehensive API gateway."
+      }
+    },
+    "location": {
+      "type": "string",
+      "metadata": {
+        "description": "Azure region for deployment."
+      }
+    },
+    "tags": {
+      "type": "object",
+      "defaultValue": {},
+      "metadata": {
+        "description": "Tags applied to all resources."
+      }
+    },
+    "sku": {
+      "type": "string",
+      "defaultValue": "Developer",
+      "allowedValues": [
+        "Developer",
+        "Standard",
+        "Premium"
+      ],
+      "metadata": {
+        "description": "SKU for API Management."
+      }
+    },
+    "publisherEmail": {
+      "type": "string",
+      "metadata": {
+        "description": "Publisher email for API Management."
+      }
+    },
+    "publisherName": {
+      "type": "string",
+      "metadata": {
+        "description": "Publisher name for API Management."
+      }
+    },
+    "subnetId": {
+      "type": "string",
+      "metadata": {
+        "description": "Subnet ID for API Management."
+      }
+    },
+    "logAnalyticsWorkspaceId": {
+      "type": "string",
+      "metadata": {
+        "description": "Log Analytics workspace for diagnostics."
+      }
+    },
+    "applicationInsightsId": {
+      "type": "string",
+      "metadata": {
+        "description": "Application Insights for API monitoring."
+      }
+    },
+    "keyVaultId": {
+      "type": "string",
+      "metadata": {
+        "description": "Key Vault for secrets management."
+      }
+    },
+    "backendServices": {
+      "type": "array",
+      "defaultValue": [],
+      "metadata": {
+        "description": "Backend services configuration."
+      }
+    }
+  },
+  "resources": [
+    {
+      "type": "Microsoft.ApiManagement/service",
+      "apiVersion": "2023-05-01-preview",
+      "name": "[parameters('name')]",
+      "location": "[parameters('location')]",
+      "tags": "[parameters('tags')]",
+      "sku": {
+        "name": "[parameters('sku')]",
+        "capacity": 1
+      },
+      "identity": {
+        "type": "SystemAssigned"
+      },
+      "properties": {
+        "publisherEmail": "[parameters('publisherEmail')]",
+        "publisherName": "[parameters('publisherName')]",
+        "virtualNetworkType": "Internal",
+        "virtualNetworkConfiguration": {
+          "subnetResourceId": "[parameters('subnetId')]"
+        },
+        "publicNetworkAccess": "Disabled",
+        "developerPortalStatus": "Enabled",
+        "gatewayUrl": "[format('https://{0}.azure-api.net', parameters('name'))]",
+        "customProperties": {
+          "Microsoft.WindowsAzure.ApiManagement.Gateway.Security.Protocols.Tls10": "False",
+          "Microsoft.WindowsAzure.ApiManagement.Gateway.Security.Protocols.Tls11": "False",
+          "Microsoft.WindowsAzure.ApiManagement.Gateway.Security.Protocols.Ssl30": "False",
+          "Microsoft.WindowsAzure.ApiManagement.Gateway.Security.Backend.Protocols.Tls10": "False",
+          "Microsoft.WindowsAzure.ApiManagement.Gateway.Security.Backend.Protocols.Tls11": "False",
+          "Microsoft.WindowsAzure.ApiManagement.Gateway.Security.Backend.Protocols.Ssl30": "False",
+          "Microsoft.WindowsAzure.ApiManagement.Gateway.Protocols.Server.Http2": "True"
+        },
+        "apiVersionConstraint": {
+          "minApiVersion": "2021-08-01"
+        }
+      }
+    },
+    {
+      "type": "Microsoft.ApiManagement/service/loggers",
+      "apiVersion": "2023-05-01-preview",
+      "name": "[format('{0}/{1}', parameters('name'), 'appinsights-logger')]",
+      "properties": {
+        "loggerType": "applicationInsights",
+        "description": "Application Insights logger for API Management",
+        "credentials": {
+          "instrumentationKey": "[reference(parameters('applicationInsightsId'), '2020-02-02').InstrumentationKey]"
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.ApiManagement/service', parameters('name'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.ApiManagement/service/policies",
+      "apiVersion": "2023-05-01-preview",
+      "name": "[format('{0}/{1}', parameters('name'), 'policy')]",
+      "properties": {
+        "value": "    <policies>\n      <inbound>\n        <cors allow-credentials=\"true\">\n          <allowed-origins>\n            <origin>*</origin>\n          </allowed-origins>\n          <allowed-methods>\n            <method>GET</method>\n            <method>POST</method>\n            <method>PUT</method>\n            <method>DELETE</method>\n            <method>OPTIONS</method>\n          </allowed-methods>\n          <allowed-headers>\n            <header>*</header>\n          </allowed-headers>\n        </cors>\n        <rate-limit-by-key calls=\"1000\" renewal-period=\"3600\" counter-key=\"@(context.Request.IpAddress)\" />\n        <quota-by-key calls=\"10000\" renewal-period=\"86400\" counter-key=\"@(context.Request.IpAddress)\" />\n        <authentication-managed-identity resource=\"https://graph.microsoft.com\" />\n        <set-header name=\"X-Powered-By\" exists-action=\"delete\" />\n        <set-header name=\"X-AspNet-Version\" exists-action=\"delete\" />\n      </inbound>\n      <backend>\n        <forward-request />\n      </backend>\n      <outbound>\n        <set-header name=\"X-Request-Id\" exists-action=\"override\">\n          <value>@(context.RequestId)</value>\n        </set-header>\n      </outbound>\n      <on-error>\n        <set-status code=\"500\" reason=\"Internal Server Error\" />\n        <set-body>@{\n          return new JObject(\n            new JProperty(\"error\", new JObject(\n              new JProperty(\"code\", context.LastError.Source),\n              new JProperty(\"message\", context.LastError.Message),\n              new JProperty(\"requestId\", context.RequestId)\n            ))\n          ).ToString();\n        }</set-body>\n      </on-error>\n    </policies>\n    "
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.ApiManagement/service', parameters('name'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.ApiManagement/service/apis",
+      "apiVersion": "2023-05-01-preview",
+      "name": "[format('{0}/{1}', parameters('name'), 'graphql-api')]",
+      "properties": {
+        "displayName": "GraphQL API",
+        "description": "Modern GraphQL API for data platform",
+        "path": "graphql",
+        "protocols": [
+          "https"
+        ],
+        "type": "graphql",
+        "format": "graphql-link",
+        "value": "https://api.example.com/graphql",
+        "subscriptionRequired": true,
+        "authenticationSettings": {
+          "oAuth2AuthenticationSettings": [],
+          "openidAuthenticationSettings": []
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.ApiManagement/service', parameters('name'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.ApiManagement/service/apis",
+      "apiVersion": "2023-05-01-preview",
+      "name": "[format('{0}/{1}', parameters('name'), 'data-platform-api')]",
+      "properties": {
+        "displayName": "Data Platform REST API",
+        "description": "RESTful API for data platform operations",
+        "path": "api/v1",
+        "protocols": [
+          "https"
+        ],
+        "type": "http",
+        "subscriptionRequired": true,
+        "authenticationSettings": {
+          "oAuth2AuthenticationSettings": [],
+          "openidAuthenticationSettings": []
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.ApiManagement/service', parameters('name'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.ApiManagement/service/apis/operations",
+      "apiVersion": "2023-05-01-preview",
+      "name": "[format('{0}/{1}/{2}', parameters('name'), 'data-platform-api', 'get-data')]",
+      "properties": {
+        "displayName": "Get Data",
+        "method": "GET",
+        "urlTemplate": "/data/{id}",
+        "description": "Retrieve data by ID",
+        "templateParameters": [
+          {
+            "name": "id",
+            "description": "Data identifier",
+            "type": "string",
+            "required": true
+          }
+        ],
+        "request": {
+          "queryParameters": [
+            {
+              "name": "format",
+              "description": "Response format",
+              "type": "string",
+              "defaultValue": "json",
+              "values": [
+                "json",
+                "xml"
+              ]
+            }
+          ]
+        },
+        "responses": [
+          {
+            "statusCode": 200,
+            "description": "Success",
+            "representations": [
+              {
+                "contentType": "application/json"
+              }
+            ]
+          },
+          {
+            "statusCode": 404,
+            "description": "Not Found"
+          }
+        ]
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.ApiManagement/service/apis', parameters('name'), 'data-platform-api')]"
+      ]
+    },
+    {
+      "type": "Microsoft.ApiManagement/service/backends",
+      "apiVersion": "2023-05-01-preview",
+      "name": "[format('{0}/{1}', parameters('name'), 'data-backend')]",
+      "properties": {
+        "description": "Data platform backend services",
+        "url": "https://data-backend.internal",
+        "protocol": "http",
+        "circuitBreaker": {
+          "rules": [
+            {
+              "failureCondition": {
+                "count": 5,
+                "interval": "PT1M",
+                "statusCodeRanges": [
+                  {
+                    "min": 500,
+                    "max": 599
+                  }
+                ]
+              },
+              "tripDuration": "PT1M"
+            }
+          ]
+        },
+        "pool": {
+          "size": 10
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.ApiManagement/service', parameters('name'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.ApiManagement/service/products",
+      "apiVersion": "2023-05-01-preview",
+      "name": "[format('{0}/{1}', parameters('name'), 'data-platform-product')]",
+      "properties": {
+        "displayName": "Data Platform APIs",
+        "description": "Comprehensive data platform API product",
+        "subscriptionRequired": true,
+        "approvalRequired": true,
+        "subscriptionsLimit": 100,
+        "state": "published"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.ApiManagement/service', parameters('name'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.ApiManagement/service/products/apis",
+      "apiVersion": "2023-05-01-preview",
+      "name": "[format('{0}/{1}/{2}', parameters('name'), 'data-platform-product', 'data-platform-api')]",
+      "dependsOn": [
+        "[resourceId('Microsoft.ApiManagement/service/products', parameters('name'), 'data-platform-product')]",
+        "[resourceId('Microsoft.ApiManagement/service/apis', parameters('name'), 'data-platform-api')]"
+      ]
+    },
+    {
+      "type": "Microsoft.ApiManagement/service/products/apis",
+      "apiVersion": "2023-05-01-preview",
+      "name": "[format('{0}/{1}/{2}', parameters('name'), 'data-platform-product', 'graphql-api')]",
+      "dependsOn": [
+        "[resourceId('Microsoft.ApiManagement/service/products', parameters('name'), 'data-platform-product')]",
+        "[resourceId('Microsoft.ApiManagement/service/apis', parameters('name'), 'graphql-api')]"
+      ]
+    },
+    {
+      "type": "Microsoft.ApiManagement/service/namedValues",
+      "apiVersion": "2023-05-01-preview",
+      "name": "[format('{0}/{1}', parameters('name'), 'backend-api-key')]",
+      "properties": {
+        "displayName": "Backend API Key",
+        "secret": true,
+        "keyVault": {
+          "secretIdentifier": "[format('{0}secrets/backend-api-key', reference(parameters('keyVaultId'), '2023-07-01').vaultUri)]"
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.ApiManagement/service', parameters('name'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.ApiManagement/service/subscriptions",
+      "apiVersion": "2023-05-01-preview",
+      "name": "[format('{0}/{1}', parameters('name'), 'internal-services')]",
+      "properties": {
+        "scope": "[format('/products/{0}', 'data-platform-product')]",
+        "displayName": "Internal Services Subscription",
+        "state": "active",
+        "allowTracing": true
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.ApiManagement/service', parameters('name'))]",
+        "[resourceId('Microsoft.ApiManagement/service/products', parameters('name'), 'data-platform-product')]"
+      ]
+    },
+    {
+      "type": "Microsoft.Insights/diagnosticSettings",
+      "apiVersion": "2021-05-01-preview",
+      "scope": "[format('Microsoft.ApiManagement/service/{0}', parameters('name'))]",
+      "name": "[format('{0}-logs', parameters('name'))]",
+      "properties": {
+        "workspaceId": "[parameters('logAnalyticsWorkspaceId')]",
+        "logs": [
+          {
+            "category": "GatewayLogs",
+            "enabled": true,
+            "retentionPolicy": {
+              "enabled": true,
+              "days": 30
+            }
+          },
+          {
+            "category": "WebSocketConnectionLogs",
+            "enabled": true,
+            "retentionPolicy": {
+              "enabled": true,
+              "days": 30
+            }
+          }
+        ],
+        "metrics": [
+          {
+            "category": "Gateway Requests",
+            "enabled": true,
+            "retentionPolicy": {
+              "enabled": true,
+              "days": 30
+            }
+          },
+          {
+            "category": "Capacity",
+            "enabled": true,
+            "retentionPolicy": {
+              "enabled": true,
+              "days": 30
+            }
+          }
+        ]
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.ApiManagement/service', parameters('name'))]"
+      ]
+    }
+  ],
+  "outputs": {
+    "apiManagementId": {
+      "type": "string",
+      "value": "[resourceId('Microsoft.ApiManagement/service', parameters('name'))]"
+    },
+    "apiManagementName": {
+      "type": "string",
+      "value": "[parameters('name')]"
+    },
+    "apiManagementIdentityPrincipalId": {
+      "type": "string",
+      "value": "[reference(resourceId('Microsoft.ApiManagement/service', parameters('name')), '2023-05-01-preview', 'full').identity.principalId]"
+    },
+    "gatewayUrl": {
+      "type": "string",
+      "value": "[format('https://{0}', reference(resourceId('Microsoft.ApiManagement/service', parameters('name')), '2023-05-01-preview').gatewayUrl)]"
+    },
+    "developerPortalUrl": {
+      "type": "string",
+      "value": "[format('https://{0}', reference(resourceId('Microsoft.ApiManagement/service', parameters('name')), '2023-05-01-preview').developerPortalUrl)]"
+    },
+    "restApiId": {
+      "type": "string",
+      "value": "[resourceId('Microsoft.ApiManagement/service/apis', parameters('name'), 'data-platform-api')]"
+    },
+    "graphqlApiId": {
+      "type": "string",
+      "value": "[resourceId('Microsoft.ApiManagement/service/apis', parameters('name'), 'graphql-api')]"
+    },
+    "productId": {
+      "type": "string",
+      "value": "[resourceId('Microsoft.ApiManagement/service/products', parameters('name'), 'data-platform-product')]"
+    }
+  }
+}

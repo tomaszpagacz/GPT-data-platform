@@ -82,7 +82,11 @@ resource functionApp 'Microsoft.Web/sites@2022-03-01' = {
         }
         {
           name: 'FUNCTIONS_WORKER_RUNTIME'
-          value: 'dotnet'
+          value: 'dotnet-isolated'
+        }
+        {
+          name: 'DOTNET_VERSION'
+          value: '8.0'
         }
         {
           name: 'AzureWebJobsStorage'
@@ -140,3 +144,4 @@ resource diagnostics 'Microsoft.Insights/diagnosticSettings@2021-05-01-preview' 
 
 output functionAppName string = functionApp.name
 output functionAppResourceId string = functionApp.id
+output functionAppIdentityPrincipalId string = functionApp.identity.principalId

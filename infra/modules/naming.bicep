@@ -16,6 +16,13 @@ var naming = {
   vnet: '${namePrefix}-vnet-${environment}'
   cognitiveServices: '${namePrefix}-cog-${environment}'
   azureMaps: '${namePrefix}-maps-${environment}'
+  // New modern platform services
+  purview: '${namePrefix}-purview-${environment}'
+  machineLearning: '${namePrefix}-ml-${environment}'
+  kubernetes: '${namePrefix}-aks-${environment}'
+  fabric: '${namePrefix}-fabric-${environment}'
+  containerInstances: '${namePrefix}-aci-${environment}'
+  comprehensiveApiGateway: '${namePrefix}-apigw-${environment}'
 }
 
 output naming object = naming

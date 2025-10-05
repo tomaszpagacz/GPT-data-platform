@@ -1,0 +1,422 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "_generator": {
+      "name": "bicep",
+      "version": "0.38.5.1644",
+      "templateHash": "9672912859972833485"
+    }
+  },
+  "parameters": {
+    "storageAccountId": {
+      "type": "string",
+      "metadata": {
+        "description": "Storage Account resource ID for RBAC assignments"
+      }
+    },
+    "keyVaultId": {
+      "type": "string",
+      "metadata": {
+        "description": "Key Vault resource ID for RBAC assignments"
+      }
+    },
+    "synapseWorkspaceId": {
+      "type": "string",
+      "metadata": {
+        "description": "Synapse Workspace resource ID for RBAC assignments"
+      }
+    },
+    "aksClusterId": {
+      "type": "string",
+      "metadata": {
+        "description": "AKS Cluster resource ID for RBAC assignments"
+      }
+    },
+    "mlWorkspaceId": {
+      "type": "string",
+      "metadata": {
+        "description": "Machine Learning Workspace resource ID for RBAC assignments"
+      }
+    },
+    "purviewAccountId": {
+      "type": "string",
+      "metadata": {
+        "description": "Purview Account resource ID for RBAC assignments"
+      }
+    },
+    "fabricCapacityId": {
+      "type": "string",
+      "metadata": {
+        "description": "Fabric Capacity resource ID for RBAC assignments"
+      }
+    },
+    "managedIdentities": {
+      "type": "object",
+      "metadata": {
+        "description": "Managed Identity Principal IDs"
+      }
+    },
+    "securityGroups": {
+      "type": "object",
+      "metadata": {
+        "description": "Security Group Object IDs"
+      }
+    }
+  },
+  "variables": {
+    "roles": {
+      "storageBlobDataOwner": "b7e6dc6d-f1e8-4753-8033-0f276bb0955b",
+      "storageBlobDataContributor": "ba92f5b4-2d11-453d-a403-e96b0029c9fe",
+      "storageBlobDataReader": "e9dba6fb-3d52-4bd0-9de6-3d48f1a77c50",
+      "keyVaultSecretsOfficer": "b86a8fe4-44ce-4948-aee5-eccb2c155cd7",
+      "keyVaultSecretsUser": "4633458b-17de-408a-b874-0445c86b69e6",
+      "keyVaultCryptoOfficer": "14b46e9e-c2b7-41b4-b07b-48a6ebf60603",
+      "azureKubernetesServiceContributorRole": "ed7f3fbd-7b88-4dd4-9017-9adb7ce333f8",
+      "azureKubernetesServiceClusterAdminRole": "0ab0b1a8-8aac-4efd-b8c2-3ee1fb270be8",
+      "azureMLDataScientist": "f6c7c914-8db3-469d-8ca1-694a8f32e121",
+      "azureMLComputeOperator": "e503ece1-11d0-4e8e-8e2c-e5c5e8b8ced1",
+      "purviewDataCurator": "8a3c2885-9b38-4fd2-9d99-91d02d8c0800",
+      "purviewDataReader": "05d8164f-58ad-4a58-8034-b3e2dedddbf5",
+      "fabricAdministrator": "1d9b5dd5-7f00-479c-a9a0-b2ea2ca8bfe2",
+      "fabricCapacityAdmin": "4c7c8a82-6af6-4b8b-90c3-e7b5c9e3d8e9",
+      "synapseAdministrator": "6e4bf58d-b8f4-4cc5-8ff6-b44e0b568dcc",
+      "synapseContributor": "7af0c69a-a548-47d6-aea3-d00e69bd83aa",
+      "synapseComputeOperator": "b9e6b3ad-d08a-4a29-aea7-78e2dd4e1b90"
+    }
+  },
+  "resources": [
+    {
+      "condition": "[not(empty(parameters('securityGroups').platformOperators))]",
+      "type": "Microsoft.Authorization/roleAssignments",
+      "apiVersion": "2022-04-01",
+      "scope": "[format('Microsoft.Storage/storageAccounts/{0}', last(split(parameters('storageAccountId'), '/')))]",
+      "name": "[guid(parameters('storageAccountId'), parameters('securityGroups').platformOperators, 'StorageBlobDataOwner')]",
+      "properties": {
+        "roleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', variables('roles').storageBlobDataOwner)]",
+        "principalId": "[parameters('securityGroups').platformOperators]",
+        "principalType": "Group"
+      }
+    },
+    {
+      "condition": "[not(empty(parameters('securityGroups').dataEngineers))]",
+      "type": "Microsoft.Authorization/roleAssignments",
+      "apiVersion": "2022-04-01",
+      "scope": "[format('Microsoft.Storage/storageAccounts/{0}', last(split(parameters('storageAccountId'), '/')))]",
+      "name": "[guid(parameters('storageAccountId'), parameters('securityGroups').dataEngineers, 'StorageBlobDataContributor')]",
+      "properties": {
+        "roleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', variables('roles').storageBlobDataContributor)]",
+        "principalId": "[parameters('securityGroups').dataEngineers]",
+        "principalType": "Group"
+      }
+    },
+    {
+      "condition": "[not(empty(parameters('managedIdentities').functions))]",
+      "type": "Microsoft.Authorization/roleAssignments",
+      "apiVersion": "2022-04-01",
+      "scope": "[format('Microsoft.Storage/storageAccounts/{0}', last(split(parameters('storageAccountId'), '/')))]",
+      "name": "[guid(parameters('storageAccountId'), parameters('managedIdentities').functions, 'StorageBlobDataContributor')]",
+      "properties": {
+        "roleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', variables('roles').storageBlobDataContributor)]",
+        "principalId": "[parameters('managedIdentities').functions]",
+        "principalType": "ServicePrincipal"
+      }
+    },
+    {
+      "condition": "[not(empty(parameters('managedIdentities').logicApps))]",
+      "type": "Microsoft.Authorization/roleAssignments",
+      "apiVersion": "2022-04-01",
+      "scope": "[format('Microsoft.Storage/storageAccounts/{0}', last(split(parameters('storageAccountId'), '/')))]",
+      "name": "[guid(parameters('storageAccountId'), parameters('managedIdentities').logicApps, 'StorageBlobDataContributor')]",
+      "properties": {
+        "roleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', variables('roles').storageBlobDataContributor)]",
+        "principalId": "[parameters('managedIdentities').logicApps]",
+        "principalType": "ServicePrincipal"
+      }
+    },
+    {
+      "condition": "[not(empty(parameters('managedIdentities').aks))]",
+      "type": "Microsoft.Authorization/roleAssignments",
+      "apiVersion": "2022-04-01",
+      "scope": "[format('Microsoft.Storage/storageAccounts/{0}', last(split(parameters('storageAccountId'), '/')))]",
+      "name": "[guid(parameters('storageAccountId'), parameters('managedIdentities').aks, 'StorageBlobDataContributor')]",
+      "properties": {
+        "roleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', variables('roles').storageBlobDataContributor)]",
+        "principalId": "[parameters('managedIdentities').aks]",
+        "principalType": "ServicePrincipal"
+      }
+    },
+    {
+      "condition": "[not(empty(parameters('managedIdentities').purview))]",
+      "type": "Microsoft.Authorization/roleAssignments",
+      "apiVersion": "2022-04-01",
+      "scope": "[format('Microsoft.Storage/storageAccounts/{0}', last(split(parameters('storageAccountId'), '/')))]",
+      "name": "[guid(parameters('storageAccountId'), parameters('managedIdentities').purview, 'StorageBlobDataReader')]",
+      "properties": {
+        "roleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', variables('roles').storageBlobDataReader)]",
+        "principalId": "[parameters('managedIdentities').purview]",
+        "principalType": "ServicePrincipal"
+      }
+    },
+    {
+      "condition": "[not(empty(parameters('securityGroups').platformOperators))]",
+      "type": "Microsoft.Authorization/roleAssignments",
+      "apiVersion": "2022-04-01",
+      "scope": "[format('Microsoft.KeyVault/vaults/{0}', last(split(parameters('keyVaultId'), '/')))]",
+      "name": "[guid(parameters('keyVaultId'), parameters('securityGroups').platformOperators, 'KeyVaultSecretsOfficer')]",
+      "properties": {
+        "roleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', variables('roles').keyVaultSecretsOfficer)]",
+        "principalId": "[parameters('securityGroups').platformOperators]",
+        "principalType": "Group"
+      }
+    },
+    {
+      "condition": "[not(empty(parameters('managedIdentities').functions))]",
+      "type": "Microsoft.Authorization/roleAssignments",
+      "apiVersion": "2022-04-01",
+      "scope": "[format('Microsoft.KeyVault/vaults/{0}', last(split(parameters('keyVaultId'), '/')))]",
+      "name": "[guid(parameters('keyVaultId'), parameters('managedIdentities').functions, 'KeyVaultSecretsUser')]",
+      "properties": {
+        "roleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', variables('roles').keyVaultSecretsUser)]",
+        "principalId": "[parameters('managedIdentities').functions]",
+        "principalType": "ServicePrincipal"
+      }
+    },
+    {
+      "condition": "[not(empty(parameters('managedIdentities').logicApps))]",
+      "type": "Microsoft.Authorization/roleAssignments",
+      "apiVersion": "2022-04-01",
+      "scope": "[format('Microsoft.KeyVault/vaults/{0}', last(split(parameters('keyVaultId'), '/')))]",
+      "name": "[guid(parameters('keyVaultId'), parameters('managedIdentities').logicApps, 'KeyVaultSecretsUser')]",
+      "properties": {
+        "roleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', variables('roles').keyVaultSecretsUser)]",
+        "principalId": "[parameters('managedIdentities').logicApps]",
+        "principalType": "ServicePrincipal"
+      }
+    },
+    {
+      "condition": "[not(empty(parameters('managedIdentities').ml))]",
+      "type": "Microsoft.Authorization/roleAssignments",
+      "apiVersion": "2022-04-01",
+      "scope": "[format('Microsoft.KeyVault/vaults/{0}', last(split(parameters('keyVaultId'), '/')))]",
+      "name": "[guid(parameters('keyVaultId'), parameters('managedIdentities').ml, 'KeyVaultCryptoOfficer')]",
+      "properties": {
+        "roleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', variables('roles').keyVaultCryptoOfficer)]",
+        "principalId": "[parameters('managedIdentities').ml]",
+        "principalType": "ServicePrincipal"
+      }
+    },
+    {
+      "condition": "[not(empty(parameters('managedIdentities').aks))]",
+      "type": "Microsoft.Authorization/roleAssignments",
+      "apiVersion": "2022-04-01",
+      "scope": "[format('Microsoft.KeyVault/vaults/{0}', last(split(parameters('keyVaultId'), '/')))]",
+      "name": "[guid(parameters('keyVaultId'), parameters('managedIdentities').aks, 'KeyVaultSecretsUser')]",
+      "properties": {
+        "roleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', variables('roles').keyVaultSecretsUser)]",
+        "principalId": "[parameters('managedIdentities').aks]",
+        "principalType": "ServicePrincipal"
+      }
+    },
+    {
+      "condition": "[not(empty(parameters('managedIdentities').purview))]",
+      "type": "Microsoft.Authorization/roleAssignments",
+      "apiVersion": "2022-04-01",
+      "scope": "[format('Microsoft.KeyVault/vaults/{0}', last(split(parameters('keyVaultId'), '/')))]",
+      "name": "[guid(parameters('keyVaultId'), parameters('managedIdentities').purview, 'KeyVaultSecretsUser')]",
+      "properties": {
+        "roleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', variables('roles').keyVaultSecretsUser)]",
+        "principalId": "[parameters('managedIdentities').purview]",
+        "principalType": "ServicePrincipal"
+      }
+    },
+    {
+      "condition": "[not(empty(parameters('securityGroups').platformOperators))]",
+      "type": "Microsoft.Authorization/roleAssignments",
+      "apiVersion": "2022-04-01",
+      "scope": "[format('Microsoft.ContainerService/managedClusters/{0}', last(split(parameters('aksClusterId'), '/')))]",
+      "name": "[guid(parameters('aksClusterId'), parameters('securityGroups').platformOperators, 'AzureKubernetesServiceClusterAdminRole')]",
+      "properties": {
+        "roleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', variables('roles').azureKubernetesServiceClusterAdminRole)]",
+        "principalId": "[parameters('securityGroups').platformOperators]",
+        "principalType": "Group"
+      }
+    },
+    {
+      "condition": "[not(empty(parameters('securityGroups').dataEngineers))]",
+      "type": "Microsoft.Authorization/roleAssignments",
+      "apiVersion": "2022-04-01",
+      "scope": "[format('Microsoft.ContainerService/managedClusters/{0}', last(split(parameters('aksClusterId'), '/')))]",
+      "name": "[guid(parameters('aksClusterId'), parameters('securityGroups').dataEngineers, 'AzureKubernetesServiceContributorRole')]",
+      "properties": {
+        "roleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', variables('roles').azureKubernetesServiceContributorRole)]",
+        "principalId": "[parameters('securityGroups').dataEngineers]",
+        "principalType": "Group"
+      }
+    },
+    {
+      "condition": "[not(empty(parameters('securityGroups').platformOperators))]",
+      "type": "Microsoft.Authorization/roleAssignments",
+      "apiVersion": "2022-04-01",
+      "scope": "[format('Microsoft.MachineLearningServices/workspaces/{0}', last(split(parameters('mlWorkspaceId'), '/')))]",
+      "name": "[guid(parameters('mlWorkspaceId'), parameters('securityGroups').platformOperators, 'AzureMLDataScientist')]",
+      "properties": {
+        "roleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', variables('roles').azureMLDataScientist)]",
+        "principalId": "[parameters('securityGroups').platformOperators]",
+        "principalType": "Group"
+      }
+    },
+    {
+      "condition": "[not(empty(parameters('securityGroups').dataEngineers))]",
+      "type": "Microsoft.Authorization/roleAssignments",
+      "apiVersion": "2022-04-01",
+      "scope": "[format('Microsoft.MachineLearningServices/workspaces/{0}', last(split(parameters('mlWorkspaceId'), '/')))]",
+      "name": "[guid(parameters('mlWorkspaceId'), parameters('securityGroups').dataEngineers, 'AzureMLComputeOperator')]",
+      "properties": {
+        "roleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', variables('roles').azureMLComputeOperator)]",
+        "principalId": "[parameters('securityGroups').dataEngineers]",
+        "principalType": "Group"
+      }
+    },
+    {
+      "condition": "[not(empty(parameters('securityGroups').platformOperators))]",
+      "type": "Microsoft.Authorization/roleAssignments",
+      "apiVersion": "2022-04-01",
+      "scope": "[format('Microsoft.Purview/accounts/{0}', last(split(parameters('purviewAccountId'), '/')))]",
+      "name": "[guid(parameters('purviewAccountId'), parameters('securityGroups').platformOperators, 'PurviewDataCurator')]",
+      "properties": {
+        "roleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', variables('roles').purviewDataCurator)]",
+        "principalId": "[parameters('securityGroups').platformOperators]",
+        "principalType": "Group"
+      }
+    },
+    {
+      "condition": "[not(empty(parameters('securityGroups').dataEngineers))]",
+      "type": "Microsoft.Authorization/roleAssignments",
+      "apiVersion": "2022-04-01",
+      "scope": "[format('Microsoft.Purview/accounts/{0}', last(split(parameters('purviewAccountId'), '/')))]",
+      "name": "[guid(parameters('purviewAccountId'), parameters('securityGroups').dataEngineers, 'PurviewDataReader')]",
+      "properties": {
+        "roleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', variables('roles').purviewDataReader)]",
+        "principalId": "[parameters('securityGroups').dataEngineers]",
+        "principalType": "Group"
+      }
+    },
+    {
+      "condition": "[not(empty(parameters('securityGroups').platformOperators))]",
+      "type": "Microsoft.Authorization/roleAssignments",
+      "apiVersion": "2022-04-01",
+      "scope": "[format('Microsoft.Fabric/capacities/{0}', last(split(parameters('fabricCapacityId'), '/')))]",
+      "name": "[guid(parameters('fabricCapacityId'), parameters('securityGroups').platformOperators, 'FabricAdministrator')]",
+      "properties": {
+        "roleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', variables('roles').fabricAdministrator)]",
+        "principalId": "[parameters('securityGroups').platformOperators]",
+        "principalType": "Group"
+      }
+    },
+    {
+      "condition": "[not(empty(parameters('securityGroups').dataEngineers))]",
+      "type": "Microsoft.Authorization/roleAssignments",
+      "apiVersion": "2022-04-01",
+      "scope": "[format('Microsoft.Fabric/capacities/{0}', last(split(parameters('fabricCapacityId'), '/')))]",
+      "name": "[guid(parameters('fabricCapacityId'), parameters('securityGroups').dataEngineers, 'FabricCapacityAdmin')]",
+      "properties": {
+        "roleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', variables('roles').fabricCapacityAdmin)]",
+        "principalId": "[parameters('securityGroups').dataEngineers]",
+        "principalType": "Group"
+      }
+    },
+    {
+      "condition": "[not(empty(parameters('securityGroups').platformOperators))]",
+      "type": "Microsoft.Authorization/roleAssignments",
+      "apiVersion": "2022-04-01",
+      "scope": "[format('Microsoft.Synapse/workspaces/{0}', last(split(parameters('synapseWorkspaceId'), '/')))]",
+      "name": "[guid(parameters('synapseWorkspaceId'), parameters('securityGroups').platformOperators, 'SynapseAdministrator')]",
+      "properties": {
+        "roleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', variables('roles').synapseAdministrator)]",
+        "principalId": "[parameters('securityGroups').platformOperators]",
+        "principalType": "Group"
+      }
+    },
+    {
+      "condition": "[not(empty(parameters('securityGroups').dataEngineers))]",
+      "type": "Microsoft.Authorization/roleAssignments",
+      "apiVersion": "2022-04-01",
+      "scope": "[format('Microsoft.Synapse/workspaces/{0}', last(split(parameters('synapseWorkspaceId'), '/')))]",
+      "name": "[guid(parameters('synapseWorkspaceId'), parameters('securityGroups').dataEngineers, 'SynapseContributor')]",
+      "properties": {
+        "roleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', variables('roles').synapseContributor)]",
+        "principalId": "[parameters('securityGroups').dataEngineers]",
+        "principalType": "Group"
+      }
+    },
+    {
+      "condition": "[not(empty(parameters('managedIdentities').functions))]",
+      "type": "Microsoft.Authorization/roleAssignments",
+      "apiVersion": "2022-04-01",
+      "scope": "[format('Microsoft.Synapse/workspaces/{0}', last(split(parameters('synapseWorkspaceId'), '/')))]",
+      "name": "[guid(parameters('synapseWorkspaceId'), parameters('managedIdentities').functions, 'SynapseComputeOperator')]",
+      "properties": {
+        "roleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', variables('roles').synapseComputeOperator)]",
+        "principalId": "[parameters('managedIdentities').functions]",
+        "principalType": "ServicePrincipal"
+      }
+    },
+    {
+      "condition": "[not(empty(parameters('managedIdentities').ml))]",
+      "type": "Microsoft.Authorization/roleAssignments",
+      "apiVersion": "2022-04-01",
+      "scope": "[format('Microsoft.Synapse/workspaces/{0}', last(split(parameters('synapseWorkspaceId'), '/')))]",
+      "name": "[guid(parameters('synapseWorkspaceId'), parameters('managedIdentities').ml, 'SynapseContributor')]",
+      "properties": {
+        "roleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', variables('roles').synapseContributor)]",
+        "principalId": "[parameters('managedIdentities').ml]",
+        "principalType": "ServicePrincipal"
+      }
+    }
+  ],
+  "outputs": {
+    "rbacAssignmentsSummary": {
+      "type": "object",
+      "value": {
+        "storageAccount": {
+          "platformOperators": "[guid(parameters('storageAccountId'), parameters('securityGroups').platformOperators, 'StorageBlobDataOwner')]",
+          "functions": "[guid(parameters('storageAccountId'), parameters('managedIdentities').functions, 'StorageBlobDataContributor')]",
+          "logicApps": "[guid(parameters('storageAccountId'), parameters('managedIdentities').logicApps, 'StorageBlobDataContributor')]",
+          "aks": "[guid(parameters('storageAccountId'), parameters('managedIdentities').aks, 'StorageBlobDataContributor')]",
+          "purview": "[guid(parameters('storageAccountId'), parameters('managedIdentities').purview, 'StorageBlobDataReader')]"
+        },
+        "keyVault": {
+          "platformOperators": "[guid(parameters('keyVaultId'), parameters('securityGroups').platformOperators, 'KeyVaultSecretsOfficer')]",
+          "functions": "[guid(parameters('keyVaultId'), parameters('managedIdentities').functions, 'KeyVaultSecretsUser')]",
+          "logicApps": "[guid(parameters('keyVaultId'), parameters('managedIdentities').logicApps, 'KeyVaultSecretsUser')]",
+          "ml": "[guid(parameters('keyVaultId'), parameters('managedIdentities').ml, 'KeyVaultCryptoOfficer')]",
+          "aks": "[guid(parameters('keyVaultId'), parameters('managedIdentities').aks, 'KeyVaultSecretsUser')]",
+          "purview": "[guid(parameters('keyVaultId'), parameters('managedIdentities').purview, 'KeyVaultSecretsUser')]"
+        },
+        "aksCluster": {
+          "platformOperators": "[guid(parameters('aksClusterId'), parameters('securityGroups').platformOperators, 'AzureKubernetesServiceClusterAdminRole')]",
+          "dataEngineers": "[guid(parameters('aksClusterId'), parameters('securityGroups').dataEngineers, 'AzureKubernetesServiceContributorRole')]"
+        },
+        "mlWorkspace": {
+          "platformOperators": "[guid(parameters('mlWorkspaceId'), parameters('securityGroups').platformOperators, 'AzureMLDataScientist')]",
+          "dataEngineers": "[guid(parameters('mlWorkspaceId'), parameters('securityGroups').dataEngineers, 'AzureMLComputeOperator')]"
+        },
+        "purviewAccount": {
+          "platformOperators": "[guid(parameters('purviewAccountId'), parameters('securityGroups').platformOperators, 'PurviewDataCurator')]",
+          "dataEngineers": "[guid(parameters('purviewAccountId'), parameters('securityGroups').dataEngineers, 'PurviewDataReader')]"
+        },
+        "fabricCapacity": {
+          "platformOperators": "[guid(parameters('fabricCapacityId'), parameters('securityGroups').platformOperators, 'FabricAdministrator')]",
+          "dataEngineers": "[guid(parameters('fabricCapacityId'), parameters('securityGroups').dataEngineers, 'FabricCapacityAdmin')]"
+        },
+        "synapseWorkspace": {
+          "platformOperators": "[guid(parameters('synapseWorkspaceId'), parameters('securityGroups').platformOperators, 'SynapseAdministrator')]",
+          "dataEngineers": "[guid(parameters('synapseWorkspaceId'), parameters('securityGroups').dataEngineers, 'SynapseContributor')]",
+          "functions": "[guid(parameters('synapseWorkspaceId'), parameters('managedIdentities').functions, 'SynapseComputeOperator')]",
+          "ml": "[guid(parameters('synapseWorkspaceId'), parameters('managedIdentities').ml, 'SynapseContributor')]"
+        }
+      }
+    }
+  }
+}

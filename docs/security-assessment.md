@@ -44,10 +44,80 @@ This document provides a comprehensive security assessment of the GPT Data Platf
 | VNET Integration | ✅ Implemented | Low | Functions run in VNET |
 | Managed Identity | ✅ Implemented | Low | No credentials in code |
 | HTTPS Only | ✅ Implemented | Low | Enforced by default |
-| Runtime Version | ✅ Implemented | Low | Using latest supported version |
+| Runtime Version | ✅ Implemented | Low | Using .NET 8 isolated worker |
 
 **Risk**: Function code execution vulnerabilities
 - Impact: High
+
+### Azure Kubernetes Service (AKS) Security
+
+#### Container Orchestration Controls
+| Control | Status | Risk Level | Notes |
+|---------|--------|------------|-------|
+| RBAC Enabled | ✅ Implemented | Low | Kubernetes RBAC active |
+| Private Cluster | ✅ Implemented | Low | API server not publicly accessible |
+| Network Policies | ✅ Implemented | Medium | Pod-to-pod communication controlled |
+| Container Registry | ✅ Implemented | Low | Private ACR integration |
+| Pod Security Standards | ✅ Implemented | Medium | Baseline security policies |
+
+**Risk**: Container escape or privilege escalation
+- Impact: High
+- Probability: Low
+- **Mitigation**: Regular security scanning and policy enforcement
+
+### Azure Machine Learning Security
+
+#### ML Platform Controls
+| Control | Status | Risk Level | Notes |
+|---------|--------|------------|-------|
+| VNET Integration | ✅ Implemented | Low | Compute isolated in VNET |
+| Private Endpoints | ✅ Implemented | Low | All ML services private |
+| Model Encryption | ✅ Implemented | Low | Models encrypted at rest |
+| Data Lineage | ✅ Implemented | Medium | Via Purview integration |
+
+**Risk**: Model theft or data poisoning
+- Impact: High
+- Probability: Medium
+- **Mitigation**: Access controls and audit logging
+
+### Microsoft Purview Security
+
+#### Data Governance Controls
+| Control | Status | Risk Level | Notes |
+|---------|--------|------------|-------|
+| Private Endpoints | ✅ Implemented | Low | Portal and APIs private |
+| Data Classification | ✅ Implemented | Medium | Automated sensitivity labeling |
+| Access Policies | ✅ Implemented | Low | Role-based data access |
+| Audit Logging | ✅ Implemented | Low | All access logged |
+
+**Risk**: Unauthorized data discovery or classification bypass
+- Impact: Medium
+
+### Microsoft Fabric Security
+
+#### Analytics Platform Controls
+| Control | Status | Risk Level | Notes |
+|---------|--------|------------|-------|
+| Capacity Isolation | ✅ Implemented | Low | Dedicated capacity |
+| OneLake Security | ✅ Implemented | Medium | Lake-level permissions |
+| Workspace RBAC | ✅ Implemented | Low | Role-based workspace access |
+| Data Lineage | ✅ Implemented | Medium | End-to-end tracking |
+
+**Risk**: Data exposure through Fabric sharing
+- Impact: High
+
+### Container Instances Security
+
+#### Lightweight Container Controls
+| Control | Status | Risk Level | Notes |
+|---------|--------|------------|-------|
+| VNET Integration | ✅ Implemented | Low | Containers run in VNET |
+| Managed Identity | ✅ Implemented | Low | No stored credentials |
+| Resource Limits | ✅ Implemented | Medium | CPU/Memory constraints |
+| Image Security | ✅ Implemented | Medium | Base image scanning |
+
+**Risk**: Resource exhaustion or container breakout
+- Impact: Medium
 - Probability: Low
 - **Mitigation**: Regular code reviews, dependency scanning
 
