@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.38.5.1644",
-      "templateHash": "16103497887298139768"
+      "templateHash": "14091960106472382294"
     }
   },
   "parameters": {
@@ -26,6 +26,40 @@
       "type": "string",
       "metadata": {
         "description": "Name of the Event Grid topic"
+      }
+    },
+    "storageAccountName": {
+      "type": "string",
+      "metadata": {
+        "description": "Storage account for queues/tables"
+      }
+    },
+    "queueName": {
+      "type": "string",
+      "defaultValue": "events-synapse",
+      "metadata": {
+        "description": "Main event queue name"
+      }
+    },
+    "dlqName": {
+      "type": "string",
+      "defaultValue": "events-synapse-dlq",
+      "metadata": {
+        "description": "Dead-letter queue name"
+      }
+    },
+    "tableDedupe": {
+      "type": "string",
+      "defaultValue": "ProcessedMessages",
+      "metadata": {
+        "description": "Table to store processed message ids (idempotency)"
+      }
+    },
+    "tableRuns": {
+      "type": "string",
+      "defaultValue": "RunHistory",
+      "metadata": {
+        "description": "Table to store run history / correlation"
       }
     },
     "location": {

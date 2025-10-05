@@ -13,7 +13,7 @@ validate_bicep() {
     
     # Create build output directory structure
     local relative_path=${file#/workspaces/GPT-data-platform/}
-    local output_dir="/workspaces/GPT-data-platform/infra/build_output"
+    local output_dir="/workspaces/GPT-data-platform/validation_outputs/bicep"
     local output_file="$output_dir/${relative_path%.bicep}.json"
     mkdir -p "$(dirname "$output_file")"
 

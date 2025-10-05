@@ -1,0 +1,119 @@
+{
+  "workflow": "wf-queue-synapse",
+  "file": "/workspaces/GPT-data-platform/src/logic-apps/workflows/wf-queue-synapse.workflow.json",
+  "timestamp": "2025-10-05T21:50:14+00:00",
+  "checks": [
+    {
+      "check": "json_valid",
+      "status": "passed"
+    },
+    {
+      "check": "has_definition",
+      "status": "passed"
+    },
+    {
+      "check": "has_contentVersion",
+      "status": "passed"
+    },
+    {
+      "check": "has_parameters",
+      "status": "passed"
+    },
+    {
+      "check": "has_triggers",
+      "status": "passed"
+    },
+    {
+      "check": "has_actions",
+      "status": "passed"
+    },
+    {
+      "check": "has_schema",
+      "status": "passed"
+    },
+    {
+      "check": "param_dedupeTable_type",
+      "status": "passed",
+      "type": "string"
+    },
+    {
+      "check": "param_pipelinesConfig_type",
+      "status": "passed",
+      "type": "string"
+    },
+    {
+      "check": "param_resourceGroup_type",
+      "status": "passed",
+      "type": "string"
+    },
+    {
+      "check": "param_runsTable_type",
+      "status": "passed",
+      "type": "string"
+    },
+    {
+      "check": "param_subscriptionId_type",
+      "status": "passed",
+      "type": "string"
+    },
+    {
+      "check": "param_synapseWorkspace_type",
+      "status": "passed",
+      "type": "string"
+    },
+    {
+      "check": "trigger_from_queue_type",
+      "status": "passed",
+      "type": "ApiConnection"
+    },
+    {
+      "check": "action_correlation_id_type",
+      "status": "passed",
+      "type": "Compose"
+    },
+    {
+      "check": "action_decode_type",
+      "status": "passed",
+      "type": "Compose"
+    },
+    {
+      "check": "action_dedupe_get_type",
+      "status": "passed",
+      "type": "ApiConnection"
+    },
+    {
+      "check": "action_if_duplicate_type",
+      "status": "passed",
+      "type": "If"
+    },
+    {
+      "check": "action_message_id_type",
+      "status": "passed",
+      "type": "Compose"
+    },
+    {
+      "check": "has_connections",
+      "status": "passed"
+    },
+    {
+      "check": "connection_count",
+      "status": "info",
+      "count": 2
+    },
+    {
+      "check": "workflow_kind",
+      "status": "passed",
+      "kind": "Stateful"
+    }
+  ],
+  "summary": {
+    "name": "wf-queue-synapse",
+    "kind": "Stateful",
+    "metrics": {
+      "parameters": 6,
+      "triggers": 1,
+      "actions": 5,
+      "connections": 2
+    }
+  }
+}

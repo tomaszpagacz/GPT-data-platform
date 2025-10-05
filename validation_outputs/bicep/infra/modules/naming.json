@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.38.5.1644",
-      "templateHash": "12817568457735735731"
+      "templateHash": "10016591118024602241"
     }
   },
   "parameters": {
@@ -23,7 +23,6 @@
       "eventGridTopic": "[format('{0}-evtgrid-{1}', parameters('namePrefix'), parameters('environment'))]",
       "functionApp": "[format('{0}-func-{1}', parameters('namePrefix'), parameters('environment'))]",
       "functionPlan": "[format('{0}-plan-{1}', parameters('namePrefix'), parameters('environment'))]",
-      "functionStorage": "[format('{0}func{1}', parameters('namePrefix'), parameters('environment'))]",
       "keyVault": "[format('{0}-kv-{1}', parameters('namePrefix'), parameters('environment'))]",
       "logAnalytics": "[format('{0}-log-{1}', parameters('namePrefix'), parameters('environment'))]",
       "logicApp": "[format('{0}-logic-{1}', parameters('namePrefix'), parameters('environment'))]",

@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.38.5.1644",
-      "templateHash": "10671555632896386513"
+      "templateHash": "5480956535221869232"
     }
   },
   "parameters": {
@@ -70,6 +70,13 @@
         "description": "Application Insights for API monitoring."
       }
     },
+    "deployApplicationInsights": {
+      "type": "bool",
+      "defaultValue": false,
+      "metadata": {
+        "description": "Whether Application Insights is deployed and available."
+      }
+    },
     "keyVaultId": {
       "type": "string",
       "metadata": {
@@ -123,6 +130,7 @@
       }
     },
     {
+      "condition": "[parameters('deployApplicationInsights')]",
       "type": "Microsoft.ApiManagement/service/loggers",
       "apiVersion": "2023-05-01-preview",
       "name": "[format('{0}/{1}', parameters('name'), 'appinsights-logger')]",

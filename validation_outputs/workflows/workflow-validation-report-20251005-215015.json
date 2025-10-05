@@ -1,0 +1,652 @@
+{
+  "timestamp": "2025-10-05T21:50:15+00:00",
+  "total_workflows": 6,
+  "validation_results": [
+    {
+      "workflow": "wf-blob-router-to-events",
+      "file": "/workspaces/GPT-data-platform/src/logic-apps/workflows/wf-blob-router-to-events.workflow.json",
+      "timestamp": "2025-10-05T21:50:13+00:00",
+      "checks": [
+        {
+          "check": "json_valid",
+          "status": "passed"
+        },
+        {
+          "check": "has_definition",
+          "status": "passed"
+        },
+        {
+          "check": "has_contentVersion",
+          "status": "passed"
+        },
+        {
+          "check": "has_parameters",
+          "status": "passed"
+        },
+        {
+          "check": "has_triggers",
+          "status": "passed"
+        },
+        {
+          "check": "has_actions",
+          "status": "passed"
+        },
+        {
+          "check": "has_schema",
+          "status": "passed"
+        },
+        {
+          "check": "param_ingressQueue_type",
+          "status": "passed",
+          "type": "string"
+        },
+        {
+          "check": "trigger_from_ingress_type",
+          "status": "passed",
+          "type": "ApiConnection"
+        },
+        {
+          "check": "action_enqueue_type",
+          "status": "passed",
+          "type": "ApiConnection"
+        },
+        {
+          "check": "action_map_to_canonical_type",
+          "status": "passed",
+          "type": "Compose"
+        },
+        {
+          "check": "action_parse_eg_type",
+          "status": "passed",
+          "type": "Compose"
+        },
+        {
+          "check": "has_connections",
+          "status": "passed"
+        },
+        {
+          "check": "connection_count",
+          "status": "info",
+          "count": 1
+        },
+        {
+          "check": "workflow_kind",
+          "status": "passed",
+          "kind": "Stateful"
+        }
+      ],
+      "summary": {
+        "name": "wf-blob-router-to-events",
+        "kind": "Stateful",
+        "metrics": {
+          "parameters": 1,
+          "triggers": 1,
+          "actions": 3,
+          "connections": 1
+        }
+      }
+    },
+    {
+      "workflow": "wf-dlq-replay",
+      "file": "/workspaces/GPT-data-platform/src/logic-apps/workflows/wf-dlq-replay.workflow.json",
+      "timestamp": "2025-10-05T21:50:13+00:00",
+      "checks": [
+        {
+          "check": "json_valid",
+          "status": "passed"
+        },
+        {
+          "check": "has_definition",
+          "status": "passed"
+        },
+        {
+          "check": "has_contentVersion",
+          "status": "passed"
+        },
+        {
+          "check": "has_parameters",
+          "status": "passed"
+        },
+        {
+          "check": "has_triggers",
+          "status": "passed"
+        },
+        {
+          "check": "has_actions",
+          "status": "passed"
+        },
+        {
+          "check": "has_schema",
+          "status": "passed"
+        },
+        {
+          "check": "param_dlqName_type",
+          "status": "passed",
+          "type": "string"
+        },
+        {
+          "check": "param_eventQueue_type",
+          "status": "passed",
+          "type": "string"
+        },
+        {
+          "check": "param_maxMessages_type",
+          "status": "passed",
+          "type": "int"
+        },
+        {
+          "check": "param_maxRetries_type",
+          "status": "passed",
+          "type": "int"
+        },
+        {
+          "check": "param_mode_type",
+          "status": "passed",
+          "type": "string"
+        },
+        {
+          "check": "param_poisonQueue_type",
+          "status": "passed",
+          "type": "string"
+        },
+        {
+          "check": "param_resourceGroup_type",
+          "status": "passed",
+          "type": "string"
+        },
+        {
+          "check": "param_subscriptionId_type",
+          "status": "passed",
+          "type": "string"
+        },
+        {
+          "check": "param_synapseWorkspace_type",
+          "status": "passed",
+          "type": "string"
+        },
+        {
+          "check": "trigger_manual_type",
+          "status": "passed",
+          "type": "Request"
+        },
+        {
+          "check": "action_each_type",
+          "status": "passed",
+          "type": "Foreach"
+        },
+        {
+          "check": "action_pull_type",
+          "status": "passed",
+          "type": "ApiConnection"
+        },
+        {
+          "check": "has_connections",
+          "status": "passed"
+        },
+        {
+          "check": "connection_count",
+          "status": "info",
+          "count": 1
+        },
+        {
+          "check": "workflow_kind",
+          "status": "passed",
+          "kind": "Stateful"
+        }
+      ],
+      "summary": {
+        "name": "wf-dlq-replay",
+        "kind": "Stateful",
+        "metrics": {
+          "parameters": 9,
+          "triggers": 1,
+          "actions": 2,
+          "connections": 1
+        }
+      }
+    },
+    {
+      "workflow": "wf-http-synapse",
+      "file": "/workspaces/GPT-data-platform/src/logic-apps/workflows/wf-http-synapse.workflow.json",
+      "timestamp": "2025-10-05T21:50:14+00:00",
+      "checks": [
+        {
+          "check": "json_valid",
+          "status": "passed"
+        },
+        {
+          "check": "has_definition",
+          "status": "passed"
+        },
+        {
+          "check": "has_contentVersion",
+          "status": "passed"
+        },
+        {
+          "check": "has_parameters",
+          "status": "passed"
+        },
+        {
+          "check": "has_triggers",
+          "status": "passed"
+        },
+        {
+          "check": "has_actions",
+          "status": "passed"
+        },
+        {
+          "check": "has_schema",
+          "status": "passed"
+        },
+        {
+          "check": "param_resourceGroup_type",
+          "status": "passed",
+          "type": "string"
+        },
+        {
+          "check": "param_sharedSecret_type",
+          "status": "passed",
+          "type": "string"
+        },
+        {
+          "check": "param_subscriptionId_type",
+          "status": "passed",
+          "type": "string"
+        },
+        {
+          "check": "param_synapseWorkspace_type",
+          "status": "passed",
+          "type": "string"
+        },
+        {
+          "check": "trigger_manual_type",
+          "status": "passed",
+          "type": "Request"
+        },
+        {
+          "check": "action_validate_secret_type",
+          "status": "passed",
+          "type": "If"
+        },
+        {
+          "check": "has_connections",
+          "status": "passed"
+        },
+        {
+          "check": "connection_count",
+          "status": "info",
+          "count": 0
+        },
+        {
+          "check": "workflow_kind",
+          "status": "passed",
+          "kind": "Stateful"
+        }
+      ],
+      "summary": {
+        "name": "wf-http-synapse",
+        "kind": "Stateful",
+        "metrics": {
+          "parameters": 4,
+          "triggers": 1,
+          "actions": 1,
+          "connections": 0
+        }
+      }
+    },
+    {
+      "workflow": "wf-queue-synapse",
+      "file": "/workspaces/GPT-data-platform/src/logic-apps/workflows/wf-queue-synapse.workflow.json",
+      "timestamp": "2025-10-05T21:50:14+00:00",
+      "checks": [
+        {
+          "check": "json_valid",
+          "status": "passed"
+        },
+        {
+          "check": "has_definition",
+          "status": "passed"
+        },
+        {
+          "check": "has_contentVersion",
+          "status": "passed"
+        },
+        {
+          "check": "has_parameters",
+          "status": "passed"
+        },
+        {
+          "check": "has_triggers",
+          "status": "passed"
+        },
+        {
+          "check": "has_actions",
+          "status": "passed"
+        },
+        {
+          "check": "has_schema",
+          "status": "passed"
+        },
+        {
+          "check": "param_dedupeTable_type",
+          "status": "passed",
+          "type": "string"
+        },
+        {
+          "check": "param_pipelinesConfig_type",
+          "status": "passed",
+          "type": "string"
+        },
+        {
+          "check": "param_resourceGroup_type",
+          "status": "passed",
+          "type": "string"
+        },
+        {
+          "check": "param_runsTable_type",
+          "status": "passed",
+          "type": "string"
+        },
+        {
+          "check": "param_subscriptionId_type",
+          "status": "passed",
+          "type": "string"
+        },
+        {
+          "check": "param_synapseWorkspace_type",
+          "status": "passed",
+          "type": "string"
+        },
+        {
+          "check": "trigger_from_queue_type",
+          "status": "passed",
+          "type": "ApiConnection"
+        },
+        {
+          "check": "action_correlation_id_type",
+          "status": "passed",
+          "type": "Compose"
+        },
+        {
+          "check": "action_decode_type",
+          "status": "passed",
+          "type": "Compose"
+        },
+        {
+          "check": "action_dedupe_get_type",
+          "status": "passed",
+          "type": "ApiConnection"
+        },
+        {
+          "check": "action_if_duplicate_type",
+          "status": "passed",
+          "type": "If"
+        },
+        {
+          "check": "action_message_id_type",
+          "status": "passed",
+          "type": "Compose"
+        },
+        {
+          "check": "has_connections",
+          "status": "passed"
+        },
+        {
+          "check": "connection_count",
+          "status": "info",
+          "count": 2
+        },
+        {
+          "check": "workflow_kind",
+          "status": "passed",
+          "kind": "Stateful"
+        }
+      ],
+      "summary": {
+        "name": "wf-queue-synapse",
+        "kind": "Stateful",
+        "metrics": {
+          "parameters": 6,
+          "triggers": 1,
+          "actions": 5,
+          "connections": 2
+        }
+      }
+    },
+    {
+      "workflow": "wf-schedule-synapse",
+      "file": "/workspaces/GPT-data-platform/src/logic-apps/workflows/wf-schedule-synapse.workflow.json",
+      "timestamp": "2025-10-05T21:50:14+00:00",
+      "checks": [
+        {
+          "check": "json_valid",
+          "status": "passed"
+        },
+        {
+          "check": "has_definition",
+          "status": "passed"
+        },
+        {
+          "check": "has_contentVersion",
+          "status": "passed"
+        },
+        {
+          "check": "has_parameters",
+          "status": "passed"
+        },
+        {
+          "check": "has_triggers",
+          "status": "passed"
+        },
+        {
+          "check": "has_actions",
+          "status": "passed"
+        },
+        {
+          "check": "has_schema",
+          "status": "passed"
+        },
+        {
+          "check": "param_lockBlobUrl_type",
+          "status": "passed",
+          "type": "string"
+        },
+        {
+          "check": "param_maxSkewSeconds_type",
+          "status": "passed",
+          "type": "int"
+        },
+        {
+          "check": "param_pipelineName_type",
+          "status": "passed",
+          "type": "string"
+        },
+        {
+          "check": "param_pipelineParameters_type",
+          "status": "passed",
+          "type": "object"
+        },
+        {
+          "check": "param_resourceGroup_type",
+          "status": "passed",
+          "type": "string"
+        },
+        {
+          "check": "param_subscriptionId_type",
+          "status": "passed",
+          "type": "string"
+        },
+        {
+          "check": "param_synapseWorkspace_type",
+          "status": "passed",
+          "type": "string"
+        },
+        {
+          "check": "trigger_daily_0400_type",
+          "status": "passed",
+          "type": "Recurrence"
+        },
+        {
+          "check": "action_acquire_lease_type",
+          "status": "passed",
+          "type": "Http"
+        },
+        {
+          "check": "action_jitter_type",
+          "status": "passed",
+          "type": "Wait"
+        },
+        {
+          "check": "action_run_pipeline_type",
+          "status": "passed",
+          "type": "Http"
+        },
+        {
+          "check": "has_connections",
+          "status": "passed"
+        },
+        {
+          "check": "connection_count",
+          "status": "info",
+          "count": 0
+        },
+        {
+          "check": "workflow_kind",
+          "status": "passed",
+          "kind": "Stateful"
+        }
+      ],
+      "summary": {
+        "name": "wf-schedule-synapse",
+        "kind": "Stateful",
+        "metrics": {
+          "parameters": 7,
+          "triggers": 1,
+          "actions": 3,
+          "connections": 0
+        }
+      }
+    },
+    {
+      "workflow": "wf-synapse-run-status",
+      "file": "/workspaces/GPT-data-platform/src/logic-apps/workflows/wf-synapse-run-status.workflow.json",
+      "timestamp": "2025-10-05T21:50:14+00:00",
+      "checks": [
+        {
+          "check": "json_valid",
+          "status": "passed"
+        },
+        {
+          "check": "has_definition",
+          "status": "passed"
+        },
+        {
+          "check": "has_contentVersion",
+          "status": "passed"
+        },
+        {
+          "check": "has_parameters",
+          "status": "passed"
+        },
+        {
+          "check": "has_triggers",
+          "status": "passed"
+        },
+        {
+          "check": "has_actions",
+          "status": "passed"
+        },
+        {
+          "check": "has_schema",
+          "status": "passed"
+        },
+        {
+          "check": "param_maxMinutes_type",
+          "status": "passed",
+          "type": "int"
+        },
+        {
+          "check": "param_pollSeconds_type",
+          "status": "passed",
+          "type": "int"
+        },
+        {
+          "check": "param_resourceGroup_type",
+          "status": "passed",
+          "type": "string"
+        },
+        {
+          "check": "param_subscriptionId_type",
+          "status": "passed",
+          "type": "string"
+        },
+        {
+          "check": "param_synapseWorkspace_type",
+          "status": "passed",
+          "type": "string"
+        },
+        {
+          "check": "param_webhookUrl_type",
+          "status": "passed",
+          "type": "string"
+        },
+        {
+          "check": "trigger_request_type",
+          "status": "passed",
+          "type": "Request"
+        },
+        {
+          "check": "action_deadline_type",
+          "status": "passed",
+          "type": "Compose"
+        },
+        {
+          "check": "action_do_until_type",
+          "status": "passed",
+          "type": "Until"
+        },
+        {
+          "check": "action_notify_type",
+          "status": "passed",
+          "type": "Http"
+        },
+        {
+          "check": "action_respond_type",
+          "status": "passed",
+          "type": "Response"
+        },
+        {
+          "check": "has_connections",
+          "status": "passed"
+        },
+        {
+          "check": "connection_count",
+          "status": "info",
+          "count": 0
+        },
+        {
+          "check": "workflow_kind",
+          "status": "passed",
+          "kind": "Stateful"
+        }
+      ],
+      "summary": {
+        "name": "wf-synapse-run-status",
+        "kind": "Stateful",
+        "metrics": {
+          "parameters": 6,
+          "triggers": 1,
+          "actions": 4,
+          "connections": 0
+        }
+      }
+    }
+  ],
+  "summary": {
+    "passed_checks": 111,
+    "warning_checks": 0,
+    "failed_checks": 0,
+    "info_checks": 6,
+    "total_checks": 117
+  }
+}

@@ -1,0 +1,365 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "_generator": {
+      "name": "bicep",
+      "version": "0.38.5.1644",
+      "templateHash": "7130632134987140845"
+    }
+  },
+  "parameters": {
+    "name": {
+      "type": "string",
+      "metadata": {
+        "description": "Name of the Logic App Standard instance."
+      }
+    },
+    "location": {
+      "type": "string",
+      "metadata": {
+        "description": "Azure region for deployment."
+      }
+    },
+    "tags": {
+      "type": "object",
+      "defaultValue": {},
+      "metadata": {
+        "description": "Tags applied to Logic App resources."
+      }
+    },
+    "sku": {
+      "type": "string",
+      "defaultValue": "Standard",
+      "metadata": {
+        "description": "Workflow Standard SKU tier (e.g., Standard)."
+      }
+    },
+    "integrationSubnetId": {
+      "type": "string",
+      "metadata": {
+        "description": "Subnet ID used for outbound VNet integration."
+      }
+    },
+    "logAnalyticsWorkspaceId": {
+      "type": "string",
+      "metadata": {
+        "description": "Log Analytics workspace for diagnostics."
+      }
+    },
+    "storageAccountId": {
+      "type": "string",
+      "metadata": {
+        "description": "Storage account backing the Logic App runtime."
+      }
+    },
+    "runtimeContainerName": {
+      "type": "string",
+      "defaultValue": "runtime",
+      "metadata": {
+        "description": "Name of the runtime container for Logic App content."
+      }
+    },
+    "synapseWorkspaceName": {
+      "type": "string",
+      "metadata": {
+        "description": "Synapse workspace name"
+      }
+    },
+    "keyVaultName": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "Key Vault name (optional)"
+      }
+    },
+    "environment": {
+      "type": "string",
+      "defaultValue": "dev",
+      "metadata": {
+        "description": "Environment name (dev, sit, prod)"
+      }
+    },
+    "onDemandSharedSecret": {
+      "type": "securestring",
+      "metadata": {
+        "description": "Shared secret for on-demand API authentication"
+      }
+    },
+    "connName": {
+      "type": "string",
+      "defaultValue": "azurequeues",
+      "metadata": {
+        "description": "Connection name for Azure Storage Queues"
+      }
+    },
+    "queueNames": {
+      "type": "array",
+      "defaultValue": [],
+      "metadata": {
+        "description": "Queue names for eventing functionality"
+      }
+    },
+    "tableNames": {
+      "type": "array",
+      "defaultValue": [],
+      "metadata": {
+        "description": "Table names for eventing functionality"
+      }
+    }
+  },
+  "variables": {
+    "storageAccountName": "[last(split(parameters('storageAccountId'), '/'))]"
+  },
+  "resources": [
+    {
+      "type": "Microsoft.Web/serverfarms",
+      "apiVersion": "2022-03-01",
+      "name": "[format('{0}-plan', parameters('name'))]",
+      "location": "[parameters('location')]",
+      "tags": "[parameters('tags')]",
+      "sku": {
+        "name": "[if(contains(parameters('sku'), 'Premium'), 'WS3', 'WS1')]",
+        "tier": "[parameters('sku')]"
+      },
+      "properties": {
+        "reserved": true,
+        "maximumElasticWorkerCount": 10
+      }
+    },
+    {
+      "type": "Microsoft.Web/sites",
+      "apiVersion": "2022-03-01",
+      "name": "[parameters('name')]",
+      "location": "[parameters('location')]",
+      "tags": "[parameters('tags')]",
+      "kind": "workflowapp,linux",
+      "identity": {
+        "type": "SystemAssigned"
+      },
+      "properties": {
+        "serverFarmId": "[resourceId('Microsoft.Web/serverfarms', format('{0}-plan', parameters('name')))]",
+        "httpsOnly": true,
+        "virtualNetworkSubnetId": "[parameters('integrationSubnetId')]",
+        "siteConfig": {
+          "linuxFxVersion": "DOTNET|6.0",
+          "appSettings": [
+            {
+              "name": "APP_KIND",
+              "value": "workflowApp"
+            },
+            {
+              "name": "AzureWebJobsStorage",
+              "value": "[format('DefaultEndpointsProtocol=https;AccountName={0};AccountKey={1};EndpointSuffix={2}', variables('storageAccountName'), listKeys(parameters('storageAccountId'), '2022-09-01').keys[0].value, environment().suffixes.storage)]"
+            },
+            {
+              "name": "FUNCTIONS_EXTENSION_VERSION",
+              "value": "~4"
+            },
+            {
+              "name": "FUNCTIONS_WORKER_RUNTIME",
+              "value": "dotnet"
+            },
+            {
+              "name": "WORKFLOWS_SUBSCRIPTION_ID",
+              "value": "[subscription().subscriptionId]"
+            },
+            {
+              "name": "WORKFLOWS_RESOURCE_GROUP_NAME",
+              "value": "[resourceGroup().name]"
+            },
+            {
+              "name": "WORKFLOWS_TENANT_ID",
+              "value": "[subscription().tenantId]"
+            },
+            {
+              "name": "SYNAPSE_WORKSPACE",
+              "value": "[parameters('synapseWorkspaceName')]"
+            },
+            {
+              "name": "KEYVAULT_NAME",
+              "value": "[parameters('keyVaultName')]"
+            },
+            {
+              "name": "WORKFLOWS_STORAGE_ACCOUNT_NAME",
+              "value": "[variables('storageAccountName')]"
+            },
+            {
+              "name": "WORKFLOWS_STORAGE_ACCOUNT_ACCESS_KEY",
+              "value": "[listKeys(parameters('storageAccountId'), '2022-09-01').keys[0].value]"
+            },
+            {
+              "name": "WEBSITE_CONTENTSHARE",
+              "value": "[parameters('runtimeContainerName')]"
+            },
+            {
+              "name": "WEBSITE_RUN_FROM_PACKAGE",
+              "value": "1"
+            },
+            {
+              "name": "EVENT_QUEUE_NAMES",
+              "value": "[join(parameters('queueNames'), ',')]"
+            },
+            {
+              "name": "EVENT_TABLE_NAMES",
+              "value": "[join(parameters('tableNames'), ',')]"
+            },
+            {
+              "name": "SCHEDULE_LOCK_BLOB_URL",
+              "value": "[format('https://{0}.blob.{1}/locks/schedule-leader-lock', variables('storageAccountName'), environment().suffixes.storage)]"
+            },
+            {
+              "name": "EVENT_QUEUE_NAME",
+              "value": "events-synapse"
+            },
+            {
+              "name": "PIPELINES_CONFIG_JSON",
+              "value": "[format('https://{0}.blob.{1}/config/pipelines.{2}.json', variables('storageAccountName'), environment().suffixes.storage, parameters('environment'))]"
+            },
+            {
+              "name": "DLQ_NAME",
+              "value": "events-synapse-dlq"
+            },
+            {
+              "name": "TABLE_DEDUPE",
+              "value": "ProcessedMessages"
+            },
+            {
+              "name": "TABLE_RUNS",
+              "value": "RunHistory"
+            },
+            {
+              "name": "AZURE_TABLE_ENDPOINT",
+              "value": "[format('https://{0}.table.{1}', variables('storageAccountName'), environment().suffixes.storage)]"
+            },
+            {
+              "name": "AZURE_BLOB_ENDPOINT",
+              "value": "[format('https://{0}.blob.{1}', variables('storageAccountName'), environment().suffixes.storage)]"
+            },
+            {
+              "name": "ENVIRONMENT",
+              "value": "[parameters('environment')]"
+            },
+            {
+              "name": "ONDEMAND_SHARED_SECRET",
+              "value": "[parameters('onDemandSharedSecret')]"
+            }
+          ],
+          "vnetRouteAllEnabled": true
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Web/serverfarms', format('{0}-plan', parameters('name')))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Authorization/roleAssignments",
+      "apiVersion": "2022-04-01",
+      "scope": "[format('Microsoft.Synapse/workspaces/{0}', parameters('synapseWorkspaceName'))]",
+      "name": "[guid(parameters('name'), 'SynapseContributor')]",
+      "properties": {
+        "principalId": "[reference(resourceId('Microsoft.Web/sites', parameters('name')), '2022-03-01', 'full').identity.principalId]",
+        "roleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '2a2b9908-6ea1-4ae2-8e65-a410df84e7d1')]",
+        "principalType": "ServicePrincipal"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Web/sites', parameters('name'))]"
+      ]
+    },
+    {
+      "condition": "[not(equals(parameters('keyVaultName'), ''))]",
+      "type": "Microsoft.Authorization/roleAssignments",
+      "apiVersion": "2022-04-01",
+      "scope": "[format('Microsoft.KeyVault/vaults/{0}', parameters('keyVaultName'))]",
+      "name": "[guid(parameters('name'), 'KVSecretsUser')]",
+      "properties": {
+        "principalId": "[reference(resourceId('Microsoft.Web/sites', parameters('name')), '2022-03-01', 'full').identity.principalId]",
+        "roleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '4633458b-17de-408a-b874-0445c86b69e6')]",
+        "principalType": "ServicePrincipal"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Web/sites', parameters('name'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Insights/diagnosticSettings",
+      "apiVersion": "2021-05-01-preview",
+      "scope": "[format('Microsoft.Web/sites/{0}', parameters('name'))]",
+      "name": "[format('{0}-logs', parameters('name'))]",
+      "properties": {
+        "workspaceId": "[parameters('logAnalyticsWorkspaceId')]",
+        "logs": [
+          {
+            "category": "WorkflowRuntime",
+            "enabled": true
+          },
+          {
+            "category": "WorkflowMetrics",
+            "enabled": true
+          }
+        ],
+        "metrics": [
+          {
+            "category": "AllMetrics",
+            "enabled": true
+          }
+        ]
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Web/sites', parameters('name'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Web/connections",
+      "apiVersion": "2016-06-01",
+      "name": "[parameters('connName')]",
+      "location": "[parameters('location')]",
+      "properties": {
+        "displayName": "Azure Storage Queues",
+        "parameterValues": {
+          "connectionString": "[format('DefaultEndpointsProtocol=https;AccountName={0};AccountKey={1};EndpointSuffix=core.windows.net', variables('storageAccountName'), listKeys(parameters('storageAccountId'), '2022-09-01').keys[0].value)]"
+        },
+        "api": {
+          "id": "[subscriptionResourceId('Microsoft.Web/locations/managedApis', parameters('location'), 'azurequeues')]"
+        }
+      }
+    },
+    {
+      "type": "Microsoft.Web/connections",
+      "apiVersion": "2016-06-01",
+      "name": "azuretables",
+      "location": "[parameters('location')]",
+      "properties": {
+        "displayName": "Azure Storage Tables",
+        "parameterValues": {
+          "connectionString": "[format('DefaultEndpointsProtocol=https;AccountName={0};AccountKey={1};EndpointSuffix=core.windows.net', variables('storageAccountName'), listKeys(parameters('storageAccountId'), '2022-09-01').keys[0].value)]"
+        },
+        "api": {
+          "id": "[subscriptionResourceId('Microsoft.Web/locations/managedApis', parameters('location'), 'azuretables')]"
+        }
+      }
+    }
+  ],
+  "outputs": {
+    "logicAppName": {
+      "type": "string",
+      "value": "[parameters('name')]"
+    },
+    "logicAppResourceId": {
+      "type": "string",
+      "value": "[resourceId('Microsoft.Web/sites', parameters('name'))]"
+    },
+    "logicAppIdentityPrincipalId": {
+      "type": "string",
+      "value": "[reference(resourceId('Microsoft.Web/sites', parameters('name')), '2022-03-01', 'full').identity.principalId]"
+    },
+    "storageQueuesConnectionId": {
+      "type": "string",
+      "value": "[resourceId('Microsoft.Web/connections', parameters('connName'))]"
+    },
+    "storageTablesConnectionId": {
+      "type": "string",
+      "value": "[resourceId('Microsoft.Web/connections', 'azuretables')]"
+    }
+  }
+}

@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.38.5.1644",
-      "templateHash": "4921100211764978393"
+      "templateHash": "13636260554578425962"
     }
   },
   "parameters": {
@@ -20,7 +20,49 @@
       "type": "string",
       "defaultValue": "global",
       "metadata": {
-        "description": "Location used for the Azure Maps account (Azure Maps is a global resource)."
+        "description": "Location used for the Azure Maps account (Azure Maps is a global resource). Leave empty to use global location parameter."
+      }
+    },
+    "machineLearningLocation": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "Location for Azure Machine Learning workspace. Leave empty to use global location parameter."
+      }
+    },
+    "aksLocation": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "Location for Azure Kubernetes Service. Leave empty to use global location parameter."
+      }
+    },
+    "fabricLocation": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "Location for Microsoft Fabric capacity. Leave empty to use global location parameter."
+      }
+    },
+    "purviewLocation": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "Location for Microsoft Purview account. Leave empty to use global location parameter."
+      }
+    },
+    "containerInstancesLocation": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "Location for Azure Container Instances. Leave empty to use global location parameter."
+      }
+    },
+    "cognitiveServicesLocation": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "Location for Cognitive Services. Leave empty to use global location parameter."
       }
     },
     "namePrefix": {
@@ -57,7 +99,8 @@
         "functionApps": "10.10.0.0/26",
         "integration": "10.10.0.64/26",
         "privateEndpoints": "10.10.0.128/26",
-        "selfHostedIntegrationRuntime": "10.10.0.192/27"
+        "selfHostedIntegrationRuntime": "10.10.0.192/27",
+        "apim": "10.10.0.224/27"
       },
       "metadata": {
         "description": "CIDR allocations for the core subnets used by the platform."
@@ -104,6 +147,12 @@
         "description": "Administrator password for the Synapse dedicated SQL pool."
       }
     },
+    "onDemandSharedSecret": {
+      "type": "securestring",
+      "metadata": {
+        "description": "Shared secret used for authenticating HTTP requests to the on-demand Logic App workflow."
+      }
+    },
     "ingestionEventTopicName": {
       "type": "string",
       "defaultValue": "[format('{0}{1}egtopic', parameters('namePrefix'), parameters('environment'))]",
@@ -134,6 +183,76 @@
       "metadata": {
         "description": "Security Group Object IDs for RBAC assignments. Leave empty to skip group-based assignments."
       }
+    },
+    "deployFabric": {
+      "type": "bool",
+      "defaultValue": true,
+      "metadata": {
+        "description": "Deploy Microsoft Fabric capacity. Charges continuously based on capacity units (F2=$525/month minimum)."
+      }
+    },
+    "deployAKS": {
+      "type": "bool",
+      "defaultValue": true,
+      "metadata": {
+        "description": "Deploy Azure Kubernetes Service. Charges for node VMs 24/7 (~$420/month minimum for 3 nodes)."
+      }
+    },
+    "deployMachineLearning": {
+      "type": "bool",
+      "defaultValue": true,
+      "metadata": {
+        "description": "Deploy Azure Machine Learning workspace with compute. ML compute instances charge continuously."
+      }
+    },
+    "deployPurview": {
+      "type": "bool",
+      "defaultValue": true,
+      "metadata": {
+        "description": "Deploy Microsoft Purview for data governance. Charges for capacity units continuously (~$400/month minimum)."
+      }
+    },
+    "deploySynapseDedicatedSQL": {
+      "type": "bool",
+      "defaultValue": false,
+      "metadata": {
+        "description": "Deploy Synapse dedicated SQL pools. Dedicated pools charge continuously unlike serverless (~$1200/month for DW100c)."
+      }
+    },
+    "deploySHIR": {
+      "type": "bool",
+      "defaultValue": false,
+      "metadata": {
+        "description": "Deploy Self-Hosted Integration Runtime VM. VM charges 24/7 when running (~$140/month for Standard_D2s_v3)."
+      }
+    },
+    "deployContainerInstances": {
+      "type": "bool",
+      "defaultValue": true,
+      "metadata": {
+        "description": "Deploy Azure Container Instances. ACI charges for allocated CPU/memory continuously."
+      }
+    },
+    "deployLogicApps": {
+      "type": "bool",
+      "defaultValue": true,
+      "metadata": {
+        "description": "Deploy Logic Apps Standard plan. Standard plan charges for allocated capacity (~$200/month base)."
+      }
+    },
+    "deployCognitiveServices": {
+      "type": "bool",
+      "defaultValue": true,
+      "metadata": {
+        "description": "Deploy Cognitive Services. Some tiers have minimum monthly charges."
+      }
+    },
+    "deployAzureMaps": {
+      "type": "bool",
+      "defaultValue": true,
+      "metadata": {
+        "description": "Deploy Azure Maps. Standard pricing tier has monthly minimums."
+      }
     }
   },
   "variables": {
@@ -142,23 +261,23 @@
       "[format('dfs.{0}', environment().suffixes.storage)]",
       "[format('queue.{0}', environment().suffixes.storage)]",
       "[format('table.{0}', environment().suffixes.storage)]",
-      "dfs.fabric.microsoft.com",
-      "privatelink.azuresynapse.net",
-      "privatelink.sql.azuresynapse.net",
-      "[format('privatelink.{0}', environment().suffixes.sqlServerHostname)]",
+      "[format('file.{0}', environment().suffixes.storage)]",
+      "[format('web.{0}', environment().suffixes.storage)]",
+      "[format('{0}', environment().suffixes.sqlServerHostname)]",
+      "database.windows.net",
+      "[format('vault.{0}', environment().suffixes.keyvaultDns)]",
       "servicebus.windows.net",
-      "privatelink.eventgrid.azure.net",
-      "privatelink.cognitiveservices.azure.com",
-      "privatelink.purview.azure.com",
-      "privatelink.purviewstudio.azure.com",
-      "privatelink.api.azureml.ms",
-      "privatelink.notebooks.azure.net",
-      "privatelink.azuredatabricks.net",
-      "privatelink.aks.azure.com",
-      "privatelink.management.azure.com",
-      "privatelink.azure-api.net",
-      "privatelink.containerinstance.azure.com"
-    ]
+      "azurewebsites.net",
+      "eventgrid.azure.net",
+      "[format('{0}', environment().resourceManager)]"
+    ],
+    "actualAzureMapsLocation": "[if(empty(parameters('azureMapsLocation')), parameters('location'), parameters('azureMapsLocation'))]",
+    "actualMachineLearningLocation": "[if(empty(parameters('machineLearningLocation')), parameters('location'), parameters('machineLearningLocation'))]",
+    "actualAksLocation": "[if(empty(parameters('aksLocation')), parameters('location'), parameters('aksLocation'))]",
+    "actualFabricLocation": "[if(empty(parameters('fabricLocation')), parameters('location'), parameters('fabricLocation'))]",
+    "actualPurviewLocation": "[if(empty(parameters('purviewLocation')), parameters('location'), parameters('purviewLocation'))]",
+    "actualContainerInstancesLocation": "[if(empty(parameters('containerInstancesLocation')), parameters('location'), parameters('containerInstancesLocation'))]",
+    "actualCognitiveServicesLocation": "[if(empty(parameters('cognitiveServicesLocation')), parameters('location'), parameters('cognitiveServicesLocation'))]"
   },
   "resources": [
     {
@@ -185,7 +304,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.38.5.1644",
-              "templateHash": "12817568457735735731"
+              "templateHash": "10016591118024602241"
             }
           },
           "parameters": {
@@ -203,7 +322,6 @@
               "eventGridTopic": "[format('{0}-evtgrid-{1}', parameters('namePrefix'), parameters('environment'))]",
               "functionApp": "[format('{0}-func-{1}', parameters('namePrefix'), parameters('environment'))]",
               "functionPlan": "[format('{0}-plan-{1}', parameters('namePrefix'), parameters('environment'))]",
-              "functionStorage": "[format('{0}func{1}', parameters('namePrefix'), parameters('environment'))]",
               "keyVault": "[format('{0}-kv-{1}', parameters('namePrefix'), parameters('environment'))]",
               "logAnalytics": "[format('{0}-log-{1}', parameters('namePrefix'), parameters('environment'))]",
               "logicApp": "[format('{0}-logic-{1}', parameters('namePrefix'), parameters('environment'))]",
@@ -936,6 +1054,40 @@
           "filesystemName": {
             "value": "[parameters('dataLakeFilesystem')]"
           },
+          "runtimeContainerName": {
+            "value": "runtime"
+          },
+          "containerNames": {
+            "value": [
+              "bronze",
+              "silver",
+              "gold",
+              "test",
+              "functional",
+              "raw",
+              "curated",
+              "locks",
+              "config",
+              "temp",
+              "checkpoints",
+              "logs",
+              "metadata",
+              "archive",
+              "quarantine"
+            ]
+          },
+          "queueNames": {
+            "value": [
+              "events-synapse",
+              "events-synapse-dlq"
+            ]
+          },
+          "tableNames": {
+            "value": [
+              "ProcessedMessages",
+              "RunHistory"
+            ]
+          },
           "privateEndpointSubnetId": {
             "value": "[reference(resourceId('Microsoft.Resources/deployments', 'networking'), '2025-04-01').outputs.privateEndpointsSubnetId.value]"
           },
@@ -950,7 +1102,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.38.5.1644",
-              "templateHash": "7085353587034783280"
+              "templateHash": "14504401250391722836"
             }
           },
           "parameters": {
@@ -978,6 +1130,34 @@
               "defaultValue": "",
               "metadata": {
                 "description": "Name of the filesystem to create when hierarchical namespace is enabled."
+              }
+            },
+            "containerNames": {
+              "type": "array",
+              "defaultValue": [],
+              "metadata": {
+                "description": "Array of container names to create in the storage account."
+              }
+            },
+            "runtimeContainerName": {
+              "type": "string",
+              "defaultValue": "runtime",
+              "metadata": {
+                "description": "Name of the runtime container for serverless compute (Functions, Logic Apps)."
+              }
+            },
+            "queueNames": {
+              "type": "array",
+              "defaultValue": [],
+              "metadata": {
+                "description": "Array of queue names to create in the storage account."
+              }
+            },
+            "tableNames": {
+              "type": "array",
+              "defaultValue": [],
+              "metadata": {
+                "description": "Array of table names to create in the storage account."
               }
             },
             "isHnsEnabled": {
@@ -1011,11 +1191,23 @@
                 "name": "dfsDnsZoneIds",
                 "count": "[length(parameters('privateDnsZoneIds'))]",
                 "input": "[if(endsWith(parameters('privateDnsZoneIds')[copyIndex('dfsDnsZoneIds')], format('/privatelink.dfs{0}', variables('blobEndpoint'))), parameters('privateDnsZoneIds')[copyIndex('dfsDnsZoneIds')], null())]"
+              },
+              {
+                "name": "queueDnsZoneIds",
+                "count": "[length(parameters('privateDnsZoneIds'))]",
+                "input": "[if(endsWith(parameters('privateDnsZoneIds')[copyIndex('queueDnsZoneIds')], format('/privatelink.queue{0}', variables('blobEndpoint'))), parameters('privateDnsZoneIds')[copyIndex('queueDnsZoneIds')], null())]"
+              },
+              {
+                "name": "tableDnsZoneIds",
+                "count": "[length(parameters('privateDnsZoneIds'))]",
+                "input": "[if(endsWith(parameters('privateDnsZoneIds')[copyIndex('tableDnsZoneIds')], format('/privatelink.table{0}', variables('blobEndpoint'))), parameters('privateDnsZoneIds')[copyIndex('tableDnsZoneIds')], null())]"
               }
             ],
             "blobEndpoint": "[environment().suffixes.storage]",
             "blobDnsZoneIdsFiltered": "[filter(variables('blobDnsZoneIds'), lambda('id', not(equals(lambdaVariables('id'), null()))))]",
-            "dfsDnsZoneIdsFiltered": "[filter(variables('dfsDnsZoneIds'), lambda('id', not(equals(lambdaVariables('id'), null()))))]"
+            "dfsDnsZoneIdsFiltered": "[filter(variables('dfsDnsZoneIds'), lambda('id', not(equals(lambdaVariables('id'), null()))))]",
+            "queueDnsZoneIdsFiltered": "[filter(variables('queueDnsZoneIds'), lambda('id', not(equals(lambdaVariables('id'), null()))))]",
+            "tableDnsZoneIdsFiltered": "[filter(variables('tableDnsZoneIds'), lambda('id', not(equals(lambdaVariables('id'), null()))))]"
           },
           "resources": [
             {
@@ -1044,6 +1236,36 @@
               "properties": {
                 "publicAccess": "None"
               }
+            },
+            {
+              "copy": {
+                "name": "containers",
+                "count": "[length(union(parameters('containerNames'), if(not(empty(parameters('runtimeContainerName'))), createArray(parameters('runtimeContainerName')), createArray())))]"
+              },
+              "type": "Microsoft.Storage/storageAccounts/blobServices/containers",
+              "apiVersion": "2022-09-01",
+              "name": "[format('{0}/default/{1}', parameters('name'), union(parameters('containerNames'), if(not(empty(parameters('runtimeContainerName'))), createArray(parameters('runtimeContainerName')), createArray()))[copyIndex()])]",
+              "properties": {
+                "publicAccess": "None"
+              }
+            },
+            {
+              "copy": {
+                "name": "queues",
+                "count": "[length(parameters('queueNames'))]"
+              },
+              "type": "Microsoft.Storage/storageAccounts/queueServices/queues",
+              "apiVersion": "2023-01-01",
+              "name": "[format('{0}/default/{1}', parameters('name'), parameters('queueNames')[copyIndex()])]"
+            },
+            {
+              "copy": {
+                "name": "tables",
+                "count": "[length(parameters('tableNames'))]"
+              },
+              "type": "Microsoft.Storage/storageAccounts/tableServices/tables",
+              "apiVersion": "2023-05-01",
+              "name": "[format('{0}/default/{1}', parameters('name'), parameters('tableNames')[copyIndex()])]"
             },
             {
               "type": "Microsoft.Network/privateEndpoints",
@@ -1087,6 +1309,58 @@
                       "privateLinkServiceId": "[resourceId('Microsoft.Storage/storageAccounts', parameters('name'))]",
                       "groupIds": [
                         "dfs"
+                      ]
+                    }
+                  }
+                ]
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.Storage/storageAccounts', parameters('name'))]"
+              ]
+            },
+            {
+              "condition": "[not(empty(parameters('queueNames')))]",
+              "type": "Microsoft.Network/privateEndpoints",
+              "apiVersion": "2021-05-01",
+              "name": "[format('{0}-pe-queue', parameters('name'))]",
+              "location": "[parameters('location')]",
+              "properties": {
+                "subnet": {
+                  "id": "[parameters('privateEndpointSubnetId')]"
+                },
+                "privateLinkServiceConnections": [
+                  {
+                    "name": "[format('{0}-queue', parameters('name'))]",
+                    "properties": {
+                      "privateLinkServiceId": "[resourceId('Microsoft.Storage/storageAccounts', parameters('name'))]",
+                      "groupIds": [
+                        "queue"
+                      ]
+                    }
+                  }
+                ]
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.Storage/storageAccounts', parameters('name'))]"
+              ]
+            },
+            {
+              "condition": "[not(empty(parameters('tableNames')))]",
+              "type": "Microsoft.Network/privateEndpoints",
+              "apiVersion": "2021-05-01",
+              "name": "[format('{0}-pe-table', parameters('name'))]",
+              "location": "[parameters('location')]",
+              "properties": {
+                "subnet": {
+                  "id": "[parameters('privateEndpointSubnetId')]"
+                },
+                "privateLinkServiceConnections": [
+                  {
+                    "name": "[format('{0}-table', parameters('name'))]",
+                    "properties": {
+                      "privateLinkServiceId": "[resourceId('Microsoft.Storage/storageAccounts', parameters('name'))]",
+                      "groupIds": [
+                        "table"
                       ]
                     }
                   }
@@ -1141,248 +1415,51 @@
               "dependsOn": [
                 "[resourceId('Microsoft.Network/privateEndpoints', format('{0}-pe-dfs', parameters('name')))]"
               ]
-            }
-          ],
-          "outputs": {
-            "storageAccountId": {
-              "type": "string",
-              "value": "[resourceId('Microsoft.Storage/storageAccounts', parameters('name'))]"
-            }
-          }
-        }
-      },
-      "dependsOn": [
-        "[resourceId('Microsoft.Resources/deployments', 'networking')]",
-        "[resourceId('Microsoft.Resources/deployments', 'privateDns')]",
-        "[resourceId('Microsoft.Resources/deployments', 'naming')]"
-      ]
-    },
-    {
-      "type": "Microsoft.Resources/deployments",
-      "apiVersion": "2025-04-01",
-      "name": "functionStorage",
-      "properties": {
-        "expressionEvaluationOptions": {
-          "scope": "inner"
-        },
-        "mode": "Incremental",
-        "parameters": {
-          "name": {
-            "value": "[reference(resourceId('Microsoft.Resources/deployments', 'naming'), '2025-04-01').outputs.naming.value.functionStorage]"
-          },
-          "location": {
-            "value": "[parameters('location')]"
-          },
-          "tags": {
-            "value": "[union(parameters('tags'), createObject('purpose', 'functions'))]"
-          },
-          "isHnsEnabled": {
-            "value": false
-          },
-          "privateEndpointSubnetId": {
-            "value": "[reference(resourceId('Microsoft.Resources/deployments', 'networking'), '2025-04-01').outputs.privateEndpointsSubnetId.value]"
-          },
-          "privateDnsZoneIds": {
-            "value": "[reference(resourceId('Microsoft.Resources/deployments', 'privateDns'), '2025-04-01').outputs.privateDnsZoneIds.value]"
-          }
-        },
-        "template": {
-          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
-          "contentVersion": "1.0.0.0",
-          "metadata": {
-            "_generator": {
-              "name": "bicep",
-              "version": "0.38.5.1644",
-              "templateHash": "7085353587034783280"
-            }
-          },
-          "parameters": {
-            "name": {
-              "type": "string",
-              "metadata": {
-                "description": "Name of the storage account to deploy."
-              }
-            },
-            "location": {
-              "type": "string",
-              "metadata": {
-                "description": "Azure region for the storage account."
-              }
-            },
-            "tags": {
-              "type": "object",
-              "defaultValue": {},
-              "metadata": {
-                "description": "Tags applied to the storage resources."
-              }
-            },
-            "filesystemName": {
-              "type": "string",
-              "defaultValue": "",
-              "metadata": {
-                "description": "Name of the filesystem to create when hierarchical namespace is enabled."
-              }
-            },
-            "isHnsEnabled": {
-              "type": "bool",
-              "defaultValue": true,
-              "metadata": {
-                "description": "Indicates whether the storage account should enable hierarchical namespace (Data Lake Storage Gen2)."
-              }
-            },
-            "privateEndpointSubnetId": {
-              "type": "string",
-              "metadata": {
-                "description": "Subnet for deploying private endpoints."
-              }
-            },
-            "privateDnsZoneIds": {
-              "type": "array",
-              "metadata": {
-                "description": "Private DNS zones to link to the created private endpoints."
-              }
-            }
-          },
-          "variables": {
-            "copy": [
-              {
-                "name": "blobDnsZoneIds",
-                "count": "[length(parameters('privateDnsZoneIds'))]",
-                "input": "[if(endsWith(parameters('privateDnsZoneIds')[copyIndex('blobDnsZoneIds')], format('/privatelink.blob{0}', variables('blobEndpoint'))), parameters('privateDnsZoneIds')[copyIndex('blobDnsZoneIds')], null())]"
-              },
-              {
-                "name": "dfsDnsZoneIds",
-                "count": "[length(parameters('privateDnsZoneIds'))]",
-                "input": "[if(endsWith(parameters('privateDnsZoneIds')[copyIndex('dfsDnsZoneIds')], format('/privatelink.dfs{0}', variables('blobEndpoint'))), parameters('privateDnsZoneIds')[copyIndex('dfsDnsZoneIds')], null())]"
-              }
-            ],
-            "blobEndpoint": "[environment().suffixes.storage]",
-            "blobDnsZoneIdsFiltered": "[filter(variables('blobDnsZoneIds'), lambda('id', not(equals(lambdaVariables('id'), null()))))]",
-            "dfsDnsZoneIdsFiltered": "[filter(variables('dfsDnsZoneIds'), lambda('id', not(equals(lambdaVariables('id'), null()))))]"
-          },
-          "resources": [
-            {
-              "type": "Microsoft.Storage/storageAccounts",
-              "apiVersion": "2022-09-01",
-              "name": "[parameters('name')]",
-              "location": "[parameters('location')]",
-              "tags": "[parameters('tags')]",
-              "sku": {
-                "name": "Standard_LRS"
-              },
-              "kind": "StorageV2",
-              "properties": {
-                "defaultToOAuthAuthentication": true,
-                "publicNetworkAccess": "Disabled",
-                "minimumTlsVersion": "TLS1_2",
-                "dnsEndpointType": "Standard",
-                "supportsHttpsTrafficOnly": true
-              }
             },
             {
-              "condition": "[and(not(empty(parameters('filesystemName'))), parameters('isHnsEnabled'))]",
-              "type": "Microsoft.Storage/storageAccounts/blobServices/containers",
-              "apiVersion": "2022-09-01",
-              "name": "[format('{0}/default/{1}', parameters('name'), parameters('filesystemName'))]",
-              "properties": {
-                "publicAccess": "None"
-              }
-            },
-            {
-              "type": "Microsoft.Network/privateEndpoints",
-              "apiVersion": "2021-05-01",
-              "name": "[format('{0}-pe-blob', parameters('name'))]",
-              "location": "[parameters('location')]",
-              "properties": {
-                "subnet": {
-                  "id": "[parameters('privateEndpointSubnetId')]"
-                },
-                "privateLinkServiceConnections": [
-                  {
-                    "name": "[format('{0}-blob', parameters('name'))]",
-                    "properties": {
-                      "privateLinkServiceId": "[resourceId('Microsoft.Storage/storageAccounts', parameters('name'))]",
-                      "groupIds": [
-                        "blob"
-                      ]
-                    }
-                  }
-                ]
-              },
-              "dependsOn": [
-                "[resourceId('Microsoft.Storage/storageAccounts', parameters('name'))]"
-              ]
-            },
-            {
-              "condition": "[parameters('isHnsEnabled')]",
-              "type": "Microsoft.Network/privateEndpoints",
-              "apiVersion": "2021-05-01",
-              "name": "[format('{0}-pe-dfs', parameters('name'))]",
-              "location": "[parameters('location')]",
-              "properties": {
-                "subnet": {
-                  "id": "[parameters('privateEndpointSubnetId')]"
-                },
-                "privateLinkServiceConnections": [
-                  {
-                    "name": "[format('{0}-dfs', parameters('name'))]",
-                    "properties": {
-                      "privateLinkServiceId": "[resourceId('Microsoft.Storage/storageAccounts', parameters('name'))]",
-                      "groupIds": [
-                        "dfs"
-                      ]
-                    }
-                  }
-                ]
-              },
-              "dependsOn": [
-                "[resourceId('Microsoft.Storage/storageAccounts', parameters('name'))]"
-              ]
-            },
-            {
-              "condition": "[not(empty(variables('blobDnsZoneIdsFiltered')))]",
+              "condition": "[and(not(empty(parameters('queueNames'))), not(empty(variables('queueDnsZoneIdsFiltered'))))]",
               "type": "Microsoft.Network/privateEndpoints/privateDnsZoneGroups",
               "apiVersion": "2020-11-01",
-              "name": "[format('{0}/{1}', format('{0}-pe-blob', parameters('name')), 'default')]",
+              "name": "[format('{0}/{1}', format('{0}-pe-queue', parameters('name')), 'default')]",
               "properties": {
                 "copy": [
                   {
                     "name": "privateDnsZoneConfigs",
-                    "count": "[length(variables('blobDnsZoneIdsFiltered'))]",
+                    "count": "[length(variables('queueDnsZoneIdsFiltered'))]",
                     "input": {
-                      "name": "[last(split(variables('blobDnsZoneIdsFiltered')[copyIndex('privateDnsZoneConfigs')], '/'))]",
+                      "name": "[last(split(variables('queueDnsZoneIdsFiltered')[copyIndex('privateDnsZoneConfigs')], '/'))]",
                       "properties": {
-                        "privateDnsZoneId": "[variables('blobDnsZoneIdsFiltered')[copyIndex('privateDnsZoneConfigs')]]"
+                        "privateDnsZoneId": "[variables('queueDnsZoneIdsFiltered')[copyIndex('privateDnsZoneConfigs')]]"
                       }
                     }
                   }
                 ]
               },
               "dependsOn": [
-                "[resourceId('Microsoft.Network/privateEndpoints', format('{0}-pe-blob', parameters('name')))]"
+                "[resourceId('Microsoft.Network/privateEndpoints', format('{0}-pe-queue', parameters('name')))]"
               ]
             },
             {
-              "condition": "[and(parameters('isHnsEnabled'), not(empty(variables('dfsDnsZoneIdsFiltered'))))]",
+              "condition": "[and(not(empty(parameters('tableNames'))), not(empty(variables('tableDnsZoneIdsFiltered'))))]",
               "type": "Microsoft.Network/privateEndpoints/privateDnsZoneGroups",
               "apiVersion": "2020-11-01",
-              "name": "[format('{0}/{1}', format('{0}-pe-dfs', parameters('name')), 'default')]",
+              "name": "[format('{0}/{1}', format('{0}-pe-table', parameters('name')), 'default')]",
               "properties": {
                 "copy": [
                   {
                     "name": "privateDnsZoneConfigs",
-                    "count": "[length(variables('dfsDnsZoneIdsFiltered'))]",
+                    "count": "[length(variables('tableDnsZoneIdsFiltered'))]",
                     "input": {
-                      "name": "[last(split(variables('dfsDnsZoneIdsFiltered')[copyIndex('privateDnsZoneConfigs')], '/'))]",
+                      "name": "[last(split(variables('tableDnsZoneIdsFiltered')[copyIndex('privateDnsZoneConfigs')], '/'))]",
                       "properties": {
-                        "privateDnsZoneId": "[variables('dfsDnsZoneIdsFiltered')[copyIndex('privateDnsZoneConfigs')]]"
+                        "privateDnsZoneId": "[variables('tableDnsZoneIdsFiltered')[copyIndex('privateDnsZoneConfigs')]]"
                       }
                     }
                   }
                 ]
               },
               "dependsOn": [
-                "[resourceId('Microsoft.Network/privateEndpoints', format('{0}-pe-dfs', parameters('name')))]"
+                "[resourceId('Microsoft.Network/privateEndpoints', format('{0}-pe-table', parameters('name')))]"
               ]
             }
           ],
@@ -1390,6 +1467,10 @@
             "storageAccountId": {
               "type": "string",
               "value": "[resourceId('Microsoft.Storage/storageAccounts', parameters('name'))]"
+            },
+            "storageAccountKey": {
+              "type": "string",
+              "value": "[listKeys(resourceId('Microsoft.Storage/storageAccounts', parameters('name')), '2022-09-01').keys[0].value]"
             }
           }
         }
@@ -1428,8 +1509,11 @@
           "functionSubnetId": {
             "value": "[reference(resourceId('Microsoft.Resources/deployments', 'networking'), '2025-04-01').outputs.functionSubnetId.value]"
           },
-          "functionStorageAccountId": {
-            "value": "[reference(resourceId('Microsoft.Resources/deployments', 'functionStorage'), '2025-04-01').outputs.storageAccountId.value]"
+          "storageAccountId": {
+            "value": "[reference(resourceId('Microsoft.Resources/deployments', 'storage'), '2025-04-01').outputs.storageAccountId.value]"
+          },
+          "runtimeContainerName": {
+            "value": "runtime"
           },
           "logAnalyticsWorkspaceId": {
             "value": "[reference(resourceId('Microsoft.Resources/deployments', 'logging'), '2025-04-01').outputs.workspaceId.value]"
@@ -1445,7 +1529,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.38.5.1644",
-              "templateHash": "10577069554555531097"
+              "templateHash": "28558143730058729"
             }
           },
           "parameters": {
@@ -1486,10 +1570,17 @@
                 "description": "Subnet ID used for VNet integration."
               }
             },
-            "functionStorageAccountId": {
+            "storageAccountId": {
               "type": "string",
               "metadata": {
                 "description": "Storage account used for Function runtime state."
+              }
+            },
+            "runtimeContainerName": {
+              "type": "string",
+              "defaultValue": "runtime",
+              "metadata": {
+                "description": "Name of the runtime container for Function App content."
               }
             },
             "logAnalyticsWorkspaceId": {
@@ -1519,7 +1610,7 @@
                 }
               }
             ],
-            "functionStorageAccountName": "[last(split(parameters('functionStorageAccountId'), '/'))]",
+            "storageAccountName": "[last(split(parameters('storageAccountId'), '/'))]",
             "defaultDenyRule": {
               "ipAddress": "0.0.0.0/0",
               "action": "Deny",
@@ -1575,15 +1666,15 @@
                     },
                     {
                       "name": "AzureWebJobsStorage",
-                      "value": "[format('DefaultEndpointsProtocol=https;AccountName={0};AccountKey={1};EndpointSuffix={2}', variables('functionStorageAccountName'), listKeys(parameters('functionStorageAccountId'), '2022-09-01').keys[0].value, environment().suffixes.storage)]"
+                      "value": "[format('DefaultEndpointsProtocol=https;AccountName={0};AccountKey={1};EndpointSuffix={2}', variables('storageAccountName'), listKeys(parameters('storageAccountId'), '2022-09-01').keys[0].value, environment().suffixes.storage)]"
                     },
                     {
                       "name": "WEBSITE_CONTENTAZUREFILECONNECTIONSTRING",
-                      "value": "[format('DefaultEndpointsProtocol=https;AccountName={0};AccountKey={1};EndpointSuffix={2}', variables('functionStorageAccountName'), listKeys(parameters('functionStorageAccountId'), '2022-09-01').keys[0].value, environment().suffixes.storage)]"
+                      "value": "[format('DefaultEndpointsProtocol=https;AccountName={0};AccountKey={1};EndpointSuffix={2}', variables('storageAccountName'), listKeys(parameters('storageAccountId'), '2022-09-01').keys[0].value, environment().suffixes.storage)]"
                     },
                     {
                       "name": "WEBSITE_CONTENTSHARE",
-                      "value": "[toLower(parameters('functionAppName'))]"
+                      "value": "[parameters('runtimeContainerName')]"
                     },
                     {
                       "name": "WEBSITE_RUN_FROM_PACKAGE",
@@ -1651,13 +1742,14 @@
         }
       },
       "dependsOn": [
-        "[resourceId('Microsoft.Resources/deployments', 'functionStorage')]",
         "[resourceId('Microsoft.Resources/deployments', 'logging')]",
         "[resourceId('Microsoft.Resources/deployments', 'networking')]",
-        "[resourceId('Microsoft.Resources/deployments', 'naming')]"
+        "[resourceId('Microsoft.Resources/deployments', 'naming')]",
+        "[resourceId('Microsoft.Resources/deployments', 'storage')]"
       ]
     },
     {
+      "condition": "[parameters('deployLogicApps')]",
       "type": "Microsoft.Resources/deployments",
       "apiVersion": "2025-04-01",
       "name": "logicApp",
@@ -1679,6 +1771,12 @@
           "sku": {
             "value": "[parameters('logicAppSku')]"
           },
+          "environment": {
+            "value": "[parameters('environment')]"
+          },
+          "onDemandSharedSecret": {
+            "value": "[parameters('onDemandSharedSecret')]"
+          },
           "integrationSubnetId": {
             "value": "[reference(resourceId('Microsoft.Resources/deployments', 'networking'), '2025-04-01').outputs.integrationSubnetId.value]"
           },
@@ -1686,7 +1784,31 @@
             "value": "[reference(resourceId('Microsoft.Resources/deployments', 'logging'), '2025-04-01').outputs.workspaceId.value]"
           },
           "storageAccountId": {
-            "value": "[reference(resourceId('Microsoft.Resources/deployments', 'functionStorage'), '2025-04-01').outputs.storageAccountId.value]"
+            "value": "[reference(resourceId('Microsoft.Resources/deployments', 'storage'), '2025-04-01').outputs.storageAccountId.value]"
+          },
+          "runtimeContainerName": {
+            "value": "runtime"
+          },
+          "synapseWorkspaceName": {
+            "value": "[reference(resourceId('Microsoft.Resources/deployments', 'synapse'), '2025-04-01').outputs.synapseWorkspaceName.value]"
+          },
+          "keyVaultName": {
+            "value": "[reference(resourceId('Microsoft.Resources/deployments', 'naming'), '2025-04-01').outputs.naming.value.keyVault]"
+          },
+          "connName": {
+            "value": "azurequeues"
+          },
+          "queueNames": {
+            "value": [
+              "events-synapse",
+              "events-synapse-dlq"
+            ]
+          },
+          "tableNames": {
+            "value": [
+              "ProcessedMessages",
+              "RunHistory"
+            ]
           }
         },
         "template": {
@@ -1696,7 +1818,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.38.5.1644",
-              "templateHash": "9840587348441681999"
+              "templateHash": "7130632134987140845"
             }
           },
           "parameters": {
@@ -1742,6 +1864,60 @@
               "type": "string",
               "metadata": {
                 "description": "Storage account backing the Logic App runtime."
+              }
+            },
+            "runtimeContainerName": {
+              "type": "string",
+              "defaultValue": "runtime",
+              "metadata": {
+                "description": "Name of the runtime container for Logic App content."
+              }
+            },
+            "synapseWorkspaceName": {
+              "type": "string",
+              "metadata": {
+                "description": "Synapse workspace name"
+              }
+            },
+            "keyVaultName": {
+              "type": "string",
+              "defaultValue": "",
+              "metadata": {
+                "description": "Key Vault name (optional)"
+              }
+            },
+            "environment": {
+              "type": "string",
+              "defaultValue": "dev",
+              "metadata": {
+                "description": "Environment name (dev, sit, prod)"
+              }
+            },
+            "onDemandSharedSecret": {
+              "type": "securestring",
+              "metadata": {
+                "description": "Shared secret for on-demand API authentication"
+              }
+            },
+            "connName": {
+              "type": "string",
+              "defaultValue": "azurequeues",
+              "metadata": {
+                "description": "Connection name for Azure Storage Queues"
+              }
+            },
+            "queueNames": {
+              "type": "array",
+              "defaultValue": [],
+              "metadata": {
+                "description": "Queue names for eventing functionality"
+              }
+            },
+            "tableNames": {
+              "type": "array",
+              "defaultValue": [],
+              "metadata": {
+                "description": "Table names for eventing functionality"
               }
             }
           },
@@ -1806,6 +1982,18 @@
                       "value": "[resourceGroup().name]"
                     },
                     {
+                      "name": "WORKFLOWS_TENANT_ID",
+                      "value": "[subscription().tenantId]"
+                    },
+                    {
+                      "name": "SYNAPSE_WORKSPACE",
+                      "value": "[parameters('synapseWorkspaceName')]"
+                    },
+                    {
+                      "name": "KEYVAULT_NAME",
+                      "value": "[parameters('keyVaultName')]"
+                    },
+                    {
                       "name": "WORKFLOWS_STORAGE_ACCOUNT_NAME",
                       "value": "[variables('storageAccountName')]"
                     },
@@ -1814,8 +2002,60 @@
                       "value": "[listKeys(parameters('storageAccountId'), '2022-09-01').keys[0].value]"
                     },
                     {
+                      "name": "WEBSITE_CONTENTSHARE",
+                      "value": "[parameters('runtimeContainerName')]"
+                    },
+                    {
                       "name": "WEBSITE_RUN_FROM_PACKAGE",
                       "value": "1"
+                    },
+                    {
+                      "name": "EVENT_QUEUE_NAMES",
+                      "value": "[join(parameters('queueNames'), ',')]"
+                    },
+                    {
+                      "name": "EVENT_TABLE_NAMES",
+                      "value": "[join(parameters('tableNames'), ',')]"
+                    },
+                    {
+                      "name": "SCHEDULE_LOCK_BLOB_URL",
+                      "value": "[format('https://{0}.blob.{1}/locks/schedule-leader-lock', variables('storageAccountName'), environment().suffixes.storage)]"
+                    },
+                    {
+                      "name": "EVENT_QUEUE_NAME",
+                      "value": "events-synapse"
+                    },
+                    {
+                      "name": "PIPELINES_CONFIG_JSON",
+                      "value": "[format('https://{0}.blob.{1}/config/pipelines.{2}.json', variables('storageAccountName'), environment().suffixes.storage, parameters('environment'))]"
+                    },
+                    {
+                      "name": "DLQ_NAME",
+                      "value": "events-synapse-dlq"
+                    },
+                    {
+                      "name": "TABLE_DEDUPE",
+                      "value": "ProcessedMessages"
+                    },
+                    {
+                      "name": "TABLE_RUNS",
+                      "value": "RunHistory"
+                    },
+                    {
+                      "name": "AZURE_TABLE_ENDPOINT",
+                      "value": "[format('https://{0}.table.{1}', variables('storageAccountName'), environment().suffixes.storage)]"
+                    },
+                    {
+                      "name": "AZURE_BLOB_ENDPOINT",
+                      "value": "[format('https://{0}.blob.{1}', variables('storageAccountName'), environment().suffixes.storage)]"
+                    },
+                    {
+                      "name": "ENVIRONMENT",
+                      "value": "[parameters('environment')]"
+                    },
+                    {
+                      "name": "ONDEMAND_SHARED_SECRET",
+                      "value": "[parameters('onDemandSharedSecret')]"
                     }
                   ],
                   "vnetRouteAllEnabled": true
@@ -1823,6 +2063,35 @@
               },
               "dependsOn": [
                 "[resourceId('Microsoft.Web/serverfarms', format('{0}-plan', parameters('name')))]"
+              ]
+            },
+            {
+              "type": "Microsoft.Authorization/roleAssignments",
+              "apiVersion": "2022-04-01",
+              "scope": "[format('Microsoft.Synapse/workspaces/{0}', parameters('synapseWorkspaceName'))]",
+              "name": "[guid(parameters('name'), 'SynapseContributor')]",
+              "properties": {
+                "principalId": "[reference(resourceId('Microsoft.Web/sites', parameters('name')), '2022-03-01', 'full').identity.principalId]",
+                "roleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '2a2b9908-6ea1-4ae2-8e65-a410df84e7d1')]",
+                "principalType": "ServicePrincipal"
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.Web/sites', parameters('name'))]"
+              ]
+            },
+            {
+              "condition": "[not(equals(parameters('keyVaultName'), ''))]",
+              "type": "Microsoft.Authorization/roleAssignments",
+              "apiVersion": "2022-04-01",
+              "scope": "[format('Microsoft.KeyVault/vaults/{0}', parameters('keyVaultName'))]",
+              "name": "[guid(parameters('name'), 'KVSecretsUser')]",
+              "properties": {
+                "principalId": "[reference(resourceId('Microsoft.Web/sites', parameters('name')), '2022-03-01', 'full').identity.principalId]",
+                "roleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '4633458b-17de-408a-b874-0445c86b69e6')]",
+                "principalType": "ServicePrincipal"
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.Web/sites', parameters('name'))]"
               ]
             },
             {
@@ -1852,6 +2121,36 @@
               "dependsOn": [
                 "[resourceId('Microsoft.Web/sites', parameters('name'))]"
               ]
+            },
+            {
+              "type": "Microsoft.Web/connections",
+              "apiVersion": "2016-06-01",
+              "name": "[parameters('connName')]",
+              "location": "[parameters('location')]",
+              "properties": {
+                "displayName": "Azure Storage Queues",
+                "parameterValues": {
+                  "connectionString": "[format('DefaultEndpointsProtocol=https;AccountName={0};AccountKey={1};EndpointSuffix=core.windows.net', variables('storageAccountName'), listKeys(parameters('storageAccountId'), '2022-09-01').keys[0].value)]"
+                },
+                "api": {
+                  "id": "[subscriptionResourceId('Microsoft.Web/locations/managedApis', parameters('location'), 'azurequeues')]"
+                }
+              }
+            },
+            {
+              "type": "Microsoft.Web/connections",
+              "apiVersion": "2016-06-01",
+              "name": "azuretables",
+              "location": "[parameters('location')]",
+              "properties": {
+                "displayName": "Azure Storage Tables",
+                "parameterValues": {
+                  "connectionString": "[format('DefaultEndpointsProtocol=https;AccountName={0};AccountKey={1};EndpointSuffix=core.windows.net', variables('storageAccountName'), listKeys(parameters('storageAccountId'), '2022-09-01').keys[0].value)]"
+                },
+                "api": {
+                  "id": "[subscriptionResourceId('Microsoft.Web/locations/managedApis', parameters('location'), 'azuretables')]"
+                }
+              }
             }
           ],
           "outputs": {
@@ -1866,15 +2165,24 @@
             "logicAppIdentityPrincipalId": {
               "type": "string",
               "value": "[reference(resourceId('Microsoft.Web/sites', parameters('name')), '2022-03-01', 'full').identity.principalId]"
+            },
+            "storageQueuesConnectionId": {
+              "type": "string",
+              "value": "[resourceId('Microsoft.Web/connections', parameters('connName'))]"
+            },
+            "storageTablesConnectionId": {
+              "type": "string",
+              "value": "[resourceId('Microsoft.Web/connections', 'azuretables')]"
             }
           }
         }
       },
       "dependsOn": [
-        "[resourceId('Microsoft.Resources/deployments', 'functionStorage')]",
         "[resourceId('Microsoft.Resources/deployments', 'logging')]",
         "[resourceId('Microsoft.Resources/deployments', 'networking')]",
-        "[resourceId('Microsoft.Resources/deployments', 'naming')]"
+        "[resourceId('Microsoft.Resources/deployments', 'naming')]",
+        "[resourceId('Microsoft.Resources/deployments', 'storage')]",
+        "[resourceId('Microsoft.Resources/deployments', 'synapse')]"
       ]
     },
     {
@@ -1892,6 +2200,21 @@
           },
           "eventHubNamespaceName": {
             "value": "[reference(resourceId('Microsoft.Resources/deployments', 'naming'), '2025-04-01').outputs.naming.value.eventHubNamespace]"
+          },
+          "storageAccountName": {
+            "value": "[reference(resourceId('Microsoft.Resources/deployments', 'storage'), '2025-04-01').outputs.storageAccountId.value]"
+          },
+          "queueName": {
+            "value": "events-synapse"
+          },
+          "dlqName": {
+            "value": "events-synapse-dlq"
+          },
+          "tableDedupe": {
+            "value": "ProcessedMessages"
+          },
+          "tableRuns": {
+            "value": "RunHistory"
           },
           "eventHubSku": {
             "value": "Standard"
@@ -1925,7 +2248,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.38.5.1644",
-              "templateHash": "16103497887298139768"
+              "templateHash": "14091960106472382294"
             }
           },
           "parameters": {
@@ -1946,6 +2269,40 @@
               "type": "string",
               "metadata": {
                 "description": "Name of the Event Grid topic"
+              }
+            },
+            "storageAccountName": {
+              "type": "string",
+              "metadata": {
+                "description": "Storage account for queues/tables"
+              }
+            },
+            "queueName": {
+              "type": "string",
+              "defaultValue": "events-synapse",
+              "metadata": {
+                "description": "Main event queue name"
+              }
+            },
+            "dlqName": {
+              "type": "string",
+              "defaultValue": "events-synapse-dlq",
+              "metadata": {
+                "description": "Dead-letter queue name"
+              }
+            },
+            "tableDedupe": {
+              "type": "string",
+              "defaultValue": "ProcessedMessages",
+              "metadata": {
+                "description": "Table to store processed message ids (idempotency)"
+              }
+            },
+            "tableRuns": {
+              "type": "string",
+              "defaultValue": "RunHistory",
+              "metadata": {
+                "description": "Table to store run history / correlation"
               }
             },
             "location": {
@@ -2207,7 +2564,8 @@
       "dependsOn": [
         "[resourceId('Microsoft.Resources/deployments', 'networking')]",
         "[resourceId('Microsoft.Resources/deployments', 'privateDns')]",
-        "[resourceId('Microsoft.Resources/deployments', 'naming')]"
+        "[resourceId('Microsoft.Resources/deployments', 'naming')]",
+        "[resourceId('Microsoft.Resources/deployments', 'storage')]"
       ]
     },
     {
@@ -2672,6 +3030,7 @@
       ]
     },
     {
+      "condition": "[parameters('deployAzureMaps')]",
       "type": "Microsoft.Resources/deployments",
       "apiVersion": "2025-04-01",
       "name": "azureMaps",
@@ -2685,7 +3044,7 @@
             "value": "[reference(resourceId('Microsoft.Resources/deployments', 'naming'), '2025-04-01').outputs.naming.value.azureMaps]"
           },
           "location": {
-            "value": "[parameters('azureMapsLocation')]"
+            "value": "[variables('actualAzureMapsLocation')]"
           },
           "tags": {
             "value": "[parameters('tags')]"
@@ -2787,6 +3146,7 @@
       ]
     },
     {
+      "condition": "[parameters('deployCognitiveServices')]",
       "type": "Microsoft.Resources/deployments",
       "apiVersion": "2025-04-01",
       "name": "cognitiveServices",
@@ -2800,7 +3160,7 @@
             "value": "[reference(resourceId('Microsoft.Resources/deployments', 'naming'), '2025-04-01').outputs.naming.value.cognitiveServices]"
           },
           "location": {
-            "value": "[parameters('location')]"
+            "value": "[variables('actualCognitiveServicesLocation')]"
           },
           "tags": {
             "value": "[parameters('tags')]"
@@ -3014,6 +3374,7 @@
       ]
     },
     {
+      "condition": "[parameters('deployPurview')]",
       "type": "Microsoft.Resources/deployments",
       "apiVersion": "2025-04-01",
       "name": "purview",
@@ -3027,7 +3388,7 @@
             "value": "[reference(resourceId('Microsoft.Resources/deployments', 'naming'), '2025-04-01').outputs.naming.value.purview]"
           },
           "location": {
-            "value": "[parameters('location')]"
+            "value": "[variables('actualPurviewLocation')]"
           },
           "tags": {
             "value": "[parameters('tags')]"
@@ -3301,6 +3662,7 @@
       ]
     },
     {
+      "condition": "[parameters('deployMachineLearning')]",
       "type": "Microsoft.Resources/deployments",
       "apiVersion": "2025-04-01",
       "name": "machineLearning",
@@ -3314,7 +3676,7 @@
             "value": "[reference(resourceId('Microsoft.Resources/deployments', 'naming'), '2025-04-01').outputs.naming.value.machineLearning]"
           },
           "location": {
-            "value": "[parameters('location')]"
+            "value": "[variables('actualMachineLearningLocation')]"
           },
           "tags": {
             "value": "[parameters('tags')]"
@@ -3790,6 +4152,7 @@
       ]
     },
     {
+      "condition": "[parameters('deployAKS')]",
       "type": "Microsoft.Resources/deployments",
       "apiVersion": "2025-04-01",
       "name": "kubernetes",
@@ -3803,7 +4166,7 @@
             "value": "[reference(resourceId('Microsoft.Resources/deployments', 'naming'), '2025-04-01').outputs.naming.value.kubernetes]"
           },
           "location": {
-            "value": "[parameters('location')]"
+            "value": "[variables('actualAksLocation')]"
           },
           "tags": {
             "value": "[parameters('tags')]"
@@ -4214,6 +4577,7 @@
       ]
     },
     {
+      "condition": "[parameters('deployFabric')]",
       "type": "Microsoft.Resources/deployments",
       "apiVersion": "2025-04-01",
       "name": "fabric",
@@ -4227,7 +4591,7 @@
             "value": "[reference(resourceId('Microsoft.Resources/deployments', 'naming'), '2025-04-01').outputs.naming.value.fabric]"
           },
           "location": {
-            "value": "[parameters('location')]"
+            "value": "[variables('actualFabricLocation')]"
           },
           "tags": {
             "value": "[parameters('tags')]"
@@ -4610,6 +4974,7 @@
       ]
     },
     {
+      "condition": "[parameters('deployContainerInstances')]",
       "type": "Microsoft.Resources/deployments",
       "apiVersion": "2025-04-01",
       "name": "containerInstances",
@@ -4623,7 +4988,7 @@
             "value": "[reference(resourceId('Microsoft.Resources/deployments', 'naming'), '2025-04-01').outputs.naming.value.containerInstances]"
           },
           "location": {
-            "value": "[parameters('location')]"
+            "value": "[variables('actualContainerInstancesLocation')]"
           },
           "tags": {
             "value": "[parameters('tags')]"
@@ -4991,6 +5356,9 @@
           "applicationInsightsId": {
             "value": ""
           },
+          "deployApplicationInsights": {
+            "value": false
+          },
           "keyVaultId": {
             "value": "[reference(resourceId('Microsoft.Resources/deployments', 'keyVault'), '2025-04-01').outputs.keyVaultId.value]"
           }
@@ -5002,7 +5370,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.38.5.1644",
-              "templateHash": "10671555632896386513"
+              "templateHash": "5480956535221869232"
             }
           },
           "parameters": {
@@ -5067,6 +5435,13 @@
                 "description": "Application Insights for API monitoring."
               }
             },
+            "deployApplicationInsights": {
+              "type": "bool",
+              "defaultValue": false,
+              "metadata": {
+                "description": "Whether Application Insights is deployed and available."
+              }
+            },
             "keyVaultId": {
               "type": "string",
               "metadata": {
@@ -5120,6 +5495,7 @@
               }
             },
             {
+              "condition": "[parameters('deployApplicationInsights')]",
               "type": "Microsoft.ApiManagement/service/loggers",
               "apiVersion": "2023-05-01-preview",
               "name": "[format('{0}/{1}', parameters('name'), 'appinsights-logger')]",
@@ -5450,27 +5826,31 @@
           "synapseWorkspaceId": {
             "value": "[reference(resourceId('Microsoft.Resources/deployments', 'synapse'), '2025-04-01').outputs.synapseWorkspaceId.value]"
           },
-          "aksClusterId": {
-            "value": "[reference(resourceId('Microsoft.Resources/deployments', 'kubernetes'), '2025-04-01').outputs.aksClusterId.value]"
+          "aksClusterId": "[if(parameters('deployAKS'), createObject('value', reference(resourceId('Microsoft.Resources/deployments', 'kubernetes'), '2025-04-01').outputs.aksClusterId.value), createObject('value', ''))]",
+          "mlWorkspaceId": "[if(parameters('deployMachineLearning'), createObject('value', reference(resourceId('Microsoft.Resources/deployments', 'machineLearning'), '2025-04-01').outputs.mlWorkspaceId.value), createObject('value', ''))]",
+          "purviewAccountId": "[if(parameters('deployPurview'), createObject('value', reference(resourceId('Microsoft.Resources/deployments', 'purview'), '2025-04-01').outputs.purviewAccountId.value), createObject('value', ''))]",
+          "fabricCapacityId": "[if(parameters('deployFabric'), createObject('value', reference(resourceId('Microsoft.Resources/deployments', 'fabric'), '2025-04-01').outputs.fabricCapacityId.value), createObject('value', ''))]",
+          "deployAKS": {
+            "value": "[parameters('deployAKS')]"
           },
-          "mlWorkspaceId": {
-            "value": "[reference(resourceId('Microsoft.Resources/deployments', 'machineLearning'), '2025-04-01').outputs.mlWorkspaceId.value]"
+          "deployMachineLearning": {
+            "value": "[parameters('deployMachineLearning')]"
           },
-          "purviewAccountId": {
-            "value": "[reference(resourceId('Microsoft.Resources/deployments', 'purview'), '2025-04-01').outputs.purviewAccountId.value]"
+          "deployPurview": {
+            "value": "[parameters('deployPurview')]"
           },
-          "fabricCapacityId": {
-            "value": "[reference(resourceId('Microsoft.Resources/deployments', 'fabric'), '2025-04-01').outputs.fabricCapacityId.value]"
+          "deployFabric": {
+            "value": "[parameters('deployFabric')]"
           },
           "managedIdentities": {
             "value": {
               "functions": "[reference(resourceId('Microsoft.Resources/deployments', 'appHosting'), '2025-04-01').outputs.functionAppIdentityPrincipalId.value]",
-              "logicApps": "[reference(resourceId('Microsoft.Resources/deployments', 'logicApp'), '2025-04-01').outputs.logicAppIdentityPrincipalId.value]",
-              "aks": "[reference(resourceId('Microsoft.Resources/deployments', 'kubernetes'), '2025-04-01').outputs.aksClusterIdentityPrincipalId.value]",
-              "ml": "[reference(resourceId('Microsoft.Resources/deployments', 'machineLearning'), '2025-04-01').outputs.mlWorkspaceIdentityPrincipalId.value]",
-              "purview": "[reference(resourceId('Microsoft.Resources/deployments', 'purview'), '2025-04-01').outputs.purviewIdentityPrincipalId.value]",
+              "logicApps": "[if(parameters('deployLogicApps'), reference(resourceId('Microsoft.Resources/deployments', 'logicApp'), '2025-04-01').outputs.logicAppIdentityPrincipalId.value, '')]",
+              "aks": "[if(parameters('deployAKS'), reference(resourceId('Microsoft.Resources/deployments', 'kubernetes'), '2025-04-01').outputs.aksClusterIdentityPrincipalId.value, '')]",
+              "ml": "[if(parameters('deployMachineLearning'), reference(resourceId('Microsoft.Resources/deployments', 'machineLearning'), '2025-04-01').outputs.mlWorkspaceIdentityPrincipalId.value, '')]",
+              "purview": "[if(parameters('deployPurview'), reference(resourceId('Microsoft.Resources/deployments', 'purview'), '2025-04-01').outputs.purviewIdentityPrincipalId.value, '')]",
               "fabric": "",
-              "containers": "[reference(resourceId('Microsoft.Resources/deployments', 'containerInstances'), '2025-04-01').outputs.containerGroupIdentityPrincipalId.value]"
+              "containers": "[if(parameters('deployContainerInstances'), reference(resourceId('Microsoft.Resources/deployments', 'containerInstances'), '2025-04-01').outputs.containerGroupIdentityPrincipalId.value, '')]"
             }
           },
           "securityGroups": {
@@ -5484,7 +5864,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.38.5.1644",
-              "templateHash": "9672912859972833485"
+              "templateHash": "12086199418560926579"
             }
           },
           "parameters": {
@@ -5528,6 +5908,34 @@
               "type": "string",
               "metadata": {
                 "description": "Fabric Capacity resource ID for RBAC assignments"
+              }
+            },
+            "deployAKS": {
+              "type": "bool",
+              "defaultValue": false,
+              "metadata": {
+                "description": "Whether AKS is deployed"
+              }
+            },
+            "deployMachineLearning": {
+              "type": "bool",
+              "defaultValue": false,
+              "metadata": {
+                "description": "Whether Machine Learning is deployed"
+              }
+            },
+            "deployPurview": {
+              "type": "bool",
+              "defaultValue": false,
+              "metadata": {
+                "description": "Whether Purview is deployed"
+              }
+            },
+            "deployFabric": {
+              "type": "bool",
+              "defaultValue": false,
+              "metadata": {
+                "description": "Whether Fabric is deployed"
               }
             },
             "managedIdentities": {
@@ -5929,7 +6337,7 @@
     },
     "logicAppName": {
       "type": "string",
-      "value": "[reference(resourceId('Microsoft.Resources/deployments', 'logicApp'), '2025-04-01').outputs.logicAppName.value]"
+      "value": "[if(parameters('deployLogicApps'), reference(resourceId('Microsoft.Resources/deployments', 'logicApp'), '2025-04-01').outputs.logicAppName.value, '')]"
     },
     "eventGridTopicEndpoint": {
       "type": "string",
@@ -5937,55 +6345,55 @@
     },
     "azureMapsAccountId": {
       "type": "string",
-      "value": "[reference(resourceId('Microsoft.Resources/deployments', 'azureMaps'), '2025-04-01').outputs.mapsAccountId.value]"
+      "value": "[if(parameters('deployAzureMaps'), reference(resourceId('Microsoft.Resources/deployments', 'azureMaps'), '2025-04-01').outputs.mapsAccountId.value, '')]"
     },
     "cognitiveAccountId": {
       "type": "string",
-      "value": "[reference(resourceId('Microsoft.Resources/deployments', 'cognitiveServices'), '2025-04-01').outputs.cognitiveAccountId.value]"
+      "value": "[if(parameters('deployCognitiveServices'), reference(resourceId('Microsoft.Resources/deployments', 'cognitiveServices'), '2025-04-01').outputs.cognitiveAccountId.value, '')]"
     },
     "cognitiveAccountEndpoint": {
       "type": "string",
-      "value": "[reference(resourceId('Microsoft.Resources/deployments', 'cognitiveServices'), '2025-04-01').outputs.cognitiveAccountEndpoint.value]"
+      "value": "[if(parameters('deployCognitiveServices'), reference(resourceId('Microsoft.Resources/deployments', 'cognitiveServices'), '2025-04-01').outputs.cognitiveAccountEndpoint.value, '')]"
     },
     "purviewAccountId": {
       "type": "string",
-      "value": "[reference(resourceId('Microsoft.Resources/deployments', 'purview'), '2025-04-01').outputs.purviewAccountId.value]"
+      "value": "[if(parameters('deployPurview'), reference(resourceId('Microsoft.Resources/deployments', 'purview'), '2025-04-01').outputs.purviewAccountId.value, '')]"
     },
     "purviewAccountName": {
       "type": "string",
-      "value": "[reference(resourceId('Microsoft.Resources/deployments', 'purview'), '2025-04-01').outputs.purviewAccountName.value]"
+      "value": "[if(parameters('deployPurview'), reference(resourceId('Microsoft.Resources/deployments', 'purview'), '2025-04-01').outputs.purviewAccountName.value, '')]"
     },
     "purviewAccountEndpoint": {
       "type": "string",
-      "value": "[reference(resourceId('Microsoft.Resources/deployments', 'purview'), '2025-04-01').outputs.purviewAccountEndpoint.value]"
+      "value": "[if(parameters('deployPurview'), reference(resourceId('Microsoft.Resources/deployments', 'purview'), '2025-04-01').outputs.purviewAccountEndpoint.value, '')]"
     },
     "mlWorkspaceId": {
       "type": "string",
-      "value": "[reference(resourceId('Microsoft.Resources/deployments', 'machineLearning'), '2025-04-01').outputs.mlWorkspaceId.value]"
+      "value": "[if(parameters('deployMachineLearning'), reference(resourceId('Microsoft.Resources/deployments', 'machineLearning'), '2025-04-01').outputs.mlWorkspaceId.value, '')]"
     },
     "mlWorkspaceName": {
       "type": "string",
-      "value": "[reference(resourceId('Microsoft.Resources/deployments', 'machineLearning'), '2025-04-01').outputs.mlWorkspaceName.value]"
+      "value": "[if(parameters('deployMachineLearning'), reference(resourceId('Microsoft.Resources/deployments', 'machineLearning'), '2025-04-01').outputs.mlWorkspaceName.value, '')]"
     },
     "aksClusterId": {
       "type": "string",
-      "value": "[reference(resourceId('Microsoft.Resources/deployments', 'kubernetes'), '2025-04-01').outputs.aksClusterId.value]"
+      "value": "[if(parameters('deployAKS'), reference(resourceId('Microsoft.Resources/deployments', 'kubernetes'), '2025-04-01').outputs.aksClusterId.value, '')]"
     },
     "aksClusterName": {
       "type": "string",
-      "value": "[reference(resourceId('Microsoft.Resources/deployments', 'kubernetes'), '2025-04-01').outputs.aksClusterName.value]"
+      "value": "[if(parameters('deployAKS'), reference(resourceId('Microsoft.Resources/deployments', 'kubernetes'), '2025-04-01').outputs.aksClusterName.value, '')]"
     },
     "fabricCapacityId": {
       "type": "string",
-      "value": "[reference(resourceId('Microsoft.Resources/deployments', 'fabric'), '2025-04-01').outputs.fabricCapacityId.value]"
+      "value": "[if(parameters('deployFabric'), reference(resourceId('Microsoft.Resources/deployments', 'fabric'), '2025-04-01').outputs.fabricCapacityId.value, '')]"
     },
     "fabricCapacityName": {
       "type": "string",
-      "value": "[reference(resourceId('Microsoft.Resources/deployments', 'fabric'), '2025-04-01').outputs.fabricCapacityName.value]"
+      "value": "[if(parameters('deployFabric'), reference(resourceId('Microsoft.Resources/deployments', 'fabric'), '2025-04-01').outputs.fabricCapacityName.value, '')]"
     },
     "containerInstancesId": {
       "type": "string",
-      "value": "[reference(resourceId('Microsoft.Resources/deployments', 'containerInstances'), '2025-04-01').outputs.containerGroupId.value]"
+      "value": "[if(parameters('deployContainerInstances'), reference(resourceId('Microsoft.Resources/deployments', 'containerInstances'), '2025-04-01').outputs.containerGroupId.value, '')]"
     },
     "apiGatewayId": {
       "type": "string",

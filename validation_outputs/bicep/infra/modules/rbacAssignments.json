@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.38.5.1644",
-      "templateHash": "9672912859972833485"
+      "templateHash": "12086199418560926579"
     }
   },
   "parameters": {
@@ -49,6 +49,34 @@
       "type": "string",
       "metadata": {
         "description": "Fabric Capacity resource ID for RBAC assignments"
+      }
+    },
+    "deployAKS": {
+      "type": "bool",
+      "defaultValue": false,
+      "metadata": {
+        "description": "Whether AKS is deployed"
+      }
+    },
+    "deployMachineLearning": {
+      "type": "bool",
+      "defaultValue": false,
+      "metadata": {
+        "description": "Whether Machine Learning is deployed"
+      }
+    },
+    "deployPurview": {
+      "type": "bool",
+      "defaultValue": false,
+      "metadata": {
+        "description": "Whether Purview is deployed"
+      }
+    },
+    "deployFabric": {
+      "type": "bool",
+      "defaultValue": false,
+      "metadata": {
+        "description": "Whether Fabric is deployed"
       }
     },
     "managedIdentities": {

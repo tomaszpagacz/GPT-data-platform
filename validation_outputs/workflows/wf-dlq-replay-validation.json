@@ -1,0 +1,119 @@
+{
+  "workflow": "wf-dlq-replay",
+  "file": "/workspaces/GPT-data-platform/src/logic-apps/workflows/wf-dlq-replay.workflow.json",
+  "timestamp": "2025-10-05T21:50:13+00:00",
+  "checks": [
+    {
+      "check": "json_valid",
+      "status": "passed"
+    },
+    {
+      "check": "has_definition",
+      "status": "passed"
+    },
+    {
+      "check": "has_contentVersion",
+      "status": "passed"
+    },
+    {
+      "check": "has_parameters",
+      "status": "passed"
+    },
+    {
+      "check": "has_triggers",
+      "status": "passed"
+    },
+    {
+      "check": "has_actions",
+      "status": "passed"
+    },
+    {
+      "check": "has_schema",
+      "status": "passed"
+    },
+    {
+      "check": "param_dlqName_type",
+      "status": "passed",
+      "type": "string"
+    },
+    {
+      "check": "param_eventQueue_type",
+      "status": "passed",
+      "type": "string"
+    },
+    {
+      "check": "param_maxMessages_type",
+      "status": "passed",
+      "type": "int"
+    },
+    {
+      "check": "param_maxRetries_type",
+      "status": "passed",
+      "type": "int"
+    },
+    {
+      "check": "param_mode_type",
+      "status": "passed",
+      "type": "string"
+    },
+    {
+      "check": "param_poisonQueue_type",
+      "status": "passed",
+      "type": "string"
+    },
+    {
+      "check": "param_resourceGroup_type",
+      "status": "passed",
+      "type": "string"
+    },
+    {
+      "check": "param_subscriptionId_type",
+      "status": "passed",
+      "type": "string"
+    },
+    {
+      "check": "param_synapseWorkspace_type",
+      "status": "passed",
+      "type": "string"
+    },
+    {
+      "check": "trigger_manual_type",
+      "status": "passed",
+      "type": "Request"
+    },
+    {
+      "check": "action_each_type",
+      "status": "passed",
+      "type": "Foreach"
+    },
+    {
+      "check": "action_pull_type",
+      "status": "passed",
+      "type": "ApiConnection"
+    },
+    {
+      "check": "has_connections",
+      "status": "passed"
+    },
+    {
+      "check": "connection_count",
+      "status": "info",
+      "count": 1
+    },
+    {
+      "check": "workflow_kind",
+      "status": "passed",
+      "kind": "Stateful"
+    }
+  ],
+  "summary": {
+    "name": "wf-dlq-replay",
+    "kind": "Stateful",
+    "metrics": {
+      "parameters": 9,
+      "triggers": 1,
+      "actions": 2,
+      "connections": 1
+    }
+  }
+}

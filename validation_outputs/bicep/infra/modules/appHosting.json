@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.38.5.1644",
-      "templateHash": "10577069554555531097"
+      "templateHash": "28558143730058729"
     }
   },
   "parameters": {
@@ -46,10 +46,17 @@
         "description": "Subnet ID used for VNet integration."
       }
     },
-    "functionStorageAccountId": {
+    "storageAccountId": {
       "type": "string",
       "metadata": {
         "description": "Storage account used for Function runtime state."
+      }
+    },
+    "runtimeContainerName": {
+      "type": "string",
+      "defaultValue": "runtime",
+      "metadata": {
+        "description": "Name of the runtime container for Function App content."
       }
     },
     "logAnalyticsWorkspaceId": {
@@ -79,7 +86,7 @@
         }
       }
     ],
-    "functionStorageAccountName": "[last(split(parameters('functionStorageAccountId'), '/'))]",
+    "storageAccountName": "[last(split(parameters('storageAccountId'), '/'))]",
     "defaultDenyRule": {
       "ipAddress": "0.0.0.0/0",
       "action": "Deny",
@@ -135,15 +142,15 @@
             },
             {
               "name": "AzureWebJobsStorage",
-              "value": "[format('DefaultEndpointsProtocol=https;AccountName={0};AccountKey={1};EndpointSuffix={2}', variables('functionStorageAccountName'), listKeys(parameters('functionStorageAccountId'), '2022-09-01').keys[0].value, environment().suffixes.storage)]"
+              "value": "[format('DefaultEndpointsProtocol=https;AccountName={0};AccountKey={1};EndpointSuffix={2}', variables('storageAccountName'), listKeys(parameters('storageAccountId'), '2022-09-01').keys[0].value, environment().suffixes.storage)]"
             },
             {
               "name": "WEBSITE_CONTENTAZUREFILECONNECTIONSTRING",
-              "value": "[format('DefaultEndpointsProtocol=https;AccountName={0};AccountKey={1};EndpointSuffix={2}', variables('functionStorageAccountName'), listKeys(parameters('functionStorageAccountId'), '2022-09-01').keys[0].value, environment().suffixes.storage)]"
+              "value": "[format('DefaultEndpointsProtocol=https;AccountName={0};AccountKey={1};EndpointSuffix={2}', variables('storageAccountName'), listKeys(parameters('storageAccountId'), '2022-09-01').keys[0].value, environment().suffixes.storage)]"
             },
             {
               "name": "WEBSITE_CONTENTSHARE",
-              "value": "[toLower(parameters('functionAppName'))]"
+              "value": "[parameters('runtimeContainerName')]"
             },
             {
               "name": "WEBSITE_RUN_FROM_PACKAGE",

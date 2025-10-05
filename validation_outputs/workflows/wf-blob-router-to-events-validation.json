@@ -1,0 +1,84 @@
+{
+  "workflow": "wf-blob-router-to-events",
+  "file": "/workspaces/GPT-data-platform/src/logic-apps/workflows/wf-blob-router-to-events.workflow.json",
+  "timestamp": "2025-10-05T21:50:13+00:00",
+  "checks": [
+    {
+      "check": "json_valid",
+      "status": "passed"
+    },
+    {
+      "check": "has_definition",
+      "status": "passed"
+    },
+    {
+      "check": "has_contentVersion",
+      "status": "passed"
+    },
+    {
+      "check": "has_parameters",
+      "status": "passed"
+    },
+    {
+      "check": "has_triggers",
+      "status": "passed"
+    },
+    {
+      "check": "has_actions",
+      "status": "passed"
+    },
+    {
+      "check": "has_schema",
+      "status": "passed"
+    },
+    {
+      "check": "param_ingressQueue_type",
+      "status": "passed",
+      "type": "string"
+    },
+    {
+      "check": "trigger_from_ingress_type",
+      "status": "passed",
+      "type": "ApiConnection"
+    },
+    {
+      "check": "action_enqueue_type",
+      "status": "passed",
+      "type": "ApiConnection"
+    },
+    {
+      "check": "action_map_to_canonical_type",
+      "status": "passed",
+      "type": "Compose"
+    },
+    {
+      "check": "action_parse_eg_type",
+      "status": "passed",
+      "type": "Compose"
+    },
+    {
+      "check": "has_connections",
+      "status": "passed"
+    },
+    {
+      "check": "connection_count",
+      "status": "info",
+      "count": 1
+    },
+    {
+      "check": "workflow_kind",
+      "status": "passed",
+      "kind": "Stateful"
+    }
+  ],
+  "summary": {
+    "name": "wf-blob-router-to-events",
+    "kind": "Stateful",
+    "metrics": {
+      "parameters": 1,
+      "triggers": 1,
+      "actions": 3,
+      "connections": 1
+    }
+  }
+}

@@ -1,0 +1,114 @@
+{
+  "workflow": "wf-schedule-synapse",
+  "file": "/workspaces/GPT-data-platform/src/logic-apps/workflows/wf-schedule-synapse.workflow.json",
+  "timestamp": "2025-10-05T21:50:14+00:00",
+  "checks": [
+    {
+      "check": "json_valid",
+      "status": "passed"
+    },
+    {
+      "check": "has_definition",
+      "status": "passed"
+    },
+    {
+      "check": "has_contentVersion",
+      "status": "passed"
+    },
+    {
+      "check": "has_parameters",
+      "status": "passed"
+    },
+    {
+      "check": "has_triggers",
+      "status": "passed"
+    },
+    {
+      "check": "has_actions",
+      "status": "passed"
+    },
+    {
+      "check": "has_schema",
+      "status": "passed"
+    },
+    {
+      "check": "param_lockBlobUrl_type",
+      "status": "passed",
+      "type": "string"
+    },
+    {
+      "check": "param_maxSkewSeconds_type",
+      "status": "passed",
+      "type": "int"
+    },
+    {
+      "check": "param_pipelineName_type",
+      "status": "passed",
+      "type": "string"
+    },
+    {
+      "check": "param_pipelineParameters_type",
+      "status": "passed",
+      "type": "object"
+    },
+    {
+      "check": "param_resourceGroup_type",
+      "status": "passed",
+      "type": "string"
+    },
+    {
+      "check": "param_subscriptionId_type",
+      "status": "passed",
+      "type": "string"
+    },
+    {
+      "check": "param_synapseWorkspace_type",
+      "status": "passed",
+      "type": "string"
+    },
+    {
+      "check": "trigger_daily_0400_type",
+      "status": "passed",
+      "type": "Recurrence"
+    },
+    {
+      "check": "action_acquire_lease_type",
+      "status": "passed",
+      "type": "Http"
+    },
+    {
+      "check": "action_jitter_type",
+      "status": "passed",
+      "type": "Wait"
+    },
+    {
+      "check": "action_run_pipeline_type",
+      "status": "passed",
+      "type": "Http"
+    },
+    {
+      "check": "has_connections",
+      "status": "passed"
+    },
+    {
+      "check": "connection_count",
+      "status": "info",
+      "count": 0
+    },
+    {
+      "check": "workflow_kind",
+      "status": "passed",
+      "kind": "Stateful"
+    }
+  ],
+  "summary": {
+    "name": "wf-schedule-synapse",
+    "kind": "Stateful",
+    "metrics": {
+      "parameters": 7,
+      "triggers": 1,
+      "actions": 3,
+      "connections": 0
+    }
+  }
+}
